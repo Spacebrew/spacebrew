@@ -84,17 +84,48 @@ wsServer.on('request', function(request) {
 
             if (tMsg['config']) {
                 // accept each apps config and add it to its respect publisher and subscriber list
-                
+                //console.log(tMsg);
+
+                // now parse and look for subscribers and publishers
+                var tSubs = tMsg['config']['subscribe']['messages'];
+                for (var i=0; i<tSubs.length; i++) {
+                    //console.log(tSubs[i]['name']);
+
+                }
+                //console.log("My subs are "+tSubs);
+
                 //var json = JSON.stringify({ type:'message', data: message });
                 //clientconnections[index].sendUTF(JSON.stringify(clients));
             }
 
+            // if route exists 0->1, 2->0, 1->1  
+            // { "hello": ["helloagain", ]
+            var web0 = new Array(0, 1, 2);
+            var web1 = new Array(1, 0);
+            var web2 = new Array(2, 1);
+            routes.push(web0);
+            routes.push(web1);
+            routes.push(web2);
+            //console.log(routes);
+
+            // if message comes in from _ then check routes and send along if applicable, otherwise ignore
+            // 
             if (tMsg['message']) {
-                console.log("I got sent a message");
-                var json = JSON.stringify({ type:'message', data: message });
-                for (var i=0; i < clientconnections.length; i++) {
-                    clientconnections[i].sendUTF(json);
+                console.log("I got sent a message from "+connection);
+                //console.log(clientconnections.length);
+                for (var i=0; i<clientconnections.length; i++){
+                    if (clientconnections[i] === connection) {
+                        // console.log(i);
+                        console.log("I am "+i+" and I'm sending to "+routes[i]);
+                        for (var j=0; j<routes[i].length; j++) {
+                            var json = JSON.stringify({ type:'message', data: message });
+                           //     for (var i=0; i < clientconnections.length; i++) {
+                            clientconnections[j].sendUTF(json);
+                            //    }
+                        }
+                    }
                 }
+
             }
         }
 
