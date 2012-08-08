@@ -6,6 +6,8 @@ var clients = [ ]; // list of socket and name pairings
 var subscribers = [ ]; 
 var publishers = [ ];
 var routes = [ ];
+var adminExists = false;
+var adminConnection;
 
 var server = http.createServer(function(request, response) {
     // process HTTP request. Since we're writing just WebSockets server
@@ -80,6 +82,12 @@ wsServer.on('request', function(request) {
                 console.log(clients);
                 //var json = JSON.stringify({ name:clients, data: clients });
                 clientconnections[index].sendUTF(JSON.stringify(clients));
+                adminExists = true;
+                adminConnection = connection;
+            }
+
+            if (adminExists) {
+                adminConnection.sendUTF(JSON.stringify(clients));
             }
 
             if (tMsg['config']) {
@@ -101,7 +109,8 @@ wsServer.on('request', function(request) {
             // if route exists 0->1, 2->0, 1->1  
             // { "hello": ["helloagain", ]
             var web0 = new Array(0, 1, 2);
-            var web1 = new Array(1, 0);
+            var web1 = new Array(0, 1);
+            // web1[0] = 1;
             var web2 = new Array(2, 1);
             routes.push(web0);
             routes.push(web1);
@@ -120,6 +129,7 @@ wsServer.on('request', function(request) {
                         for (var j=0; j<routes[i].length; j++) {
                             var json = JSON.stringify({ type:'message', data: message });
                            //     for (var i=0; i < clientconnections.length; i++) {
+                            // console.log("Sending to ")
                             clientconnections[j].sendUTF(json);
                             //    }
                         }
