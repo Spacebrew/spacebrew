@@ -3,6 +3,7 @@ var http = require('http');
 
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
 var clients = [ ]; // list of socket and name pairings
+var clientObjs = [ ];
 var subscribers = [ ]; 
 var publishers = [ ];
 var routes = [ ];
@@ -22,20 +23,35 @@ wsServer = new WebSocketServer({
 
 // WebSocket server
 wsServer.on('request', function(request) {
+    
     var connection = request.accept(null, request.origin);
-
+    //console.log(tClient);
 
     var repeatConnection = false;
-    for (var i; i<clientconnections.length; i++) {
-        if (clientconnections[i] - 1 === index) {
+    console.log("Going to check "+clientconnections.length+" connections.");
+    for (var i=0; i<clientconnections.length; i++) {
+        console.log(clientconnections[i]);
+        console.log(connection);
+        if (clientconnections[i] === connection) {
              repeatConnection = true; // flag if it exists
-             //console.log("rejected existing user, already connected");
+             console.log("rejected existing user, already connected");
 
         }
     }
     if (repeatConnection === false) {
         var index = clientconnections.push(connection) - 1;
         //console.log("Logged new connection");
+        var tClient = {
+            "name": "",
+            "id": "",
+            "description": "",
+            "connection": "",
+            "publishers": "",
+            "subscribers": ""
+        };
+        tClient['connection'] = connection;
+        tClient['id'] = index;
+        console.log("Client is new");
     }
 
     //console.log(connection);
@@ -122,19 +138,27 @@ wsServer.on('request', function(request) {
             if (tMsg['message']) {
                 console.log("I got sent a message from "+connection);
                 //console.log(clientconnections.length);
-                for (var i=0; i<clientconnections.length; i++){
-                    if (clientconnections[i] === connection) {
-                        // console.log(i);
-                        console.log("I am "+i+" and I'm sending to "+routes[i]);
-                        for (var j=0; j<routes[i].length; j++) {
-                            var json = JSON.stringify({ type:'message', data: message });
-                           //     for (var i=0; i < clientconnections.length; i++) {
-                            // console.log("Sending to ")
-                            clientconnections[j].sendUTF(json);
-                            //    }
-                        }
-                    }
+
+                // SEND TO EVERYONE
+                var json = JSON.stringify({ type:'message', data: message });
+                for (var j=0; j<clientconnections.length; j++) {
+                    clientconnections[j].sendUTF(json);
                 }
+
+                // TRY ROUTING
+                // for (var i=0; i<clientconnections.length; i++){
+                //     if (clientconnections[i] === connection) {
+                //         // console.log(i);
+                //         console.log("I am "+i+" and I'm sending to "+routes[i]);
+                //         for (var j=0; j<routes[i].length; j++) {
+                //             var json = JSON.stringify({ type:'message', data: message });
+                //            //     for (var i=0; i < clientconnections.length; i++) {
+                //             // console.log("Sending to ")
+                //             clientconnections[j].sendUTF(json);
+                //             //    }
+                //         }
+                //     }
+                // }
 
             }
         }
