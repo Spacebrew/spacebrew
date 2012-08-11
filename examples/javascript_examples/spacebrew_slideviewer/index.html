@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<title>Spacebrew signage</title>
+		<title>Spacebrew slideshow</title>
 		<meta charset="utf-8">
 		<link rel="stylesheet" href="css/reset.css" type="text/css" media="screen" charset="utf-8" />
 		<link rel="stylesheet" href="css/style.css" type="text/css" media="screen" charset="utf-8" />
@@ -21,21 +21,16 @@ var currentMessage = "hello world";
 var myConfig = {
 "config": {
  "name": name,
- "description": "This is an example of a signage system",
+ "description": "This is an example slide show viewer",
  "publish": {
    "messages": [
      {
-       "name": "signageOn",
-       "type": "boolean",
-       "default": "true"
-     },
-     {
-       "name": "currentColor",
+       "name": "currentSlideNumber",
        "type": "number",
-       "default": "1023"
+       "default": "0"
      },
      {
-       "name": "currentText",
+       "name": "currentCaption",
        "type": "string",
        "default": "hello world"
      }
@@ -44,15 +39,23 @@ var myConfig = {
  "subscribe": {
    "messages": [
      {
-       "name": "signageOn",
+       "name": "autoPlay",
        "type": "boolean"
      },
      {
-       "name": "color",
+       "name": "next",
+       "type": "boolean"
+     },
+     {
+       "name": "previous",
+       "type": "boolean"
+     },
+     {
+       "name": "slideNumber",
        "type": "number"
      },
      {
-       "name": "text",
+       "name": "caption",
        "type": "string"
      }
    ]

@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<title>Spacebrew signage</title>
+		<title>Spacebrew slideshow</title>
 		<meta charset="utf-8">
 		<link rel="stylesheet" href="css/reset.css" type="text/css" media="screen" charset="utf-8" />
 		<link rel="stylesheet" href="css/style.css" type="text/css" media="screen" charset="utf-8" />
@@ -21,39 +21,25 @@ var currentMessage = "hello world";
 var myConfig = {
 "config": {
  "name": name,
- "description": "This is an example of a signage system",
+ "description": "This is an example using a leonardo to control a powertail",
  "publish": {
    "messages": [
      {
-       "name": "signageOn",
+       "name": "plugOn",
        "type": "boolean",
-       "default": "true"
-     },
-     {
-       "name": "currentColor",
-       "type": "number",
-       "default": "1023"
-     },
-     {
-       "name": "currentText",
-       "type": "string",
-       "default": "hello world"
+       "default": "0"
      }
    ]
  },
  "subscribe": {
    "messages": [
      {
-       "name": "signageOn",
+       "name": "power",
        "type": "boolean"
      },
      {
-       "name": "color",
+       "name": "cyclePower",
        "type": "number"
-     },
-     {
-       "name": "text",
-       "type": "string"
      }
    ]
  }

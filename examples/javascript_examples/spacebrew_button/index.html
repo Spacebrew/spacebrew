@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<title>Spacebrew sender</title>
+		<title>Spacebrew button</title>
 		<meta charset="utf-8">
 		<link rel="stylesheet" href="css/reset.css" type="text/css" media="screen" charset="utf-8" />
 		<link rel="stylesheet" href="css/style.css" type="text/css" media="screen" charset="utf-8" />
@@ -20,23 +20,23 @@ console.log(name);
 var myConfig = {
 "config": {
  "name": name,
- "description": "lorem ipsum ",
+ "description": "This is an example client which has a big red button you can push to send a message. It also listens for color events and will change it's color based on those messages.",
  "publish": {
    "messages": [
      {
        "name": "partyModeOn",
        "type": "boolean",
-       "text": "false"
+       "default": "false"
      },
      {
        "name": "currentColor",
        "type": "number",
-       "text": "1023"
+       "default": "1023"
      },
      {
        "name": "currentMessage",
        "type": "string",
-       "text": "not-updated"
+       "default": "not-updated"
      }
    ]
  },
@@ -59,7 +59,7 @@ var myConfig = {
 }
 };
 
-var ws = new WebSocket("ws://10.57.23.148:9000");
+var ws = new WebSocket("ws://localhost:9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var nameMsg = { "name": [
