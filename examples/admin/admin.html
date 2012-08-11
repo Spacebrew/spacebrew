@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Spacebrew sender</title>
+		<meta charset="utf-8">
+		<link rel="stylesheet" href="css/reset.css" type="text/css" media="screen" charset="utf-8" />
+		<link rel="stylesheet" href="css/style.css" type="text/css" media="screen" charset="utf-8" />
+		<!-- basic libraries -->
+        <script type="text/javascript" src="js/jquery/jq.js"></script>
+<script type="text/javascript">
+$(document).ready( function() {
+	//setup();
+});
+
+var ws = new WebSocket("ws://localhost:9000");
+    ws.onopen = function() {
+        console.log("WebSockets connection opened");
+        var adminMsg = { "admin": [
+        	{"admin": true}
+       	]};
+   		ws.send(JSON.stringify(adminMsg));
+    }
+    ws.onmessage = function(e) {
+        //console.log("Got WebSockets message: " + e.data);
+        console.log("Got WebSockets message: " + e.data);
+        try {
+            var json = JSON.parse(e.data);
+
+            var tHtml = "<br><br>";
+            for (var i=0; i<json.length; i++) {
+                tHtml += "<br>>> "+i+" : name: "+json[i][0]+" : from host: "+json[i][1];
+            }
+            // tHtml += "<br><br>Routes are hardcoded for as  0 -> (0, 1, 2), 1 -> (0, 1), 2 -> (2,1)";
+           	document.getElementById("clientnum").innerHTML="There are "+json.length+" nodes attached"+tHtml;
+        } catch (e) {
+            console.log('This doesn\'t look like a valid JSON: ', e.data);
+            return;
+        }
+    }
+    ws.onclose = function() {
+        console.log("WebSockets connection closed");
+    }
+
+</script>
+		<!-- MAIN -->
+	</head>
+	<body>
+		<h1>Admin</h1>
+		<h3 id="clientnum"></h3>
+   </body>
+</html>
+
