@@ -1,0 +1,121 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Spacebrew sender</title>
+		<meta charset="utf-8">
+		<link rel="stylesheet" href="css/reset.css" type="text/css" media="screen" charset="utf-8" />
+		<link rel="stylesheet" href="css/style.css" type="text/css" media="screen" charset="utf-8" />
+		<!-- basic libraries -->
+        <script type="text/javascript" src="js/jquery/jq.js"></script>
+<script type="text/javascript">
+$(document).ready( function() {
+	setup();
+});
+
+var index = 0;
+var fullURL = parent.document.URL;
+var name = fullURL.substring(fullURL.indexOf('?')+6, fullURL.length);
+console.log(name);
+
+var myConfig = {
+"config": {
+ "name": name,
+ "description": "lorem ipsum ",
+ "publish": {
+   "messages": [
+     {
+       "name": "partyModeOn",
+       "type": "boolean",
+       "default": "false"
+     },
+     {
+       "name": "currentColor",
+       "type": "number",
+       "default": "1023"
+     },
+     {
+       "name": "currentMessage",
+       "type": "string",
+       "default": "not-updated"
+     }
+   ]
+ },
+ "subscribe": {
+   "messages": [
+     {
+       "name": "partyMode",
+       "type": "boolean"
+     },
+     {
+       "name": "color",
+       "type": "number"
+     },
+     {
+       "name": "text",
+       "type": "string"
+     }
+   ]
+ }
+}
+};
+
+var ws = new WebSocket("ws://localhost:9000");
+    ws.onopen = function() {
+        console.log("WebSockets connection opened");
+        var nameMsg = { "name": [
+        	{"name": name}
+       	]};
+   		ws.send(JSON.stringify(nameMsg));
+
+      // send my config
+      ws.send(JSON.stringify(myConfig));
+    }
+    ws.onmessage = function(e) {
+        console.log("Got WebSockets message: " + e.data);
+        incrementIndex();
+        document.getElementById("currentMessage").innerHTML=e.data.value;
+
+    }
+    ws.onclose = function() {
+        console.log("WebSockets connection closed");
+    }
+
+
+//-------------------------------------------------------
+function setup (){
+
+// 	// listen to the mouse
+	window.addEventListener("mousedown", onMouseDown);
+}
+
+function incrementIndex() {
+    index += 1;
+    console.log(index);
+}
+
+//-------------------------------------------------------
+function onMouseDown (evt){
+	//ecs.sendMessage("packet", 255);
+	console.log("Sending message");
+	var message = {message: [
+       {
+           clientname:name, 
+           name:"buttonPress",
+           type:"boolean",
+           value:"true"
+       }
+   	]
+   	};
+
+   	//console.log(message);
+   	ws.send(JSON.stringify(message));
+
+}
+
+</script>
+		<!-- MAIN -->
+	</head>
+	<body>
+		<h1 id="currentMessage">Hello World</h1>
+   </body>
+</html>
