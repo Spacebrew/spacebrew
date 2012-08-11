@@ -2,11 +2,7 @@ var WebSocketServer = require('websocket').server;
 var http = require('http');
 
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
-var clients = [ ]; // list of socket and name pairings
-var clientObjs = [ ];
-var subscribers = [ ]; 
-var publishers = [ ];
-var routes = [ ];
+var trustedClients = []; // list of clients that have sent names
 var adminExists = false;
 var adminConnection;
 
@@ -27,32 +23,20 @@ wsServer.on('request', function(request) {
     var connection = request.accept(null, request.origin);
     //console.log(tClient);
 
-    var repeatConnection = false;
-    console.log("Going to check "+clientconnections.length+" connections.");
-    for (var i=0; i<clientconnections.length; i++) {
-        console.log(clientconnections[i]);
-        console.log(connection);
-        if (clientconnections[i] === connection) {
-             repeatConnection = true; // flag if it exists
-             console.log("rejected existing user, already connected");
+    // var repeatConnection = false;
+    // console.log("Going to check "+clientconnections.length+" connections.");
+    // for (var i=0; i<clientconnections.length; i++) {
+    //     // console.log(clientconnections[i]);
+    //     // console.log(connection);
+    //     if (clientconnections[i] === connection) {
+    //          repeatConnection = true; // flag if it exists
+    //          console.log("rejected existing user, already connected");
 
-        }
-    }
-    if (repeatConnection === false) {
-        var index = clientconnections.push(connection) - 1;
-        //console.log("Logged new connection");
-        var tClient = {
-            "name": "",
-            "id": "",
-            "description": "",
-            "connection": "",
-            "publishers": "",
-            "subscribers": ""
-        };
-        tClient['connection'] = connection;
-        tClient['id'] = index;
-        console.log("Client is new");
-    }
+    //     }
+    // }
+    //if (repeatConnection === false) {
+        clientconnections.push(connection);
+    //}
 
     //console.log(connection);
     // This is the most important callback for us, we'll handle
@@ -72,54 +56,92 @@ wsServer.on('request', function(request) {
                 // console.log("I got sent a name");
                 // console.log(tMsg);
                 // console.log ("your name will be "+tMsg['name'][0].name);
-                var tVar = [tMsg['name'][0].name, connection['remoteAddress']];
+                var tVar = [tMsg['name'][0].name, connection['remoteAddress'], connection];
 
                 var existingClient = false;
-                for(var i=0; i<clients.length; i++) {
-                    if (clients[i][0] === tVar[0]) {
+                for(var i=0; i<trustedClients.length; i++) {
+                    if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
                         existingClient = true;
                         console.log("client is already connected");
                     }
                 }
                 if (existingClient === false) {
-                    clients.push(tVar);
+                    //console.log("Logged new connection");
+                    var tClient = {
+                        "name": tVar[0],
+                        "remoteAddress": tVar[1],
+                        "description": "",
+                        "connection": connection,
+                        "publishers": {},
+                        "subscribers": {},
+                        "config":""
+                    };
+                    console.log("Client is new");
+
+                    trustedClients.push(tClient);
                     console.log("client added");
-                    //console.log(tVar+" : "+index);
                 }
 
-                console.log("Here are the current clients "+clients.length);
+                console.log("Here are the current trustedClients "+trustedClients.length);
 
-                for (var i=0; i<clients.length; i++) {
-                    console.log(clients[i][0]);
+                for (var i=0; i<trustedClients.length; i++) {
+                    console.log(trustedClients[i]['name']);
                 }
             }
 
             if (tMsg['admin']) {
-                console.log(clients);
-                //var json = JSON.stringify({ name:clients, data: clients });
-                clientconnections[index].sendUTF(JSON.stringify(clients));
+                console.log(trustedClients);
+                //var json = JSON.stringify({ name:trustedClients, data: trustedClients });
+                clientconnections[index].sendUTF(JSON.stringify(trustedClients));
                 adminExists = true;
                 adminConnection = connection;
             }
 
             if (adminExists) {
-                adminConnection.sendUTF(JSON.stringify(clients));
+                adminConnection.sendUTF(JSON.stringify(trustedClients));
             }
 
             if (tMsg['config']) {
                 // accept each apps config and add it to its respect publisher and subscriber list
                 //console.log(tMsg);
+                var trustedClient = undefined;
+                for(var i = 0; i < trustedClients.length; i++){
+                    if (trustedClients[i].name === tMsg['config']['name'] &&
+                        trustedClients[i].remoteAddress === connection.remoteAddress){
+                        trustedClient = trustedClients[i];
+                        break;
+                    }
+                }
 
-                // now parse and look for subscribers and publishers
-                var tSubs = tMsg['config']['subscribe']['messages'];
-                for (var i=0; i<tSubs.length; i++) {
-                    //console.log(tSubs[i]['name']);
-
+                if (trustedClient !== undefined){
+                    trustedClient.config = tMsg['config'];
+                    // now parse and look for subscribers and publishers
+                    var tSubs = tMsg['config']['subscribe']['messages'];
+                    var tPubs = tMsg['config']['publish']['messages'];
+                    //add new subscribers to hash
+                    var items = [[tSubs, trustedClient.subscribers,'publishers'], [tPubs, trustedClient.publishers,'subscribers']];
+                    for (var j = 0; j<items.length; j++){
+                        item = items[j];
+                        var hash = {};
+                        for (var i=0; i<item[0].length; i++) {
+                            hash[item[0][i].name] = item[0][i];
+                            if (!item[1][item[0][i].name]){
+                                item[0][i][item[2]] = [];
+                                item[1][item[0][i].name] = item[0][i];
+                            }
+                        }
+                        //remove non-defined subscribers from hash
+                        for (var key in item[1]){
+                            if (hash[key] === undefined){
+                                delete item[1][key];
+                            }
+                        }
+                    }
                 }
                 //console.log("My subs are "+tSubs);
 
                 //var json = JSON.stringify({ type:'message', data: message });
-                //clientconnections[index].sendUTF(JSON.stringify(clients));
+                //clientconnections[index].sendUTF(JSON.stringify(trustedClients));
             }
 
             // if route exists 0->1, 2->0, 1->1  
@@ -128,11 +150,6 @@ wsServer.on('request', function(request) {
             var web1 = new Array(0, 1);
             // web1[0] = 1;
             var web2 = new Array(2, 1);
-            routes.push(web0);
-            routes.push(web1);
-            routes.push(web2);
-            //console.log(routes);
-
             // if message comes in from _ then check routes and send along if applicable, otherwise ignore
             // 
             if (tMsg['message']) {
@@ -165,12 +182,18 @@ wsServer.on('request', function(request) {
 
     });
 
-    connection.on('open', function(connection) {
-        console.log("open");
-    });
-
     connection.on('close', function(connection) {
         // close user connection
         console.log("close");
+        for(var i = 0; i < trustedClients.length; i++){
+            if (trustedClients[i]['connection'].state === 'closed'){
+                trustedClients.splice(i, 1);
+            }
+        }
+        for(var i = 0; i<clientconnections.length; i++){
+            if (clientconnections[i].state === 'closed'){
+                clientconnections.splice(i, 1);
+            }
+        }
     });
 });

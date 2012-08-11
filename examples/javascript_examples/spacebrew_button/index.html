@@ -19,7 +19,7 @@ console.log(name);
 
 var myConfig = {
 "config": {
- "name": "Web button",
+ "name": name,
  "description": "lorem ipsum ",
  "publish": {
    "messages": [
@@ -116,6 +116,7 @@ function onMouseDown (evt){
 	console.log("Sending message");
 	var message = {message: [
        {
+           clientName:name,
            name:"buttonPress",
            type:"boolean",
            value:"true"

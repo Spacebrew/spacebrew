@@ -5,8 +5,10 @@ import org.java_websocket.handshake.ServerHandshake;
 ExampleClient c;
 int numClicks = 0;
 boolean sendingNow = false;
+int sec0;
 
 void setup() {
+  frameRate(240);
   size(600,400);
   try {
     openSocket();
@@ -28,6 +30,10 @@ void draw() {
       String testMsg = "{\"message\":[{\"name\":\"buttonPress\",\"type\":\"boolean\",\"value\":\"false\"}]}";
       c.send(testMsg);
   }
+  
+  int sec = second();
+  if (sec != sec0){println("FPS: "+frameRate);}
+  sec0 = sec;
 }
 
 void keyPressed() {
@@ -67,7 +73,7 @@ public class ExampleClient extends WebSocketClient {
 
 	@Override
 	public void onMessage( String message ) {
-          println(message);
+          //println(message);
           numClicks++;
 	}
 
