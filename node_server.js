@@ -3,8 +3,7 @@ var http = require('http');
 
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
 var trustedClients = []; // list of clients that have sent names
-var adminExists = false;
-var adminConnection;
+var adminConnections = [];
 
 var server = http.createServer(function(request, response) {
     // process HTTP request. Since we're writing just WebSockets server
@@ -16,6 +15,19 @@ server.listen(9000, function() { });
 wsServer = new WebSocketServer({
     httpServer: server
 });
+
+var buildTrustedClientsForAdmin = function(){
+    var output = [];
+    for(var i = 0, end = trustedClients.length; i < end; i++){
+        var keys = ['name','remoteAddress','description','publishers','subscribers'];
+        var currClient = {};
+        for(var j = 0; j < keys.length; j++){
+            currClient[keys[j]] = trustedClients[i][keys[j]];
+        }
+        output.push(currClient);
+    }
+    return output;
+}
 
 // WebSocket server
 wsServer.on('request', function(request) {
@@ -90,15 +102,15 @@ wsServer.on('request', function(request) {
             }
 
             if (tMsg['admin']) {
-                console.log(trustedClients);
-                //var json = JSON.stringify({ name:trustedClients, data: trustedClients });
-                clientconnections[index].sendUTF(JSON.stringify(trustedClients));
-                adminExists = true;
-                adminConnection = connection;
-            }
-
-            if (adminExists) {
-                adminConnection.sendUTF(JSON.stringify(trustedClients));
+                connection.sendUTF(JSON.stringify(buildTrustedClientsForAdmin()));
+                adminConnections.push(connection);
+            } else {
+                if (adminConnections.length > 0){
+                    var stringified = JSON.stringify(buildTrustedClientsForAdmin());
+                    for(var i = 0; i < adminConnections.length; i++){
+                        adminConnections[i].sendUTF(stringified);
+                    }
+                }
             }
 
             if (tMsg['config']) {
@@ -157,9 +169,9 @@ wsServer.on('request', function(request) {
                 //console.log(clientconnections.length);
 
                 // SEND TO EVERYONE
-                var json = JSON.stringify({ type:'message', data: message });
-                for (var j=0; j<clientconnections.length; j++) {
-                    clientconnections[j].sendUTF(json);
+                var json = JSON.stringify({ type:'message', data: tMsg });
+                for (var j=0, end=trustedClients.length; j<end; j++) {
+                    trustedClients[j].connection.sendUTF(json);
                 }
 
                 // TRY ROUTING
@@ -188,6 +200,11 @@ wsServer.on('request', function(request) {
         for(var i = 0; i < trustedClients.length; i++){
             if (trustedClients[i]['connection'].state === 'closed'){
                 trustedClients.splice(i, 1);
+            }
+        }
+        for(var i = 0; i < adminConnections.length; i++){
+            if (adminConnections[i].state === 'closed'){
+                adminConnections.splice(i, 1);
             }
         }
         for(var i = 0; i<clientconnections.length; i++){

@@ -28,7 +28,7 @@ var ws = new WebSocket("ws://localhost:9000");
 
             var tHtml = "<br><br>";
             for (var i=0; i<json.length; i++) {
-                tHtml += "<br>>> "+i+" : name: "+json[i][0]+" : from host: "+json[i][1];
+                tHtml += "<br>>> "+i+" : name: "+json[i].name+" : from host: "+json[i].remoteAddress;
             }
             // tHtml += "<br><br>Routes are hardcoded for as  0 -> (0, 1, 2), 1 -> (0, 1), 2 -> (2,1)";
            	document.getElementById("clientnum").innerHTML="There are "+json.length+" nodes attached"+tHtml;
