@@ -226,7 +226,7 @@ wsServer.on('request', function(request) {
                             } else {
                                 bValidMessage = true;
                                 for(var j = pub.subscribers.length - 1; j >= 0; j--){
-                                    var currSub = pub.subscribers[i];
+                                    var currSub = pub.subscribers[j];
                                     currSub.client.connection.sendUTF(JSON.stringify({message:{
                                         name:currSub.subscriber.name,
                                         type:tMsg.message.type,
