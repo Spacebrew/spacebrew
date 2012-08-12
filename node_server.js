@@ -18,33 +18,53 @@ wsServer = new WebSocketServer({
 
 var buildTrustedClientsForAdmin = function(){
     var output = [];
+    //re-create the 'name' and 'config' messages
     for(var i = 0, end = trustedClients.length; i < end; i++){
-        var keys = ['name','remoteAddress','description'];
-        var currClient = {};
-        for(var j = 0; j < keys.length; j++){
-            currClient[keys[j]] = trustedClients[i][keys[j]];
-        }
-        currClient.publishers = [];
-        currClient.subscribers = [];
-        var toSimplify = [[currClient.publishers, trustedClients[i].publishers, "subscribers", "subscriber"],
-                            [currClient.subscribers, trustedClients[i].subscribers, "publishers", "publisher"]];
-        for(var entry in toSimplify){
-            for(var key in entry[1]){
-                for(var type in entry[1][key]){
-                    var toAdd = {name:key,type:type};
-                    toAdd[entry[2]] = [];
-                    for(var j = 0; j < entry[1][key][type][entry[2]].length; j++){
-                        var item = entry[1][key][type][entry[2]][j];
-                        toAdd[entry[2]].push({clientName:item.client.name,remoteAddress:item.client.remoteAddress,name:item[entry[3]].name});
-                    }
-                    entry[0].push(toAdd);
+        var currClient = trustedClients[i];
+        var currMsg = {name:[{name:currClient.name, remoteAddress:currClient.remoteAddress}]};
+        output.push(currMsg);
+        var publishers = [];
+        var subscribers = [];
+        var items = [[publishers, currClient.publishers],[subscribers, currClient.subscribers]];
+        for(var j = 0; j < items.length; j++){
+            for(var key in items[j][1]){
+                for (var type in items[j][1][key]){
+                    items[j][0].push({name:key, type:type, default:items[j][1][key][type].default});
                 }
             }
         }
-        output.push(currClient);
+        currMsg = {config:{name:currClient.name,
+                            remoteAddress:currClient.remoteAddress,
+                            description:currClient.description,
+                            publish:{messages:publishers},
+                            subscribe:{messages:subscribers}}};
+        output.push(currMsg);
+    }
+    //now re-create the 'route' messages
+    //we only need to build from one side, so we only look at publishers
+    for(var i = 0, end = trustedClients.length; i < end; i++){
+        var currClient = trustedClients[i];
+        for (var key in currClient.publishers){
+            for (var type in currClient.publishers[key]){
+                var publisherObj = {clientName:currClient.name,
+                                    name:key,
+                                    type:type,
+                                    remoteAddress:currClient.remoteAddress};
+                var publisher = currClient.publishers[key][type];
+                for (var j = 0; j < publisher.subscribers.length; j++){
+                    var subscriber = publisher.subscribers[j];
+                    currMsg = {route:{publisher:publisherObj,
+                                        subscriber:{clientName:subscriber.client.name,
+                                                    name:subscriber.subscriber.name,
+                                                    type:subscriber.subscriber.type,
+                                                    remoteAddress:subscriber.client.remoteAddress}}};
+                    output.push(currMsg);
+                }
+            }
+        }
     }
     return output;
-}
+};
 
 // WebSocket server
 wsServer.on('request', function(request) {
@@ -84,31 +104,35 @@ wsServer.on('request', function(request) {
 
             if (tMsg['name']) {
                 //a connection is registering themselves
-                var tVar = [tMsg['name'][0].name, connection['remoteAddress'], connection];
+                for (var index = 0; index < tMsg['name'].length; index++){
+                    var tVar = [tMsg['name'][index].name, connection['remoteAddress'], connection];
+                    //add the remote address to the message for the admins
+                    tMsg['name'][index].remoteAddress = connection['remoteAddress'];
 
-                var existingClient = false;
-                for(var i=0; i<trustedClients.length; i++) {
-                    if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
-                        existingClient = true;
-                        console.log("client is already connected");
+                    var existingClient = false;
+                    for(var i=0; i<trustedClients.length; i++) {
+                        if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
+                            existingClient = true;
+                            console.log("client is already connected");
+                        }
                     }
-                }
-                if (existingClient === false) {
-                    //console.log("Logged new connection");
-                    var tClient = {
-                        "name": tVar[0],
-                        "remoteAddress": tVar[1],
-                        "description": "",
-                        "connection": connection,
-                        "publishers": {},
-                        "subscribers": {},
-                        "config":""
-                    };
-                    console.log("Client is new");
+                    if (existingClient === false) {
+                        //console.log("Logged new connection");
+                        var tClient = {
+                            "name": tVar[0],
+                            "remoteAddress": tVar[1],
+                            "description": "",
+                            "connection": connection,
+                            "publishers": {},
+                            "subscribers": {},
+                            "config":""
+                        };
+                        console.log("Client is new");
 
-                    trustedClients.push(tClient);
-                    console.log("client added");
-                    bValidMessage = true;
+                        trustedClients.push(tClient);
+                        console.log("client added");
+                        bValidMessage = true;
+                    }
                 }
 
                 console.log("Here are the current trustedClients "+trustedClients.length);
@@ -129,6 +153,8 @@ wsServer.on('request', function(request) {
 
                 if (trustedClient !== undefined){
                     bValidMessage = true;
+                    //add the remote address to the message for the admins
+                    tMsg['config'].remoteaddress = trustedClient.remoteAddress;
                     trustedClient.config = tMsg['config'];
                     var tSubs = (tMsg['config']['subscribe'] ? tMsg['config']['subscribe']['messages'] : []);
                     var tPubs = (tMsg['config']['publish'] ? tMsg['config']['publish']['messages'] : []);
@@ -177,6 +203,8 @@ wsServer.on('request', function(request) {
                     trustedClients[j].connection.sendUTF(json);
                 }
                 bValidMessage = true;
+                //add the remote address for the admins
+                tMsg['message'].remoteAddress = connection.remoteAddress;
 
                 // TRY ROUTING
                 // for (var i=0; i<clientconnections.length; i++){
@@ -237,19 +265,28 @@ wsServer.on('request', function(request) {
     connection.on('close', function(connection) {
         // close user connection
         console.log("close");
-        for(var i = 0; i < trustedClients.length; i++){
+        var removed = [];
+        for(var i = 0; i < trustedClients.length;){
             if (trustedClients[i]['connection'].state === 'closed'){
+                removed.push({name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress});
                 trustedClients.splice(i, 1);
+            } else {
+                i++;
             }
         }
-        for(var i = 0; i < adminConnections.length; i++){
+        sendToAdmins({remove:removed});
+        for(var i = 0; i < adminConnections.length;){
             if (adminConnections[i].state === 'closed'){
                 adminConnections.splice(i, 1);
+            } else {
+                i++;
             }
         }
-        for(var i = 0; i<clientconnections.length; i++){
+        for(var i = 0; i<clientconnections.length;){
             if (clientconnections[i].state === 'closed'){
                 clientconnections.splice(i, 1);
+            } else {
+                i++;
             }
         }
     });
