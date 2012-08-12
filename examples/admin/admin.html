@@ -48,7 +48,55 @@
     <div class="container">
 
         <h1>Admin</h1>
-        <h3 id="clientnum"></h3>
+        <ol id="client_list"></ol>
+        <form class="form-horizontal">
+          <fieldset>
+            <legend>Create Route</legend>
+            <div class="control-group">
+              <label class="control-label" for="pubClientName">pubClientName</label>
+              <div class="controls">
+                <input type="text" class="input-xlarge" id="pubClientName">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="pubAddr">pubAddr</label>
+              <div class="controls">
+                <input type="text" class="input-xlarge" id="pubAddr">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="pubName">pubName</label>
+              <div class="controls">
+                <input type="text" class="input-xlarge" id="pubName">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="subClientName">subClientName</label>
+              <div class="controls">
+                <input type="text" class="input-xlarge" id="subClientName">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="subAddr">subAddr</label>
+              <div class="controls">
+                <input type="text" class="input-xlarge" id="subAddr">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="subName">subName</label>
+              <div class="controls">
+                <input type="text" class="input-xlarge" id="subName">
+              </div>
+            </div>
+            <div class="control-group">
+              <label class="control-label" for="type">type</label>
+              <div class="controls">
+                <input type="text" class="input-xlarge" id="type">
+              </div>
+            </div>
+          </fieldset>
+          <button class="btn" onClick='doroute()'>Route!</button>
+        </form>
 
     </div> <!-- /container -->
 
@@ -63,6 +111,19 @@ $(document).ready( function() {
     //setup();
 });
 
+var doroute = function(){
+    ws.send(JSON.stringify({
+        route:{publisher:{clienName:$("#pubClientName").val(),
+                            name:$("#pubName").val(),
+                            type:$("#type").val(),
+                            remoteAddress:$("#pubAddr").val()},
+                subscriber:{clientName:$("#subClientName").val(),
+                            name:$("#subName").val(),
+                            type:$("#type").val(),
+                            remoteAddress:$("#subAddr").val()}}
+    }));
+};
+
 var ws = new WebSocket("ws://localhost:9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
@@ -73,17 +134,16 @@ var ws = new WebSocket("ws://localhost:9000");
     }
     ws.onmessage = function(e) {
         //console.log("Got WebSockets message: " + e.data);
-        console.log("Got WebSockets message: " + e.data);
+        console.log("Got WebSockets message:");
+        console.log(e);
         try {
             var json = JSON.parse(e.data);
-
-            var tHtml = "<br><br>";
-            for (var i=0; i<json.length; i++) {
-                tHtml += "<br>>> "+i+" : name: "+json[i].name+" : from host: "+json[i].remoteAddress;
+            if (!handleMsg(json)){
+                for(var i = 0, end = json.length; i < end; i++){
+                    handleMsg(json[i]);
+                }
             }
-            // tHtml += "<br><br>Routes are hardcoded for as  0 -> (0, 1, 2), 1 -> (0, 1), 2 -> (2,1)";
-            document.getElementById("clientnum").innerHTML="There are "+json.length+" nodes attached"+tHtml;
-        } catch (e) {
+        } catch (err) {
             console.log('This doesn\'t look like a valid JSON: ', e.data);
             return;
         }
@@ -91,6 +151,71 @@ var ws = new WebSocket("ws://localhost:9000");
     ws.onclose = function() {
         console.log("WebSockets connection closed");
     }
+
+var clients = [];
+
+var handleMsg = function(json){
+    if (json.name){
+        handleNameMsg(json);
+    } else if (json.config){
+        handleConfigMsg(json);
+    } else if (json.message){
+        handleMessageMsg(json);
+    } else if (json.route){
+        handleRouteMsg(json);
+    } else if (json.remove){
+        handleRemoveMsg(json);
+    } else if (json.admin){
+        //do nothing
+    } else {
+        return false;
+    }
+    return true;
+}
+
+var handleMessageMsg = function(msg){
+
+};
+
+var handleNameMsg = function(msg){
+    for(var i = 0; i < msg.name.length; i++){
+        clients.push({name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress});
+    };
+    generateList();
+};
+
+//generates the list of clients for viewing
+var generateList = function(){
+    var html = '';
+    for(var i = 0; i < clients.length; i++){
+        html += '<li>'+clients[i].name + ' @ ' + clients[i].remoteAddress + '</li>';
+    };
+    $("#client_list").html(html);
+};
+
+var handleConfigMsg = function(msg){
+
+};
+
+var handleRouteMsg = function(msg){
+
+};
+
+var handleRemoveMsg = function(msg){
+    //for each entry in the remove list
+    //for each entry in the clients list
+    //if the name & address match, then remove it from the list
+    for(var i = 0; i < msg.remove.length; i++){
+        for(var j = 0; j < clients.length; j++){
+            if (clients[j].name === msg.remove[i].name
+                && clients[j].remoteAddress === msg.remove[i].remoteAddress){
+                clients.splice(j, 1);
+                break;
+            }
+        }
+    }
+    generateList();
+};
 
 </script>
   </body>
