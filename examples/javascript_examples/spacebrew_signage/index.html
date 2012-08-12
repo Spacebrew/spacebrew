@@ -12,11 +12,25 @@ $(document).ready( function() {
 	setup();
 });
 
+function gup( name ) {
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+var name = gup('name') || window.location.href; 
+var server = gup('server') || 'localhost';
+
 var index = 0;
-var fullURL = parent.document.URL;
-var name = fullURL.substring(fullURL.indexOf('?')+6, fullURL.length);
 console.log(name);
-var currentMessage = "hello world";
+var currentMessage = "you clicked?";
+var signageOn = true;
+var currentColor = '#000000';
 
 var myConfig = {
 "config": {
@@ -60,7 +74,7 @@ var myConfig = {
 }
 };
 
-var ws = new WebSocket("ws://localhost:9000");
+var ws = new WebSocket("ws://"+server+":9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var nameMsg = { "name": [
@@ -74,19 +88,45 @@ var ws = new WebSocket("ws://localhost:9000");
     ws.onmessage = function(e) {
         console.log("Got WebSockets message: " + e.data);
         incrementIndex();
-        //currentMessage = e.data.data.utf8Data;
-        console.log(e);
-        var test = JSON.parse(e.data);
-        var test2 = JSON.parse(test.data.utf8Data);
-        console.log(test2.message[0].name);
-        currentMessage = test2.message[0].name;
-        //.data;
-        //console.log(test);
-        //var test2 = JSON.parse(test.data.utf8Data);
-        //console.log();
-        //console.log(JSON.parse(currentMessage.message[0].name));
-        //console.log(e.data);
-        document.getElementById("currentMessage").innerHTML=currentMessage;
+
+        var currName = JSON.parse(e.data).data.message[0].name;
+        var currType = JSON.parse(e.data).data.message[0].type;
+        //currName = "text";
+        var currValue = JSON.parse(e.data).data.message[0].value;
+        //currValue = "BIG RED BUTTON";
+        if (currType == "boolean") {
+          currValue = Boolean(currValue);
+          console.log("Cast to boolean");
+        }
+
+        console.log(currName+" : "+currValue);
+
+        if (currName == "signageOn") {
+          console.log("received signageOn message");
+          if (currValue == true) {
+            signageOn = true;
+          }
+          if (currValue == false) {
+            signageOn = false;
+          }
+        }
+
+        // if it's a color
+        if (currName == "color") {
+          console.log("received color message");
+          changeBGC(currValue);
+        }
+
+        if (currName == "text") {
+            console.log("received color message");
+            currentMessage = currValue;
+        }
+
+        if (signageOn == true) {
+          document.getElementById("currentMessage").innerHTML=currentMessage;
+        } else {
+          document.getElementById("currentMessage").innerHTML="";
+        }
     }
     ws.onclose = function() {
         console.log("WebSockets connection closed");
@@ -105,6 +145,11 @@ function incrementIndex() {
     //console.log(index);
 }
 
+function changeBGC(color){
+  document.body.style.background = color;
+  console.log("Changed color");
+}
+
 //-------------------------------------------------------
 function onMouseDown (evt){
 	//ecs.sendMessage("packet", 255);
@@ -112,7 +157,7 @@ function onMouseDown (evt){
 	var message = {message: [
        {
            clientname:name, 
-           name:text,
+           name:"text",
            type:"string",
            value:currentMessage
        }

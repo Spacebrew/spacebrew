@@ -12,10 +12,25 @@ $(document).ready( function() {
 	setup();
 });
 
+function gup( name ) {
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
 var index = 0;
-var fullURL = parent.document.URL;
-var name = fullURL.substring(fullURL.indexOf('?')+6, fullURL.length);
+
+var name = gup('name') || window.location.href; 
+var server = gup('server') || 'localhost';
+
 console.log(name);
+var partyModeOn = false;
+var buttonText = "";
 
 var myConfig = {
 "config": {
@@ -59,7 +74,7 @@ var myConfig = {
 }
 };
 
-var ws = new WebSocket("ws://localhost:9000");
+var ws = new WebSocket("ws://"+server+":9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var nameMsg = { "name": [
@@ -72,8 +87,46 @@ var ws = new WebSocket("ws://localhost:9000");
     }
     ws.onmessage = function(e) {
         console.log("Got WebSockets message: " + e.data);
+        
+
+        var currName = JSON.parse(e.data).data.message[0].name;
+        var currType = JSON.parse(e.data).data.message[0].type;
+        //currName = "partyMode";
+        var currValue = JSON.parse(e.data).data.message[0].value;
+        
+        if (currType == "boolean") {
+          currValue = Boolean(currValue);
+          console.log("Cast to boolean");
+        }
+        //currValue = "BIG RED BUTTON";
+        console.log(currName+" : "+currValue);
+
+
+        // if it's a partyMode
+        if (currName == "partyMode") {
+          console.log("received partymode message");
+          if (currValue == true) {
+             partyModeOn = true;
+             console.log(partyModeOn);
+          } else {
+            partyModeOn = false;
+          }
+        }
+
+        // if it's a color
+        if (currName == "color") {
+          console.log("received color message");
+          changeBGC(currValue);
+        }
+
+        // if it’s a text
+        if (currName == "text") {
+          console.log("received text message"); 
+          buttonText = currValue;         
+        } 
+
         incrementIndex();
-        document.getElementById("numclicks").innerHTML="This has been virtually clicked "+index+" times";
+        document.getElementById("numclicks").innerHTML=buttonText+" has been virtually clicked "+index+" times and PARTY MODE IS: "+partyModeOn;
 
     }
     ws.onclose = function() {
@@ -83,37 +136,25 @@ var ws = new WebSocket("ws://localhost:9000");
 
 //-------------------------------------------------------
 function setup (){
-// 	this.host 	= "127.0.0.1";
-// 	this.port 	= 9002;
-// 	this.socket = new WebSocket("ws://"+this.host+":"+this.port);
-
-// this.socket.onopen = function() {
-//   console.log("open");
-//   this.socket.send("Connection open");
-//   }
-//   this.socket.onmessage = function(e) {
-//   console.log(e.data);
-//   }
-//   this.socket.onclose = function(e) {
-//   console.log("closed");
-//   }
-//   this.socket.onerror = function(e) {
-//   console.log("error");
-//  }
-
 // 	// listen to the mouse
 	window.addEventListener("mousedown", onMouseDown);
 }
 
 function incrementIndex() {
     index += 1;
-    console.log(index);
+    //console.log(index);
+}
+
+function changeBGC(color){
+  document.body.style.background = color;
+  console.log("Changed color");
 }
 
 //-------------------------------------------------------
 function onMouseDown (evt){
 	//ecs.sendMessage("packet", 255);
 	console.log("Sending message");
+
 	var message = {message: [
        {
            clientName:name,
@@ -126,7 +167,6 @@ function onMouseDown (evt){
 
    	//console.log(message);
    	ws.send(JSON.stringify(message));
-
 }
 
 </script>
