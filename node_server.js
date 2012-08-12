@@ -19,10 +19,27 @@ wsServer = new WebSocketServer({
 var buildTrustedClientsForAdmin = function(){
     var output = [];
     for(var i = 0, end = trustedClients.length; i < end; i++){
-        var keys = ['name','remoteAddress','description','publishers','subscribers'];
+        var keys = ['name','remoteAddress','description'];
         var currClient = {};
         for(var j = 0; j < keys.length; j++){
             currClient[keys[j]] = trustedClients[i][keys[j]];
+        }
+        currClient.publishers = [];
+        currClient.subscribers = [];
+        var toSimplify = [[currClient.publishers, trustedClients[i].publishers, "subscribers", "subscriber"],
+                            [currClient.subscribers, trustedClients[i].subscribers, "publishers", "publisher"]];
+        for(var entry in toSimplify){
+            for(var key in entry[1]){
+                for(var type in entry[1][key]){
+                    var toAdd = {name:key,type:type};
+                    toAdd[entry[2]] = [];
+                    for(var j = 0; j < entry[1][key][type][entry[2]].length; j++){
+                        var item = entry[1][key][type][entry[2]][j];
+                        toAdd[entry[2]].push({clientName:item.client.name,remoteAddress:item.client.remoteAddress,name:item[entry[3]].name});
+                    }
+                    entry[0].push(toAdd);
+                }
+            }
         }
         output.push(currClient);
     }
@@ -65,9 +82,7 @@ wsServer.on('request', function(request) {
             // console.log(tMsg);
 
             if (tMsg['name']) {
-                // console.log("I got sent a name");
-                // console.log(tMsg);
-                // console.log ("your name will be "+tMsg['name'][0].name);
+                //a connection is registering themselves
                 var tVar = [tMsg['name'][0].name, connection['remoteAddress'], connection];
 
                 var existingClient = false;
@@ -99,23 +114,8 @@ wsServer.on('request', function(request) {
                 for (var i=0; i<trustedClients.length; i++) {
                     console.log(trustedClients[i]['name']);
                 }
-            }
-
-            if (tMsg['admin']) {
-                connection.sendUTF(JSON.stringify(buildTrustedClientsForAdmin()));
-                adminConnections.push(connection);
-            } else {
-                if (adminConnections.length > 0){
-                    var stringified = JSON.stringify(buildTrustedClientsForAdmin());
-                    for(var i = 0; i < adminConnections.length; i++){
-                        adminConnections[i].sendUTF(stringified);
-                    }
-                }
-            }
-
-            if (tMsg['config']) {
+            } else if (tMsg['config']) {
                 // accept each apps config and add it to its respect publisher and subscriber list
-                //console.log(tMsg);
                 var trustedClient = undefined;
                 for(var i = 0; i < trustedClients.length; i++){
                     if (trustedClients[i].name === tMsg['config']['name'] &&
@@ -127,46 +127,46 @@ wsServer.on('request', function(request) {
 
                 if (trustedClient !== undefined){
                     trustedClient.config = tMsg['config'];
-                    // now parse and look for subscribers and publishers
-                    var tSubs = tMsg['config']['subscribe']['messages'];
-                    var tPubs = tMsg['config']['publish']['messages'];
-                    //add new subscribers to hash
+                    var tSubs = (tMsg['config']['subscribe'] ? tMsg['config']['subscribe']['messages'] : []);
+                    var tPubs = (tMsg['config']['publish'] ? tMsg['config']['publish']['messages'] : []);
                     var items = [[tSubs, trustedClient.subscribers,'publishers'], [tPubs, trustedClient.publishers,'subscribers']];
+                    //we are storing in a structure
+                    // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
+                    //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
+                    //so you need to access them by trustedClients[i][<sub_or_pub>][<name>][<type>]
                     for (var j = 0; j<items.length; j++){
                         item = items[j];
                         var hash = {};
+                        //add new subscribers/publishers to hash
                         for (var i=0; i<item[0].length; i++) {
-                            hash[item[0][i].name] = item[0][i];
+                            if (!hash[item[0][i].name]){
+                                hash[item[0][i].name] = {};
+                            }
+                            hash[item[0][i].name][item[0][i].type] = item[0][i];
                             if (!item[1][item[0][i].name]){
+                                item[1][item[0][i].name] = {};
+                            }
+                            if (!item[1][item[0][i].name][item[0][i].type]){
                                 item[0][i][item[2]] = [];
-                                item[1][item[0][i].name] = item[0][i];
+                                item[1][item[0][i].name][item[0][i].type] = item[0][i];
                             }
                         }
-                        //remove non-defined subscribers from hash
+                        //remove stale subscribers/publishers from hash
                         for (var key in item[1]){
                             if (hash[key] === undefined){
                                 delete item[1][key];
+                            } else {
+                                for (var type in item[1][key]){
+                                    if (hash[key][type] === undefined){
+                                        delete item[1][key][type];
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                //console.log("My subs are "+tSubs);
-
-                //var json = JSON.stringify({ type:'message', data: message });
-                //clientconnections[index].sendUTF(JSON.stringify(trustedClients));
-            }
-
-            // if route exists 0->1, 2->0, 1->1  
-            // { "hello": ["helloagain", ]
-            var web0 = new Array(0, 1, 2);
-            var web1 = new Array(0, 1);
-            // web1[0] = 1;
-            var web2 = new Array(2, 1);
-            // if message comes in from _ then check routes and send along if applicable, otherwise ignore
-            // 
-            if (tMsg['message']) {
+            } else if (tMsg['message']) {
                 console.log("I got sent a message from "+connection);
-                //console.log(clientconnections.length);
 
                 // SEND TO EVERYONE
                 var json = JSON.stringify({ type:'message', data: tMsg });
@@ -189,9 +189,41 @@ wsServer.on('request', function(request) {
                 //     }
                 // }
 
+            } else if (tMsg['admin']) {
+                connection.sendUTF(JSON.stringify(buildTrustedClientsForAdmin()));
+                adminConnections.push(connection);
+            } else if (tMsg['route']){
+                //expected message format:
+                //{route:{publisher:{clientName:_____,name:____,type:_____,remoteAddress:_____},
+                //        subscriber:{clientName:____,name:____,type:____,remoteAddress:____}}}
+                //ignore if types do not match
+                var pub = tMsg.route.publisher, sub = tMsg.route.subscriber;
+                if (pub.type === sub.type){
+                    var pubEntry, subEntry, pubClient, subClient;
+                    //find the appropriate entry in trustedClients
+                    var tcLength = trustedClients.length;
+                    for(var i = 0; i < tcLength && (pubEntry === undefined || subEntry === undefined); i++){
+                        if (trustedClients[i].name === pub.clientName 
+                            && trustedClients[i].remoteAddress === pub.remoteAddress){
+                            pubClient = trustedClients[i];
+                            pubEntry = pubClient.publishers[pub.name][pub.type];
+                        }
+                        if (trustedClients[i].name === sub.clientName
+                            && trustedClients[i].remoteAddress === sub.remoteAddress){
+                            subClient = trustedClients[i];
+                            subEntry = subClient.subscribers[sub.name][sub.type];
+                        }
+                    }
+                    //if we have found a matching publisher and subscriber, point them at eachother
+                    //then tell the admins about it
+                    if (pubEntry && subEntry){
+                        pubEntry.subscribers.push({client:subClient,subscriber:subEntry});
+                        subEntry.publishers.push({client:pubClient,publisher:pubEntry});
+                        sendToAdmins(tMsg);
+                    }
+                }
             }
         }
-
     });
 
     connection.on('close', function(connection) {
@@ -214,3 +246,9 @@ wsServer.on('request', function(request) {
         }
     });
 });
+
+var sendToAdmins = function(json){
+    for(var i = adminConnections.length - 1; i >= 0; i--){
+        adminConnections[i].sendUTF(JSON.stringify(json));
+    }
+}
