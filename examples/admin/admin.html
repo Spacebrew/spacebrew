@@ -16,6 +16,7 @@
       }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -48,20 +49,14 @@
     <div class="container">
 
         <h1>Admin</h1>
-        <ol id="client_list"></ol>
+        <ol id="client_list" start='0'></ol>
         <form class="form-horizontal">
           <fieldset>
             <legend>Create Route</legend>
             <div class="control-group">
-              <label class="control-label" for="pubClientName">pubClientName</label>
+              <label class="control-label" for="ddlPubClient">pubClient</label>
               <div class="controls">
-                <input type="text" class="input-xlarge" id="pubClientName">
-              </div>
-            </div>
-            <div class="control-group">
-              <label class="control-label" for="pubAddr">pubAddr</label>
-              <div class="controls">
-                <input type="text" class="input-xlarge" id="pubAddr">
+                <select id="ddlPubClient"></select>
               </div>
             </div>
             <div class="control-group">
@@ -71,15 +66,9 @@
               </div>
             </div>
             <div class="control-group">
-              <label class="control-label" for="subClientName">subClientName</label>
+              <label class="control-label" for="ddlSubClient">subClient</label>
               <div class="controls">
-                <input type="text" class="input-xlarge" id="subClientName">
-              </div>
-            </div>
-            <div class="control-group">
-              <label class="control-label" for="subAddr">subAddr</label>
-              <div class="controls">
-                <input type="text" class="input-xlarge" id="subAddr">
+                <select id="ddlSubClient"></select>
               </div>
             </div>
             <div class="control-group">
@@ -89,13 +78,18 @@
               </div>
             </div>
             <div class="control-group">
-              <label class="control-label" for="type">type</label>
+              <label class="control-label" for="ddlType">type</label>
               <div class="controls">
-                <input type="text" class="input-xlarge" id="type">
+                <select id="ddlType">
+                    <option value="">Select One</option>
+                    <option value="boolean">boolean</option>
+                    <option value="string">string</option>
+                    <option value="number">number</option>
+                </select>
               </div>
             </div>
           </fieldset>
-          <button class="btn" onClick='doroute()'>Route!</button>
+          <button class="btn" id="btnRoute"}>Route!</button>
         </form>
 
     </div> <!-- /container -->
@@ -109,18 +103,30 @@
 <script type="text/javascript">
 $(document).ready( function() {
     //setup();
+    $("#btnRoute").on('click', doroute);
+    $("#ddlPubClient").on('change',updatePubClient);
+    $("#ddlSubClient").on('change',updateSubClient);
 });
 
-var doroute = function(){
+var updatePubClient = function(e){
+    if (e){e.preventDefault();};
+}
+
+var updateSubClient = function(e){
+    if (e){e.preventDefault();};
+}
+
+var doroute = function(e){
+    if (e){e.preventDefault();};
     ws.send(JSON.stringify({
-        route:{publisher:{clienName:$("#pubClientName").val(),
+        route:{publisher:{clientName:clients[$("#ddlPubClient").val()].name,
                             name:$("#pubName").val(),
-                            type:$("#type").val(),
-                            remoteAddress:$("#pubAddr").val()},
-                subscriber:{clientName:$("#subClientName").val(),
+                            type:$("#ddlType").val(),
+                            remoteAddress:clients[$("#ddlPubClient").val()].remoteAddress},
+                subscriber:{clientName:clients[$("#ddlSubClient").val()].name,
                             name:$("#subName").val(),
-                            type:$("#type").val(),
-                            remoteAddress:$("#subAddr").val()}}
+                            type:$("#ddlType").val(),
+                            remoteAddress:clients[$("#ddlSubClient").val()].remoteAddress}}
     }));
 };
 
@@ -136,17 +142,17 @@ var ws = new WebSocket("ws://localhost:9000");
         //console.log("Got WebSockets message: " + e.data);
         console.log("Got WebSockets message:");
         console.log(e);
-        try {
+        //try {
             var json = JSON.parse(e.data);
             if (!handleMsg(json)){
                 for(var i = 0, end = json.length; i < end; i++){
                     handleMsg(json[i]);
                 }
             }
-        } catch (err) {
-            console.log('This doesn\'t look like a valid JSON: ', e.data);
-            return;
-        }
+        // } catch (err) {
+        //     console.log('This doesn\'t look like a valid JSON: ', e.data);
+        //     return;
+        // }
     }
     ws.onclose = function() {
         console.log("WebSockets connection closed");
@@ -174,7 +180,14 @@ var handleMsg = function(json){
 }
 
 var handleMessageMsg = function(msg){
-
+    for(var i = clients.length - 1; i >= 0; i--){
+        if (clients[i].name === msg.message.clientName
+            && clients[i].remoteAddress === msg.message.remoteAddress){
+            var selector = "#client_list li:eq("+i+")";
+            $(selector).addClass('active');
+            setTimeout(function(){$(selector).removeClass('active');},200);
+        }
+    }
 };
 
 var handleNameMsg = function(msg){
@@ -186,15 +199,30 @@ var handleNameMsg = function(msg){
 
 //generates the list of clients for viewing
 var generateList = function(){
-    var html = '';
+    var olHtml = '';
+    var ddlHtml = '<option value="">Select One</option>';
     for(var i = 0; i < clients.length; i++){
-        html += '<li>'+clients[i].name + ' @ ' + clients[i].remoteAddress + '</li>';
+        var name=clients[i].name;
+        var addr = clients[i].remoteAddress;
+        var extraData = (clients[i].config ? ' [publish:{pub} subscribe:{sub}]'.replace(/{pub}/g,JSON.stringify(clients[i].config.publish)).replace(/{sub}/g,JSON.stringify(clients[i].config.subscribe)) : '');
+        var title = (clients[i].config ? clients[i].config.description : '');
+        olHtml += '<li title="{title}">{name} @ {addr}{extra}</li>'.replace(/{name}/g,name).replace(/{addr}/g,addr).replace(/{extra}/g,extraData).replace(/{title}/g,title);
+        ddlHtml += '<option value="{i}">{i}</option>'.replace(/{i}/g,i);
     };
-    $("#client_list").html(html);
+    $("#client_list").html(olHtml);
+    $("#ddlSubClient").html(ddlHtml);
+    $("#ddlPubClient").html(ddlHtml);
 };
 
 var handleConfigMsg = function(msg){
-
+    for(var j = 0; j < clients.length; j++){
+        if (clients[j].name === msg.config.name
+            && clients[j].remoteAddress === msg.config.remoteAddress){
+            clients[j].config = msg.config;
+            break;
+        }
+    }
+    generateList();
 };
 
 var handleRouteMsg = function(msg){

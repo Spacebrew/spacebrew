@@ -154,7 +154,7 @@ wsServer.on('request', function(request) {
                 if (trustedClient !== undefined){
                     bValidMessage = true;
                     //add the remote address to the message for the admins
-                    tMsg['config'].remoteaddress = trustedClient.remoteAddress;
+                    tMsg['config'].remoteAddress = trustedClient.remoteAddress;
                     trustedClient.config = tMsg['config'];
                     var tSubs = (tMsg['config']['subscribe'] ? tMsg['config']['subscribe']['messages'] : []);
                     var tPubs = (tMsg['config']['publish'] ? tMsg['config']['publish']['messages'] : []);
@@ -197,30 +197,47 @@ wsServer.on('request', function(request) {
             } else if (tMsg['message']) {
                 console.log("I got sent a message from "+connection);
 
-                // SEND TO EVERYONE
-                var json = JSON.stringify({ type:'message', data: tMsg });
-                for (var j=0, end=trustedClients.length; j<end; j++) {
-                    trustedClients[j].connection.sendUTF(json);
-                }
-                bValidMessage = true;
+                // BROADCAST
+                // var messageToSend = JSON.stringify(tMsg);
+                // for (var j=0, end=trustedClients.length; j<end; j++) {
+                //     trustedClients[j].connection.sendUTF(messageToSend);
+                // }
                 //add the remote address for the admins
                 tMsg['message'].remoteAddress = connection.remoteAddress;
 
-                // TRY ROUTING
-                // for (var i=0; i<clientconnections.length; i++){
-                //     if (clientconnections[i] === connection) {
-                //         // console.log(i);
-                //         console.log("I am "+i+" and I'm sending to "+routes[i]);
-                //         for (var j=0; j<routes[i].length; j++) {
-                //             var json = JSON.stringify({ type:'message', data: message });
-                //            //     for (var i=0; i < clientconnections.length; i++) {
-                //             // console.log("Sending to ")
-                //             clientconnections[j].sendUTF(json);
-                //             //    }
-                //         }
-                //     }
-                // }
-
+                //ROUTING
+                var pub;
+                //find the associated client
+                //get the appropriate publisher on that client
+                //for each subscriber to that publisher,
+                //translate the message to the subscriber's name
+                //and send the type & value
+                for(var i = trustedClients.length - 1; i>= 0; i--){
+                    var currClient = trustedClients[i];
+                    if (currClient.name === tMsg.message.clientName
+                        && currClient.remoteAddress === tMsg.message.remoteAddress){
+                        pub = currClient.publishers[tMsg.message.name];
+                        if (!pub){
+                            console.log("an un-registered publisher name: " + tMsg.message.name);
+                        } else {
+                            pub = pub[tMsg.message.type];
+                            if (!pub){
+                                console.log("an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
+                            } else {
+                                bValidMessage = true;
+                                for(var j = pub.subscribers.length - 1; j >= 0; j--){
+                                    var currSub = pub.subscribers[i];
+                                    currSub.client.connection.sendUTF(JSON.stringify({message:{
+                                        name:currSub.subscriber.name,
+                                        type:tMsg.message.type,
+                                        value:tMsg.message.value
+                                    }}));
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
             } else if (tMsg['admin']) {
                 connection.sendUTF(JSON.stringify(buildTrustedClientsForAdmin()));
                 adminConnections.push(connection);
