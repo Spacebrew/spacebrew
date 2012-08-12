@@ -18,5 +18,9 @@ body
 
 ol li.active
 {
-	background-color:green;
+	background-color:cyan;
+}
+ol li label.active
+{
+	background-color:lawngreen;
 }

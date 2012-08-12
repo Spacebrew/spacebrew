@@ -49,7 +49,14 @@
     <div class="container">
 
         <h1>Admin</h1>
+        <div class='row'>
+            <div class='span3'>Clients</div>
+            <div class='span3'>Publishers</div>
+            <div class='span3'>Subscribers</div>
+        </div>
+        <br />
         <ol id="client_list" start='0'></ol>
+        <button class="btn" id="btnRouteRadio"}>Route!</button>
         <form class="form-horizontal">
           <fieldset>
             <legend>Create Route</legend>
@@ -104,6 +111,7 @@
 $(document).ready( function() {
     //setup();
     $("#btnRoute").on('click', doroute);
+    $("#btnRouteRadio").on('click', dorouteradio);
     $("#ddlPubClient").on('change',updatePubClient);
     $("#ddlSubClient").on('change',updateSubClient);
 });
@@ -119,7 +127,8 @@ var updateSubClient = function(e){
 var doroute = function(e){
     if (e){e.preventDefault();};
     ws.send(JSON.stringify({
-        route:{publisher:{clientName:clients[$("#ddlPubClient").val()].name,
+        route:{type:'add',
+                publisher:{clientName:clients[$("#ddlPubClient").val()].name,
                             name:$("#pubName").val(),
                             type:$("#ddlType").val(),
                             remoteAddress:clients[$("#ddlPubClient").val()].remoteAddress},
@@ -128,6 +137,29 @@ var doroute = function(e){
                             type:$("#ddlType").val(),
                             remoteAddress:clients[$("#ddlSubClient").val()].remoteAddress}}
     }));
+};
+
+var dorouteradio = function(e){
+    if (e){e.preventDefault();};
+    var selectedPub = $("input[name=pub]:radio:checked").val();
+    var selectedSub = $("input[name=sub]:radio:checked").val();
+    if (selectedPub && selectedSub){
+        selectedPub = selectedPub.split(':');
+        selectedSub = selectedSub.split(':');
+        if (selectedPub.length == 4 && selectedSub.length == 4){
+            ws.send(JSON.stringify({
+                route:{type:'add',
+                        publisher:{clientName:selectedPub[0],
+                                    name:selectedPub[2],
+                                    type:selectedPub[3],
+                                    remoteAddress:selectedPub[1]},
+                        subscriber:{clientName:selectedSub[0],
+                                    name:selectedSub[2],
+                                    type:selectedSub[3],
+                                    remoteAddress:selectedSub[1]}}
+            }));
+        }
+    }
 };
 
 var ws = new WebSocket("ws://localhost:9000");
@@ -186,8 +218,12 @@ var handleMessageMsg = function(msg){
             var selector = "#client_list li:eq("+i+")";
             $(selector).addClass('active');
             setTimeout(function(){$(selector).removeClass('active');},200);
+            break;
         }
     }
+    var selector2 = "input[name=pub][value='{name}:{addr}:{pubName}:{pubType}']:radio".replace("{name}",msg.message.clientName).replace("{addr}", msg.message.remoteAddress).replace("{pubName}",msg.message.name).replace("{pubType}",msg.message.type);
+    $(selector2).parent().addClass('active');
+    setTimeout(function(){$(selector2).parent().removeClass('active');},200);
 };
 
 var handleNameMsg = function(msg){
@@ -203,10 +239,26 @@ var generateList = function(){
     var ddlHtml = '<option value="">Select One</option>';
     for(var i = 0; i < clients.length; i++){
         var name=clients[i].name;
-        var addr = clients[i].remoteAddress;
-        var extraData = (clients[i].config ? ' [publish:{pub} subscribe:{sub}]'.replace(/{pub}/g,JSON.stringify(clients[i].config.publish)).replace(/{sub}/g,JSON.stringify(clients[i].config.subscribe)) : '');
-        var title = (clients[i].config ? clients[i].config.description : '');
-        olHtml += '<li title="{title}">{name} @ {addr}{extra}</li>'.replace(/{name}/g,name).replace(/{addr}/g,addr).replace(/{extra}/g,extraData).replace(/{title}/g,title);
+        var addr = clients[i].remoteAddress, pubColumn = '<div class="span3">', title = '', subColumn = '<div class="span3">';
+        if (clients[i].config){
+            if (clients[i].config.publish && clients[i].config.publish.messages){
+                for(var j = clients[i].config.publish.messages.length - 1; j >= 0; j--){
+                    var currM = clients[i].config.publish.messages[j];
+                    pubColumn += '<label class="radio"><input type="radio" name="pub" value="{name}:{addr}:{pubName}:{pubType}">{pubName}, {pubType}</label>'.replace(/{pubName}/g,currM.name).replace(/{pubType}/g,currM.type);
+                }
+            }
+            if (clients[i].config.subscribe && clients[i].config.subscribe.messages){
+                for (var j = clients[i].config.subscribe.messages.length - 1; j >= 0; j--){
+                    var currM = clients[i].config.subscribe.messages[j];
+                    subColumn += '<label class="radio"><input type="radio" name="sub" value="{name}:{addr}:{subName}:{subType}">{subName}, {subType}</label>'.replace(/{subName}/g,currM.name).replace(/{subType}/g,currM.type);
+                }
+            }
+            title = clients[i].config.description;
+        }
+        pubColumn += '</div>';
+        subColumn += '</div>';
+        var leftColumn = '<div class="span3" title="{title}">{name} @ {addr}</div>';
+        olHtml += '<li><div class="row">{col1}{col2}{col3}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,name).replace(/{addr}/g,addr).replace(/{title}/g,title);
         ddlHtml += '<option value="{i}">{i}</option>'.replace(/{i}/g,i);
     };
     $("#client_list").html(olHtml);

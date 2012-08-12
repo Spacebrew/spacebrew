@@ -156,8 +156,20 @@ wsServer.on('request', function(request) {
                     //add the remote address to the message for the admins
                     tMsg['config'].remoteAddress = trustedClient.remoteAddress;
                     trustedClient.config = tMsg['config'];
-                    var tSubs = (tMsg['config']['subscribe'] ? tMsg['config']['subscribe']['messages'] : []);
-                    var tPubs = (tMsg['config']['publish'] ? tMsg['config']['publish']['messages'] : []);
+                    var tSubs = [];
+                    if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
+                        tSubs = tMsg.config.subscribe.messages;
+                    } else {
+                        tMsg.config['subscribe'] = {};
+                        tMsg.config.subscribe['messages'] = [];
+                    }
+                    var tPubs = [];
+                    if (tMsg.config.publish && tMsg.config.publish.messages){
+                        tPubs = tMsg.config.publish.messages;
+                    } else {
+                        tMsg.config['publish'] = {};
+                        tMsg.config.publish['messages'] = [];
+                    }
                     var items = [[tSubs, trustedClient.subscribers,'publishers'], [tPubs, trustedClient.publishers,'subscribers']];
                     //we are storing in a structure
                     // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
@@ -243,35 +255,7 @@ wsServer.on('request', function(request) {
                 adminConnections.push(connection);
                 bValidMessage = true;
             } else if (tMsg['route']){
-                //expected message format:
-                //{route:{publisher:{clientName:_____,name:____,type:_____,remoteAddress:_____},
-                //        subscriber:{clientName:____,name:____,type:____,remoteAddress:____}}}
-                //ignore if types do not match
-                var pub = tMsg.route.publisher, sub = tMsg.route.subscriber;
-                if (pub.type === sub.type){
-                    var pubEntry, subEntry, pubClient, subClient;
-                    //find the appropriate entry in trustedClients
-                    var tcLength = trustedClients.length;
-                    for(var i = 0; i < tcLength && (pubEntry === undefined || subEntry === undefined); i++){
-                        if (trustedClients[i].name === pub.clientName 
-                            && trustedClients[i].remoteAddress === pub.remoteAddress){
-                            pubClient = trustedClients[i];
-                            pubEntry = pubClient.publishers[pub.name][pub.type];
-                        }
-                        if (trustedClients[i].name === sub.clientName
-                            && trustedClients[i].remoteAddress === sub.remoteAddress){
-                            subClient = trustedClients[i];
-                            subEntry = subClient.subscribers[sub.name][sub.type];
-                        }
-                    }
-                    //if we have found a matching publisher and subscriber, point them at eachother
-                    //then tell the admins about it
-                    if (pubEntry && subEntry){
-                        pubEntry.subscribers.push({client:subClient,subscriber:subEntry});
-                        subEntry.publishers.push({client:pubClient,publisher:pubEntry});
-                        bValidMessage = true;
-                    }
-                }
+                bValidMessage = handleRouteMessage(tMsg);
             }
             if (bValidMessage){
                 sendToAdmins(tMsg);
@@ -283,15 +267,43 @@ wsServer.on('request', function(request) {
         // close user connection
         console.log("close");
         var removed = [];
+        //remove clients
         for(var i = 0; i < trustedClients.length;){
             if (trustedClients[i]['connection'].state === 'closed'){
+                //for each publisher
+                //for each subscriber to that publisher
+                //remove route
+                //for each subscriber
+                //for each publisher to that subscriber
+                //remove route
+                var items = [[trustedClients[i].publishers, 'subscribers', 'subscriber', 'publisher'],[trustedClients[i].subscribers, 'publishers', 'publisher', 'subscriber']];
+                for (var k = 0; k < items.length; k++){
+                    for (var j = 0; j < items[k][0].length; j++){
+                        var currBase = items[k][0][j];
+                        while(currBase[items[k][1]].length > 0){
+                            var currLeaf = currBase[items[k][1]][0];
+                            var messageContent = {type:'remove'};
+                            messageContent[items[k][2]] = {clientName:currLeaf.client.name,
+                                                            name:currLeaf[items[k][2]].name,
+                                                            type:currLeaf[items[k][2]].type,
+                                                            remoteAddress:currLeaf.client.remoteAddress};
+                            messageContent[items[k][3]] = {clientName:trustedClients[i].name,
+                                                            name:currBase.name,
+                                                            type:currBase.type,
+                                                            remoteAddress:trustedClients[i].remoteAddress};
+                            handleRouteMessage({route:messageContent});
+                        }
+                    }
+                }
                 removed.push({name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress});
                 trustedClients.splice(i, 1);
             } else {
                 i++;
             }
         }
+        //tell the admins about removed clients
         sendToAdmins({remove:removed});
+        //remove admins
         for(var i = 0; i < adminConnections.length;){
             if (adminConnections[i].state === 'closed'){
                 adminConnections.splice(i, 1);
@@ -299,6 +311,7 @@ wsServer.on('request', function(request) {
                 i++;
             }
         }
+        //remove connections
         for(var i = 0; i<clientconnections.length;){
             if (clientconnections[i].state === 'closed'){
                 clientconnections.splice(i, 1);
@@ -308,6 +321,58 @@ wsServer.on('request', function(request) {
         }
     });
 });
+
+var handleRouteMessage = function(tMsg){
+    //expected message format:
+    //{route:{type:<add/remove>,
+    //        publisher:{clientName:_____,name:____,type:_____,remoteAddress:_____},
+    //        subscriber:{clientName:____,name:____,type:____,remoteAddress:____}}}
+    //ignore if types do not match
+    var bValidMessage = false;
+    var pub = tMsg.route.publisher, sub = tMsg.route.subscriber;
+    if (pub.type === sub.type){
+        var pubEntry, subEntry, pubClient, subClient;
+        //find the appropriate entry in trustedClients
+        var tcLength = trustedClients.length;
+        for(var i = 0; i < tcLength && (pubEntry === undefined || subEntry === undefined); i++){
+            if (trustedClients[i].name === pub.clientName 
+                && trustedClients[i].remoteAddress === pub.remoteAddress){
+                pubClient = trustedClients[i];
+                pubEntry = pubClient.publishers[pub.name][pub.type];
+            }
+            if (trustedClients[i].name === sub.clientName
+                && trustedClients[i].remoteAddress === sub.remoteAddress){
+                subClient = trustedClients[i];
+                subEntry = subClient.subscribers[sub.name][sub.type];
+            }
+        }
+        //if we have found a matching publisher and subscriber, 
+        //handle the adding or deleting of references
+        //then tell the admins about it
+        if (pubEntry && subEntry){
+            bValidMessage = true;
+            if (tMsg.route.type == "add"){
+                pubEntry.subscribers.push({client:subClient,subscriber:subEntry});
+                subEntry.publishers.push({client:pubClient,publisher:pubEntry});
+            } else if (tMsg.route.type == "remove"){
+                var entry;
+                var items = [[subEntry, pubEntry.subscribers, 'subscriber'],[pubEntry, subEntry.publishers, 'publisher']];
+                for (var j = 0; j < items.length; j++){
+                    var item = items[j];
+                    for(var i = item[1].length - 1; i >= 0; i--){
+                        entry = item[1][i];
+                        if (entry[item[2]] === item[0]){
+                            item[1].splice(i, 1);
+                        }
+                    }
+                }
+            } else {
+                bValidMessage = false;
+            }
+        }
+    }
+    return bValidMessage;
+}
 
 var sendToAdmins = function(json){
     for(var i = adminConnections.length - 1; i >= 0; i--){
