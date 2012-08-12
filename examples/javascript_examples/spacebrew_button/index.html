@@ -29,7 +29,7 @@ var name = gup('name') || window.location.href;
 var server = gup('server') || 'localhost';
 
 console.log(name);
-var partyModeOn = false;
+var buttonPress = false;
 var buttonText = "";
 
 var myConfig = {
@@ -39,7 +39,7 @@ var myConfig = {
  "publish": {
    "messages": [
      {
-       "name": "partyModeOn",
+       "name": "buttonPress",
        "type": "boolean",
        "default": "false"
      },
