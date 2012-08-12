@@ -89,10 +89,10 @@ var ws = new WebSocket("ws://"+server+":9000");
         console.log("Got WebSockets message: " + e.data);
         incrementIndex();
 
-        var currName = JSON.parse(e.data).data.message[0].name;
-        var currType = JSON.parse(e.data).data.message[0].type;
+        var currName = JSON.parse(e.data).data.message.name;
+        var currType = JSON.parse(e.data).data.message.type;
         //currName = "text";
-        var currValue = JSON.parse(e.data).data.message[0].value;
+        var currValue = JSON.parse(e.data).data.message.value;
         //currValue = "BIG RED BUTTON";
         if (currType == "boolean") {
           currValue = Boolean(currValue);
@@ -154,14 +154,13 @@ function changeBGC(color){
 function onMouseDown (evt){
 	//ecs.sendMessage("packet", 255);
 	console.log("Sending message");
-	var message = {message: [
+	var message = {message:
        {
            clientname:name, 
            name:"text",
            type:"string",
            value:currentMessage
        }
-   	]
    	};
 
    	//console.log(message);

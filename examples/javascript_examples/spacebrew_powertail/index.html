@@ -12,11 +12,24 @@ $(document).ready( function() {
 	setup();
 });
 
+function gup( name ) {
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+
+var name = gup('name') || window.location.href; 
+var server = gup('server') || 'localhost';
+
 var index = 0;
-var fullURL = parent.document.URL;
-var name = fullURL.substring(fullURL.indexOf('?')+6, fullURL.length);
 console.log(name);
-var currentMessage = "hello world";
+var power = "Off";
 
 var myConfig = {
 "config": {
@@ -27,7 +40,7 @@ var myConfig = {
      {
        "name": "plugOn",
        "type": "boolean",
-       "default": "0"
+       "default": "false"
      }
    ]
  },
@@ -46,7 +59,7 @@ var myConfig = {
 }
 };
 
-var ws = new WebSocket("ws://localhost:9000");
+var ws = new WebSocket("ws://"+server+":9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var nameMsg = { "name": [
@@ -60,19 +73,35 @@ var ws = new WebSocket("ws://localhost:9000");
     ws.onmessage = function(e) {
         console.log("Got WebSockets message: " + e.data);
         incrementIndex();
-        //currentMessage = e.data.data.utf8Data;
-        console.log(e);
-        var test = JSON.parse(e.data);
-        var test2 = JSON.parse(test.data.utf8Data);
-        console.log(test2.message[0].name);
-        currentMessage = test2.message[0].name;
-        //.data;
-        //console.log(test);
-        //var test2 = JSON.parse(test.data.utf8Data);
-        //console.log();
-        //console.log(JSON.parse(currentMessage.message[0].name));
-        //console.log(e.data);
-        document.getElementById("currentMessage").innerHTML=currentMessage;
+
+        var currName = JSON.parse(e.data).data.message.name;
+        var currType = JSON.parse(e.data).data.message.type;
+        //currName = "partyMode";
+        var currValue = JSON.parse(e.data).data.message.value;
+        
+        if (currType == "boolean") {
+          currValue = Boolean(currValue);
+          console.log("Cast to boolean");
+        }
+        //currValue = "BIG RED BUTTON";
+        console.log(currName+" : "+currValue);
+
+        // check the power!
+        if (currName == "power") {
+          console.log("received power message");
+          if (currValue == true) {
+             power = true;
+             console.log(power);
+          } else {
+            power = false;
+          }
+        }
+
+        if (power == true) {
+          document.getElementById("currentMessage").innerHTML="POWER ON!";
+        } else {
+          document.getElementById("currentMessage").innerHTML="POWER OFF!";
+        }
     }
     ws.onclose = function() {
         console.log("WebSockets connection closed");
@@ -95,14 +124,16 @@ function incrementIndex() {
 function onMouseDown (evt){
 	//ecs.sendMessage("packet", 255);
 	console.log("Sending message");
-	var message = {message: [
+
+  power = !power;
+
+	var message = {message:
        {
            clientname:name, 
-           name:text,
-           type:"string",
-           value:currentMessage
+           name:power,
+           type:"boolean",
+           value:power
        }
-   	]
    	};
 
    	//console.log(message);
@@ -114,6 +145,6 @@ function onMouseDown (evt){
 		<!-- MAIN -->
 	</head>
 	<body>
-		<h1 id="currentMessage">Hello World</h1>
+		<h1 id="currentMessage">waiting</h1>
    </body>
 </html>

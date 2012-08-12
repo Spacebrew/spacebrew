@@ -12,11 +12,23 @@ $(document).ready( function() {
 	setup();
 });
 
+function gup( name ) {
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+var name = gup('name') || window.location.href; 
+var server = gup('server') || 'localhost';
+
 var index = 0;
-var fullURL = parent.document.URL;
-var name = fullURL.substring(fullURL.indexOf('?')+6, fullURL.length);
 console.log(name);
-var currentMessage = "hello world";
+var currentDistance = 0;
 
 var myConfig = {
 "config": {
@@ -39,7 +51,7 @@ var myConfig = {
 }
 };
 
-var ws = new WebSocket("ws://localhost:9000");
+var ws = new WebSocket("ws://"+server+":9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var nameMsg = { "name": [
@@ -54,18 +66,18 @@ var ws = new WebSocket("ws://localhost:9000");
         console.log("Got WebSockets message: " + e.data);
         incrementIndex();
         //currentMessage = e.data.data.utf8Data;
-        console.log(e);
-        var test = JSON.parse(e.data);
-        var test2 = JSON.parse(test.data.utf8Data);
-        console.log(test2.message[0].name);
-        currentMessage = test2.message[0].name;
+        // console.log(e);
+        // var test = JSON.parse(e.data);
+        // var test2 = JSON.parse(test.data.utf8Data);
+        // console.log(test2.message[0].name);
+        // currentMessage = test2.message[0].name;
         //.data;
         //console.log(test);
         //var test2 = JSON.parse(test.data.utf8Data);
         //console.log();
         //console.log(JSON.parse(currentMessage.message[0].name));
         //console.log(e.data);
-        document.getElementById("currentMessage").innerHTML=currentMessage;
+        document.getElementById("currentMessage").innerHTML=currentDistance;
     }
     ws.onclose = function() {
         console.log("WebSockets connection closed");
@@ -76,7 +88,7 @@ var ws = new WebSocket("ws://localhost:9000");
 function setup (){
 
 // 	// listen to the mouse
-	window.addEventListener("mousedown", onMouseDown);
+	window.addEventListener("mousemove", onMouseMove);
 }
 
 function incrementIndex() {
@@ -84,18 +96,28 @@ function incrementIndex() {
     //console.log(index);
 }
 
+function translate(oldValue, oldMin, oldMax, newMin, newMax) { // input_coords = {x:123,y:123}
+      var oldRange = (oldMax - oldMin);
+      var newRange = (newMax - newMin);
+      var newValue = (((oldValue - oldMin) * newRange) / oldRange) + newMin;
+      return newValue;
+}
+
 //-------------------------------------------------------
-function onMouseDown (evt){
+function onMouseMove (evt){
 	//ecs.sendMessage("packet", 255);
-	console.log("Sending message");
-	var message = {message: [
+	//console.log("Sending message");
+  //console.log($(window).width());
+  currentDistance = translate(evt.pageX, 0, $(window).width(), 0, 1023);
+  console.log(currentDistance);
+  // map to 0-1023
+	var message = {message:
        {
            clientname:name, 
-           name:text,
-           type:"string",
-           value:currentMessage
+           name:"currentDistance",
+           type:"number",
+           value:currentDistance
        }
-   	]
    	};
 
    	//console.log(message);

@@ -89,10 +89,10 @@ var ws = new WebSocket("ws://"+server+":9000");
         console.log("Got WebSockets message: " + e.data);
         
 
-        var currName = JSON.parse(e.data).data.message[0].name;
-        var currType = JSON.parse(e.data).data.message[0].type;
+        var currName = JSON.parse(e.data).data.message.name;
+        var currType = JSON.parse(e.data).data.message.type;
         //currName = "partyMode";
-        var currValue = JSON.parse(e.data).data.message[0].value;
+        var currValue = JSON.parse(e.data).data.message.value;
         
         if (currType == "boolean") {
           currValue = Boolean(currValue);
@@ -155,14 +155,13 @@ function onMouseDown (evt){
 	//ecs.sendMessage("packet", 255);
 	console.log("Sending message");
 
-	var message = {message: [
+	var message = {message:
        {
            clientName:name,
            name:"buttonPress",
            type:"boolean",
            value:"true"
        }
-   	]
    	};
 
    	//console.log(message);
