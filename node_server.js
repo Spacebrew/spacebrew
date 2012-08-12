@@ -71,6 +71,7 @@ wsServer.on('request', function(request) {
     // This is the most important callback for us, we'll handle
     // all messages from users here.
     connection.on('message', function(message) {
+        var bValidMessage = false;
         if (message.type === 'utf8') {
             // process WebSocket message
             //console.log(message);
@@ -107,6 +108,7 @@ wsServer.on('request', function(request) {
 
                     trustedClients.push(tClient);
                     console.log("client added");
+                    bValidMessage = true;
                 }
 
                 console.log("Here are the current trustedClients "+trustedClients.length);
@@ -126,6 +128,7 @@ wsServer.on('request', function(request) {
                 }
 
                 if (trustedClient !== undefined){
+                    bValidMessage = true;
                     trustedClient.config = tMsg['config'];
                     var tSubs = (tMsg['config']['subscribe'] ? tMsg['config']['subscribe']['messages'] : []);
                     var tPubs = (tMsg['config']['publish'] ? tMsg['config']['publish']['messages'] : []);
@@ -173,6 +176,7 @@ wsServer.on('request', function(request) {
                 for (var j=0, end=trustedClients.length; j<end; j++) {
                     trustedClients[j].connection.sendUTF(json);
                 }
+                bValidMessage = true;
 
                 // TRY ROUTING
                 // for (var i=0; i<clientconnections.length; i++){
@@ -192,6 +196,7 @@ wsServer.on('request', function(request) {
             } else if (tMsg['admin']) {
                 connection.sendUTF(JSON.stringify(buildTrustedClientsForAdmin()));
                 adminConnections.push(connection);
+                bValidMessage = true;
             } else if (tMsg['route']){
                 //expected message format:
                 //{route:{publisher:{clientName:_____,name:____,type:_____,remoteAddress:_____},
@@ -219,9 +224,12 @@ wsServer.on('request', function(request) {
                     if (pubEntry && subEntry){
                         pubEntry.subscribers.push({client:subClient,subscriber:subEntry});
                         subEntry.publishers.push({client:pubClient,publisher:pubEntry});
-                        sendToAdmins(tMsg);
+                        bValidMessage = true;
                     }
                 }
+            }
+            if (bValidMessage){
+                sendToAdmins(tMsg);
             }
         }
     });
