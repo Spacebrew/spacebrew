@@ -24,3 +24,11 @@ ol li label.active
 {
 	background-color:lawngreen;
 }
+div#route_list div.odd
+{
+	background-color:ghostwhite;
+}
+div#route_list div.even
+{
+	background-color:lightcyan;
+}

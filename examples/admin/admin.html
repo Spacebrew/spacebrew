@@ -57,6 +57,8 @@
         <br />
         <ol id="client_list" start='0'></ol>
         <button class="btn" id="btnRouteRadio"}>Route!</button>
+        <h2>Routes</h2>
+        <div id='route_list'></div>
         <form class="form-horizontal">
           <fieldset>
             <legend>Create Route</legend>
@@ -191,6 +193,7 @@ var ws = new WebSocket("ws://localhost:9000");
     }
 
 var clients = [];
+var routes = [];
 
 var handleMsg = function(json){
     if (json.name){
@@ -266,6 +269,20 @@ var generateList = function(){
     $("#ddlPubClient").html(ddlHtml);
 };
 
+var displayRoutes = function(){
+    var html = '';
+    var even = false;
+    for(var i = routes.length - 1; i >= 0; i--){
+        var pub = routes[i].publisher;
+        var pubColumn = "<div class='span5'>{name} @ {addr}: {pubName}, {pubType}</div>".replace("{name}",pub.clientName).replace("{addr}",pub.remoteAddress).replace("{pubName}",pub.name).replace("{pubType}",pub.type);
+        var sub = routes[i].subscriber;
+        var subColumn = "<div class='span5'>{name} @ {addr}: {subName}, {subType}</div>".replace("{name}",sub.clientName).replace("{addr}",sub.remoteAddress).replace("{subName}",sub.name).replace("{subType}",sub.type);
+        html += '<div class="row {even}">{col1}<div class="span2">-----TO-----></div>{col3}</div>'.replace("{col1}",pubColumn).replace("{col3}",subColumn).replace("{even}",(even?"even":"odd"));
+        even = !even;
+    }
+    $("#route_list").html(html);
+}
+
 var handleConfigMsg = function(msg){
     for(var j = 0; j < clients.length; j++){
         if (clients[j].name === msg.config.name
@@ -278,7 +295,28 @@ var handleConfigMsg = function(msg){
 };
 
 var handleRouteMsg = function(msg){
-
+    if (msg.route.type === 'add'){
+        routes.push({publisher:msg.route.publisher,
+                    subscriber:msg.route.subscriber});
+    } else if (msg.route.type === 'remove'){
+        for(var i = routes.length - 1; i >= 0; i--){
+            var myPub = routes[i].publisher;
+            var thePub = msg.route.publisher;
+            var mySub = routes[i].subscriber;
+            var theSub = msg.route.subscriber;
+            if (myPub.clientName === thePub.clientName
+                && myPub.name === thePub.name
+                && myPub.type === thePub.type
+                && myPub.remoteAddress === thePub.remoteAddress
+                && mySub.clientName === theSub.clientName
+                && mySub.name === theSub.name
+                && mySub.type === theSub.type
+                && mySub.remoteAddress === theSub.remoteAddress){
+                routes.splice(i, 1);
+            }
+        }
+    }
+    displayRoutes();
 };
 
 var handleRemoveMsg = function(msg){

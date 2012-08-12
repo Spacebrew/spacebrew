@@ -53,7 +53,8 @@ var buildTrustedClientsForAdmin = function(){
                 var publisher = currClient.publishers[key][type];
                 for (var j = 0; j < publisher.subscribers.length; j++){
                     var subscriber = publisher.subscribers[j];
-                    currMsg = {route:{publisher:publisherObj,
+                    currMsg = {route:{type:'add',
+                                        publisher:publisherObj,
                                         subscriber:{clientName:subscriber.client.name,
                                                     name:subscriber.subscriber.name,
                                                     type:subscriber.subscriber.type,
@@ -278,20 +279,22 @@ wsServer.on('request', function(request) {
                 //remove route
                 var items = [[trustedClients[i].publishers, 'subscribers', 'subscriber', 'publisher'],[trustedClients[i].subscribers, 'publishers', 'publisher', 'subscriber']];
                 for (var k = 0; k < items.length; k++){
-                    for (var j = 0; j < items[k][0].length; j++){
-                        var currBase = items[k][0][j];
-                        while(currBase[items[k][1]].length > 0){
-                            var currLeaf = currBase[items[k][1]][0];
-                            var messageContent = {type:'remove'};
-                            messageContent[items[k][2]] = {clientName:currLeaf.client.name,
-                                                            name:currLeaf[items[k][2]].name,
-                                                            type:currLeaf[items[k][2]].type,
-                                                            remoteAddress:currLeaf.client.remoteAddress};
-                            messageContent[items[k][3]] = {clientName:trustedClients[i].name,
-                                                            name:currBase.name,
-                                                            type:currBase.type,
-                                                            remoteAddress:trustedClients[i].remoteAddress};
-                            handleRouteMessage({route:messageContent});
+                    for (var key in items[k][0]){
+                        for (var type in items[k][0][key]){
+                            var currBase = items[k][0][key][type];
+                            while(currBase[items[k][1]].length > 0){
+                                var currLeaf = currBase[items[k][1]][0];
+                                var messageContent = {type:'remove'};
+                                messageContent[items[k][2]] = {clientName:currLeaf.client.name,
+                                                                name:currLeaf[items[k][2]].name,
+                                                                type:currLeaf[items[k][2]].type,
+                                                                remoteAddress:currLeaf.client.remoteAddress};
+                                messageContent[items[k][3]] = {clientName:trustedClients[i].name,
+                                                                name:currBase.name,
+                                                                type:currBase.type,
+                                                                remoteAddress:trustedClients[i].remoteAddress};
+                                handleRouteMessage({route:messageContent});
+                            }
                         }
                     }
                 }
