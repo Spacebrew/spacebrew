@@ -89,10 +89,10 @@ var ws = new WebSocket("ws://"+server+":9000");
         console.log("Got WebSockets message: " + e.data);
         
 
-        var currName = JSON.parse(e.data).data.message.name;
-        var currType = JSON.parse(e.data).data.message.type;
+        var currName = JSON.parse(e.data).message.name;
+        var currType = JSON.parse(e.data).message.type;
         //currName = "partyMode";
-        var currValue = JSON.parse(e.data).data.message.value;
+        var currValue = JSON.parse(e.data).message.value;
         
         if (currType == "boolean") {
           currValue = Boolean(currValue);
