@@ -164,6 +164,20 @@ var dorouteradio = function(e){
     }
 };
 
+var dorouteremove = function(index){
+    if (index >= 0 && index < routes.length){
+        var toRemove = routes.splice(index, 1);
+        if (toRemove.length > 0){
+            toRemove = toRemove[0];
+            ws.send(JSON.stringify({
+                route:{type:'remove',
+                        publisher:toRemove.publisher,
+                        subscriber:toRemove.subscriber}
+            }));
+        }
+    }
+}
+
 var ws = new WebSocket("ws://localhost:9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
@@ -277,7 +291,8 @@ var displayRoutes = function(){
         var pubColumn = "<div class='span5'>{name} @ {addr}: {pubName}, {pubType}</div>".replace("{name}",pub.clientName).replace("{addr}",pub.remoteAddress).replace("{pubName}",pub.name).replace("{pubType}",pub.type);
         var sub = routes[i].subscriber;
         var subColumn = "<div class='span5'>{name} @ {addr}: {subName}, {subType}</div>".replace("{name}",sub.clientName).replace("{addr}",sub.remoteAddress).replace("{subName}",sub.name).replace("{subType}",sub.type);
-        html += '<div class="row {even}">{col1}<div class="span2">-----TO-----></div>{col3}</div>'.replace("{col1}",pubColumn).replace("{col3}",subColumn).replace("{even}",(even?"even":"odd"));
+        var button = '<div class="span1"><button id="btnRouteRemove{index}" onclick="dorouteremove({index})" class="btn btn-inverse btn-mini">remove</button></div>';
+        html += '<div class="row {even}">{col1}<div class="span1">---TO---></div>{col3}{button}</div>'.replace("{col1}",pubColumn).replace("{col3}",subColumn).replace("{button}",button).replace("{even}",(even?"even":"odd")).replace(/{index}/g,i);
         even = !even;
     }
     $("#route_list").html(html);
