@@ -50,15 +50,20 @@
 
         <h1>Admin</h1>
         <div class='row'>
-            <div class='span3'>Clients</div>
-            <div class='span3'>Publishers</div>
-            <div class='span3'>Subscribers</div>
+            <div class='span8 client'>
+                Clients
+                <div class="row">
+                    <div class='span3 offset2 publishers'>Publishers (outputs)</div>
+                    <div class='span3 subscribers'>Subscribers (inputs)</div>
+                </div>
+            </div>
         </div>
         <br />
         <ol id="client_list" start='0'></ol>
         <button class="btn" id="btnRouteRadio"}>Route!</button>
         <h2>Routes</h2>
         <div id='route_list'></div>
+        <!--
         <form class="form-horizontal">
           <fieldset>
             <legend>Create Route</legend>
@@ -99,7 +104,7 @@
             </div>
           </fieldset>
           <button class="btn" id="btnRoute"}>Route!</button>
-        </form>
+        </form>-->
 
     </div> <!-- /container -->
 
@@ -112,7 +117,7 @@
 <script type="text/javascript">
 $(document).ready( function() {
     //setup();
-    $("#btnRoute").on('click', doroute);
+    //$("#btnRoute").on('click', doroute);
     $("#btnRouteRadio").on('click', dorouteradio);
     $("#ddlPubClient").on('change',updatePubClient);
     $("#ddlSubClient").on('change',updateSubClient);
@@ -146,8 +151,8 @@ var dorouteradio = function(e){
     var selectedPub = $("input[name=pub]:radio:checked").val();
     var selectedSub = $("input[name=sub]:radio:checked").val();
     if (selectedPub && selectedSub){
-        selectedPub = selectedPub.split(':');
-        selectedSub = selectedSub.split(':');
+        selectedPub = selectedPub.split(':').map(unescape);
+        selectedSub = selectedSub.split(':').map(unescape);
         if (selectedPub.length == 4 && selectedSub.length == 4){
             ws.send(JSON.stringify({
                 route:{type:'add',
@@ -256,26 +261,26 @@ var generateList = function(){
     var ddlHtml = '<option value="">Select One</option>';
     for(var i = 0; i < clients.length; i++){
         var name=clients[i].name;
-        var addr = clients[i].remoteAddress, pubColumn = '<div class="span3">', title = '', subColumn = '<div class="span3">';
+        var addr = clients[i].remoteAddress, pubColumn = '<div class="span3 offset2 publishers">', title = '', subColumn = '<div class="span3 subscribers">';
         if (clients[i].config){
             if (clients[i].config.publish && clients[i].config.publish.messages){
                 for(var j = clients[i].config.publish.messages.length - 1; j >= 0; j--){
                     var currM = clients[i].config.publish.messages[j];
-                    pubColumn += '<label class="radio"><input type="radio" name="pub" value="{name}:{addr}:{pubName}:{pubType}">{pubName}, {pubType}</label>'.replace(/{pubName}/g,currM.name).replace(/{pubType}/g,currM.type);
+                    pubColumn += '<label class="radio"><input type="radio" name="pub" value="{name}:{addr}:{pubName}:{pubType}">{pubName}, {pubType}</label>'.replace(/{pubName}/g,escape(currM.name)).replace(/{pubType}/g,escape(currM.type));
                 }
             }
             if (clients[i].config.subscribe && clients[i].config.subscribe.messages){
                 for (var j = clients[i].config.subscribe.messages.length - 1; j >= 0; j--){
                     var currM = clients[i].config.subscribe.messages[j];
-                    subColumn += '<label class="radio"><input type="radio" name="sub" value="{name}:{addr}:{subName}:{subType}">{subName}, {subType}</label>'.replace(/{subName}/g,currM.name).replace(/{subType}/g,currM.type);
+                    subColumn += '<label class="radio"><input type="radio" name="sub" value="{name}:{addr}:{subName}:{subType}">{subName}, {subType}</label>'.replace(/{subName}/g,escape(currM.name)).replace(/{subType}/g,escape(currM.type));
                 }
             }
             title = clients[i].config.description;
         }
         pubColumn += '</div>';
         subColumn += '</div>';
-        var leftColumn = '<div class="span3" title="{title}">{name} @ {addr}</div>';
-        olHtml += '<li><div class="row">{col1}{col2}{col3}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,name).replace(/{addr}/g,addr).replace(/{title}/g,title);
+        var leftColumn = '<div class="span8 client" title="{title}">{name} @ {addr}<div class="row">{col2}{col3}</div></div>';
+        olHtml += '<li><div class="row">{col1}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,escape(name)).replace(/{addr}/g,escape(addr)).replace(/{title}/g,title);
         ddlHtml += '<option value="{i}">{i}</option>'.replace(/{i}/g,i);
     };
     $("#client_list").html(olHtml);

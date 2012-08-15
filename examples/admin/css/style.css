@@ -22,7 +22,7 @@ ol li.active
 }
 ol li label.active
 {
-	background-color:lawngreen;
+	background-color:orchid;
 }
 div#route_list div.odd
 {
@@ -31,4 +31,16 @@ div#route_list div.odd
 div#route_list div.even
 {
 	background-color:lightcyan;
+}
+.publishers
+{
+	background-color:paleturquoise;
+}
+.subscribers
+{
+	background-color:palegreen;
+}
+.client
+{
+
 }
