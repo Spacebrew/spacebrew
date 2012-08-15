@@ -119,32 +119,32 @@ $(document).ready( function() {
     //setup();
     //$("#btnRoute").on('click', doroute);
     $("#btnRouteRadio").on('click', dorouteradio);
-    $("#ddlPubClient").on('change',updatePubClient);
-    $("#ddlSubClient").on('change',updateSubClient);
+    //$("#ddlPubClient").on('change',updatePubClient);
+    //$("#ddlSubClient").on('change',updateSubClient);
 });
 
-var updatePubClient = function(e){
-    if (e){e.preventDefault();};
-}
+// var updatePubClient = function(e){
+//     if (e){e.preventDefault();};
+// }
 
-var updateSubClient = function(e){
-    if (e){e.preventDefault();};
-}
+// var updateSubClient = function(e){
+//     if (e){e.preventDefault();};
+// }
 
-var doroute = function(e){
-    if (e){e.preventDefault();};
-    ws.send(JSON.stringify({
-        route:{type:'add',
-                publisher:{clientName:clients[$("#ddlPubClient").val()].name,
-                            name:$("#pubName").val(),
-                            type:$("#ddlType").val(),
-                            remoteAddress:clients[$("#ddlPubClient").val()].remoteAddress},
-                subscriber:{clientName:clients[$("#ddlSubClient").val()].name,
-                            name:$("#subName").val(),
-                            type:$("#ddlType").val(),
-                            remoteAddress:clients[$("#ddlSubClient").val()].remoteAddress}}
-    }));
-};
+// var doroute = function(e){
+//     if (e){e.preventDefault();};
+//     ws.send(JSON.stringify({
+//         route:{type:'add',
+//                 publisher:{clientName:clients[$("#ddlPubClient").val()].name,
+//                             name:$("#pubName").val(),
+//                             type:$("#ddlType").val(),
+//                             remoteAddress:clients[$("#ddlPubClient").val()].remoteAddress},
+//                 subscriber:{clientName:clients[$("#ddlSubClient").val()].name,
+//                             name:$("#subName").val(),
+//                             type:$("#ddlType").val(),
+//                             remoteAddress:clients[$("#ddlSubClient").val()].remoteAddress}}
+//     }));
+// };
 
 var dorouteradio = function(e){
     if (e){e.preventDefault();};
