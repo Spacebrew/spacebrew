@@ -146,6 +146,20 @@ $(document).ready( function() {
 //     }));
 // };
 
+function gup( name ) {
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+var name = gup('name') || window.location.href; 
+var server = gup('server') || 'localhost';
+
 var dorouteradio = function(e){
     if (e){e.preventDefault();};
     var selectedPub = $("input[name=pub]:radio:checked").val();
@@ -183,7 +197,7 @@ var dorouteremove = function(index){
     }
 }
 
-var ws = new WebSocket("ws://localhost:9000");
+var ws = new WebSocket("ws://"+server+":9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var adminMsg = { "admin": [
