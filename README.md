@@ -11,7 +11,7 @@ A dynamically re-routable software toolkit for choreographing interactive spaces
 * Open the admin in another browser window
 * Start routing, have fun
 
-# LICENSE
+## LICENSE
 =========
 The MIT License (MIT)
 Copyright © 2012 LAB at Rockwell Group, http://www.rockwellgroup.com/lab
