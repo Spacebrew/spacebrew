@@ -45,6 +45,11 @@ var myConfig = {
        "name": "something",
        "type": "boolean",
        "default": "false"
+     },
+     {
+       "name": "distanceString",
+       "type": "string",
+       "default": "false"
      }
    ]
  }
@@ -114,8 +119,8 @@ function onMouseMove (evt){
 	var message = {message:
        {
            clientName:name, 
-           name:"currentDistance",
-           type:"number",
+           name:"distanceString",
+           type:"string",
            value:currentDistance
        }
    	};

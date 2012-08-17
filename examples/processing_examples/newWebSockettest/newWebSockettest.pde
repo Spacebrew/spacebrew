@@ -90,6 +90,7 @@ void keyPressed() {
     println(myConfig);
     c.send(myConfig);
     sendingNow =true;
+    
   } else {
   
     String testMsg = "{\"message\":{\"clientName\":\""+name+"\",\"name\":\"procPress\",\"type\":\"boolean\",\"value\":\"true\"}}";
