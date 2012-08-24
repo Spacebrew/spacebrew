@@ -1,15 +1,14 @@
-String server="lab-server.local";
+String server="localhost";
 String name="processingButtonJSON";
 String description ="This is an example client which has a big red button you can push to send a message. It also listens for color events and will change it's color based on those messages.";
 
 SpacebrewClient c;
-int numClicks = 0;
-int sec0;
 
+// inputs + outputs
 boolean toSend = false;
+int numClicks = 0;
 
 void setup() {
-  frameRate(240);
   size(600, 400);
   
   c = new SpacebrewClient( this );
@@ -26,7 +25,7 @@ void setup() {
 }
 
 void draw() {
-  background( inputColor );
+  background( 255 );
   fill(20);
   textSize(100);
   text(numClicks, 20, 120);
@@ -41,12 +40,15 @@ void keyPressed() {
 
 void onIntMessage( String name, int value ){
   println("got int message "+name +" : "+ value);
+  numClicks++;
 }
 
 void onBooleanMessage( String name, boolean value ){
   println("got bool message "+name +" : "+ value);  
+  numClicks++;
 }
 
 void onStringMessage( String name, String value ){
   println("got string message "+name +" : "+ value);  
+  numClicks++;
 }
