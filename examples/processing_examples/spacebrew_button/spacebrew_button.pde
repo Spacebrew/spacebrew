@@ -21,7 +21,7 @@ void setup() {
   c.addSubscribe( "text", "string" );
   
   // connect!
-  c.connect("ws://"+server+":9000", name, description );
+  c.connect(server, name, description );
 }
 
 void draw() {
