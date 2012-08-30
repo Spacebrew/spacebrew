@@ -95,13 +95,13 @@ wss.on('connection', function(ws) {
     //var connection = ws.accept(null, ws.origin);
     var connection = ws;
     clientconnections.push(ws);
-    console.log(connection.upgradeReq.headers.host);
+    //console.log(connection.upgradeReq.headers.host);
     //connection['remoteAddress'] = connection.upgradeReq.headers.host;
 
     // This is the most important callback for us, we'll handle
     // all messages from users here.
     ws.on('message', function(message) {
-        console.log(message);
+        //console.log(message);
         var bValidMessage = false;
         if (message) {
             // process WebSocket message
@@ -116,7 +116,7 @@ wss.on('connection', function(ws) {
 
             if (tMsg['name']) {
                 //a connection is registering themselves
-                console.log(tMsg['name']);
+                //console.log(tMsg['name']);
                 for (var index = 0; index < tMsg['name'].length; index++){
                     var tVar = [tMsg['name'][index].name, connection.upgradeReq.headers.host, connection];
                     //add the remote address to the message for the admins
@@ -124,8 +124,8 @@ wss.on('connection', function(ws) {
 
                     var existingClient = false;
                     for(var i=0; i<trustedClients.length; i++) {
-                        console.log(trustedClients[i]['name'] +" : "+ tVar[0]);
-                        console.log(trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
+                        console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
+                        console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
                         if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
                             existingClient = true;
                             console.log("client is already connected");
@@ -222,7 +222,7 @@ wss.on('connection', function(ws) {
                     }
                 }
             } else if (tMsg['message']) {
-                console.log("I got sent a message from "+connection);
+                //console.log("I got sent a message from "+connection);
 
                 // BROADCAST
                 // var messageToSend = JSON.stringify(tMsg);
@@ -278,17 +278,21 @@ wss.on('connection', function(ws) {
         }
     });
 
-    ws.on('close', function(connection) {
-        console.log("Connection is: "+connection);
+    ws.on('close', function(ws) {
+        //console.log("Connection is: "+ws);
         // close user connection
         console.log("close");
+        //console.log(ws);
         var removed = [];
         //remove clients
-        console.log("There are this many clients: "+trustedClients.length);
+        //console.log("There are this many clients: "+trustedClients.length);
 
         for(var i = 0; i < trustedClients.length;){
-            console.log("Client is : "+trustedClients[i]['connection'].state);
-            if (trustedClients[i]['connection'].state === 'closed'){
+            //console.log(trustedClients);
+            //console.log("Client is : "+trustedClients[i]);
+            //if (trustedClients[i]['connection'].state === 'closed'){
+            if (trustedClients[i]._socket == null){
+                
                 //for each publisher
                 //for each subscriber to that publisher
                 //remove route
@@ -324,17 +328,18 @@ wss.on('connection', function(ws) {
         }
 
         //remove admins
-        console.log("There are admins: "+ adminConnections.length);
+        //console.log("There are admins: "+ adminConnections.length);
         for(var i = 0; i < adminConnections.length;){
-            //if (adminConnections[i].state === 'closed'){
+            if (adminConnections[i]._socket == null){
                 adminConnections.splice(i, 1);
-            //} else {
+            } else {
                 i++;
-            //}
+            }
         }
         //remove connections
         for(var i = 0; i<clientconnections.length;){
-            if (clientconnections[i].state === 'closed'){
+            console.log(i + " : is : "+clientconnections[i]._socket);
+            if (clientconnections[i]._socket == null){
                 clientconnections.splice(i, 1);
             } else {
                 i++;
