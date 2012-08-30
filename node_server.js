@@ -1,41 +1,18 @@
+var spacePort = 9000;
+if (process.argv[2]) {
+    spacePort = process.argv[2];    
+} 
+
 var WebSocketServer = require('ws').Server
-  , wss = new WebSocketServer({port: 9000});
+  , wss = new WebSocketServer({port: spacePort});
 var http = require('http');
 
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
 var trustedClients = []; // list of clients that have sent names
 var adminConnections = [];
 
-console.log("\nRunning Spacebrew on PORT 9000");
-
-// var server = http.createServer(function(request, response) {
-//     // process HTTP request. Since we're writing just WebSockets server
-//     // we don't have to implement anything.
-// });
-// server.listen(9000, function() { });
-
-// create the server
-// wsServer = new WebSocketServer({
-//     httpServer: server
-// });
- //ws.createServer(function (websocket) {
-// websocket.addListener("connect", function (resource) { 
-
-// wss.on('connection', function(ws) {
-//     ws.on('open', function() {
-//         console.log('connected');
-//         ws.send(Date.now().toString(), {mask: true});
-//     });
-//     ws.on('close', function() {
-//         console.log('disconnected');
-//     });
-
-//     ws.on('message', function(message) {
-//         console.log('received: %s', message);
-//     });
-//     ws.send('something');
-// });
-
+console.log("\nRunning Spacebrew on PORT "+spacePort);
+console.log("More info at http://www.spacebrew.cc");
 
 var buildTrustedClientsForAdmin = function(){
     var output = [];
@@ -90,29 +67,18 @@ var buildTrustedClientsForAdmin = function(){
 
 // WebSocket server
 wss.on('connection', function(ws) {
-//wsServer.on('request', function(request) {
     
-    //var connection = ws.accept(null, ws.origin);
     var connection = ws;
     clientconnections.push(ws);
-    //console.log(connection.upgradeReq.headers.host);
-    //connection['remoteAddress'] = connection.upgradeReq.headers.host;
 
     // This is the most important callback for us, we'll handle
     // all messages from users here.
     ws.on('message', function(message) {
-        //console.log(message);
+        console.log(message);
         var bValidMessage = false;
         if (message) {
             // process WebSocket message
-            //console.log(message);
-            //console.log(message.utf8Data.name);
-            //console.log(JSON.parse(message.utf8Data));
             var tMsg = JSON.parse(message);
-            //console.log(tMsg);
-
-            //console.log(tMsg);
-            //console.log(tMsg['name'][0]);
 
             if (tMsg['name']) {
                 //a connection is registering themselves
@@ -124,8 +90,8 @@ wss.on('connection', function(ws) {
 
                     var existingClient = false;
                     for(var i=0; i<trustedClients.length; i++) {
-                        console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
-                        console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
+                        //console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
+                        //console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
                         if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
                             existingClient = true;
                             console.log("client is already connected");
@@ -279,7 +245,6 @@ wss.on('connection', function(ws) {
     });
 
     ws.on('close', function(ws) {
-        //console.log("Connection is: "+ws);
         // close user connection
         console.log("close");
         //console.log(ws);
@@ -289,9 +254,8 @@ wss.on('connection', function(ws) {
 
         for(var i = 0; i < trustedClients.length;){
             //console.log(trustedClients);
-            //console.log("Client is : "+trustedClients[i]);
             //if (trustedClients[i]['connection'].state === 'closed'){
-            if (trustedClients[i]._socket == null){
+            if (!trustedClients[i].connection._socket){
                 
                 //for each publisher
                 //for each subscriber to that publisher
@@ -338,7 +302,6 @@ wss.on('connection', function(ws) {
         }
         //remove connections
         for(var i = 0; i<clientconnections.length;){
-            console.log(i + " : is : "+clientconnections[i]._socket);
             if (clientconnections[i]._socket == null){
                 clientconnections.splice(i, 1);
             } else {
