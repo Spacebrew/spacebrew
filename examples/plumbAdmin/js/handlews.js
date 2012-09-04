@@ -1,34 +1,3 @@
-$(document).ready( function() {
-    //setup();
-    //$("#btnRoute").on('click', doroute);
-    $("#btnRouteRadio").on('click', dorouteradio);
-    //$("#ddlPubClient").on('change',updatePubClient);
-    //$("#ddlSubClient").on('change',updateSubClient);
-});
-
-// var updatePubClient = function(e){
-//     if (e){e.preventDefault();};
-// }
-
-// var updateSubClient = function(e){
-//     if (e){e.preventDefault();};
-// }
-
-// var doroute = function(e){
-//     if (e){e.preventDefault();};
-//     ws.send(JSON.stringify({
-//         route:{type:'add',
-//                 publisher:{clientName:clients[$("#ddlPubClient").val()].name,
-//                             name:$("#pubName").val(),
-//                             type:$("#ddlType").val(),
-//                             remoteAddress:clients[$("#ddlPubClient").val()].remoteAddress},
-//                 subscriber:{clientName:clients[$("#ddlSubClient").val()].name,
-//                             name:$("#subName").val(),
-//                             type:$("#ddlType").val(),
-//                             remoteAddress:clients[$("#ddlSubClient").val()].remoteAddress}}
-//     }));
-// };
-
 function gup( name ) {
   name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
   var regexS = "[\\?&]"+name+"=([^&#]*)";
@@ -43,44 +12,16 @@ function gup( name ) {
 var name = gup('name') || window.location.href; 
 var server = gup('server') || 'localhost';
 
-var dorouteradio = function(e){
-    if (e){e.preventDefault();};
-    var selectedPub = $("input[name=pub]:radio:checked").val();
-    var selectedSub = $("input[name=sub]:radio:checked").val();
-    if (selectedPub && selectedSub){
-        selectedPub = selectedPub.split(':').map(unescape);
-        selectedSub = selectedSub.split(':').map(unescape);
-        if (selectedPub.length == 4 && selectedSub.length == 4){
-            ws.send(JSON.stringify({
-                route:{type:'add',
-                        publisher:{clientName:selectedPub[0],
-                                    name:selectedPub[2],
-                                    type:selectedPub[3],
-                                    remoteAddress:selectedPub[1]},
-                        subscriber:{clientName:selectedSub[0],
-                                    name:selectedSub[2],
-                                    type:selectedSub[3],
-                                    remoteAddress:selectedSub[1]}}
-            }));
-        }
-    }
-};
+var clients = [];
+var routes = [];
+var ignoreMessages = [];
+var ignoreActions = [];
+var sep = "_";
 
-var dorouteremove = function(index){
-    if (index >= 0 && index < routes.length){
-        var toRemove = routes.splice(index, 1);
-        if (toRemove.length > 0){
-            toRemove = toRemove[0];
-            ws.send(JSON.stringify({
-                route:{type:'remove',
-                        publisher:toRemove.publisher,
-                        subscriber:toRemove.subscriber}
-            }));
-        }
-    }
-}
+var ws;
+setupWS = function(){
+    ws = new WebSocket("ws://"+server+":9000");
 
-var ws = new WebSocket("ws://"+server+":9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var adminMsg = { "admin": [
@@ -94,9 +35,9 @@ var ws = new WebSocket("ws://"+server+":9000");
         console.log(e);
         //try {
             var json = JSON.parse(e.data);
-            if (!handleMsg(json)){
+            if (!myWS.handleMsg(json)){
                 for(var i = 0, end = json.length; i < end; i++){
-                    handleMsg(json[i]);
+                    myWS.handleMsg(json[i]);
                 }
             }
         // } catch (err) {
@@ -107,21 +48,20 @@ var ws = new WebSocket("ws://"+server+":9000");
     ws.onclose = function() {
         console.log("WebSockets connection closed");
     }
+};
+var myWS = {};
 
-var clients = [];
-var routes = [];
-
-var handleMsg = function(json){
+myWS.handleMsg = function(json){
     if (json.name){
-        handleNameMsg(json);
+        this.handleNameMsg(json);
     } else if (json.config){
-        handleConfigMsg(json);
+        this.handleConfigMsg(json);
     } else if (json.message){
-        handleMessageMsg(json);
+        this.handleMessageMsg(json);
     } else if (json.route){
-        handleRouteMsg(json);
+        this.handleRouteMsg(json);
     } else if (json.remove){
-        handleRemoveMsg(json);
+        this.handleRemoveMsg(json);
     } else if (json.admin){
         //do nothing
     } else {
@@ -130,30 +70,35 @@ var handleMsg = function(json){
     return true;
 }
 
-var handleMessageMsg = function(msg){
-    for(var i = clients.length - 1; i >= 0; i--){
-        if (clients[i].name === msg.message.clientName
-            && clients[i].remoteAddress === msg.message.remoteAddress){
-            var selector = "#client_list li:eq("+i+")";
-            $(selector).addClass('active');
-            setTimeout(function(){$(selector).removeClass('active');},200);
-            break;
-        }
-    }
-    var selector2 = "input[name=pub][value='{name}:{addr}:{pubName}:{pubType}']:radio".replace("{name}",msg.message.clientName).replace("{addr}", msg.message.remoteAddress).replace("{pubName}",msg.message.name).replace("{pubType}",msg.message.type);
-    $(selector2).parent().addClass('active');
-    setTimeout(function(){$(selector2).parent().removeClass('active');},200);
+myWS.handleMessageMsg = function(msg){
+    // for(var i = clients.length - 1; i >= 0; i--){
+    //     if (clients[i].name === msg.message.clientName
+    //         && clients[i].remoteAddress === msg.message.remoteAddress){
+    //         var selector = "#client_list li:eq("+i+")";
+    //         $(selector).addClass('active');
+    //         setTimeout(function(){$(selector).removeClass('active');},200);
+    //         break;
+    //     }
+    // }
+    // var selector2 = "input[name=pub][value='{name}:{addr}:{pubName}:{pubType}']:radio".replace("{name}",msg.message.clientName).replace("{addr}", msg.message.remoteAddress).replace("{pubName}",msg.message.name).replace("{pubType}",msg.message.type);
+    // $(selector2).parent().addClass('active');
+    // setTimeout(function(){$(selector2).parent().removeClass('active');},200);
 };
 
-var handleNameMsg = function(msg){
+myWS.handleNameMsg = function(msg){
     for(var i = 0; i < msg.name.length; i++){
         clients.push({name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress});
+        var newDiv = $("<div>").addClass("window").prop("id",escape(msg.name[i].name)+sep+escape(msg.name[i].remoteAddress.replace(/\./g,"-")));
+        newDiv.append($("<div>").css("white-space","nowrap").text(msg.name[i].name));
+        jsPlumb.draggable(newDiv);
+        $("#bucket").append(newDiv);
     };
-    generateList();
+    this.generateList();
 };
 
 //generates the list of clients for viewing
-var generateList = function(){
+myWS.generateList = function(){
+    return;
     var olHtml = '';
     var ddlHtml = '<option value="">Select One</option>';
     for(var i = 0; i < clients.length; i++){
@@ -185,7 +130,7 @@ var generateList = function(){
     $("#ddlPubClient").html(ddlHtml);
 };
 
-var displayRoutes = function(){
+myWS.displayRoutes = function(){
     var html = '';
     var even = false;
     for(var i = routes.length - 1; i >= 0; i--){
@@ -198,9 +143,29 @@ var displayRoutes = function(){
         even = !even;
     }
     $("#route_list").html(html);
-}
+};
 
-var handleConfigMsg = function(msg){
+myWS.handleConfigMsg = function(msg){
+    var endpointList = [];
+    if (msg.config.publish && msg.config.publish.messages){
+        for (var i = 0; i < msg.config.publish.messages.length; i++){
+            var currPub = msg.config.publish.messages[i];
+            endpointList.push({commType:currPub.type,source:true,label:currPub.name});
+        }
+    }
+    if (msg.config.subscribe && msg.config.subscribe.messages){
+        for (var i = 0; i < msg.config.subscribe.messages.length; i++){
+            var currSub = msg.config.subscribe.messages[i];
+            endpointList.push({commType:currSub.type, source:false, label:currSub.name});
+        }
+    }
+    myPlumb.addEndpoints(escape(msg.config.name)+sep+escape(msg.config.remoteAddress.replace(/\./g,"-")), endpointList);
+    // [{commType:'string',source:true,label:'test'},
+    //                                         {commType:'bool', source:true,label:'btest'},
+    //                                         {commType:'int',source:true,label:'itest'},
+    //                                         {commType:'bool',source:false,label:'intest'},
+    //                                         {commType:'string',source:false,label:'instest'},
+    //                                         {commType:'int',source:false,label:'intintest'}]);
     for(var j = 0; j < clients.length; j++){
         if (clients[j].name === msg.config.name
             && clients[j].remoteAddress === msg.config.remoteAddress){
@@ -208,14 +173,66 @@ var handleConfigMsg = function(msg){
             break;
         }
     }
-    generateList();
+    this.generateList();
 };
 
-var handleRouteMsg = function(msg){
+myWS.handleRouteMsg = function(msg){
+    for(var i = 0; i < ignoreMessages.length; i++){
+        var currIgnore = ignoreMessages[i];
+        toCompare = [["type"],['publisher','clientName'],['publisher','remoteAddress'],['publisher','type'],['publisher','name'],
+                    ['subscriber','clientName'],['subscriber','remoteAddress'],['subscriber','type'],['subscriber','name']];
+        var matches = true;
+        for(var j = toCompare.length - 1; j >= 0 && matches; j--){
+            var currComp = toCompare[j];
+            var from = currIgnore.route,
+                to = msg.route;
+            var numLevels = currComp.length;
+            for(var k = 0; k < numLevels; k++){
+                var currLevel = currComp[k];
+                from = from[currLevel];
+                to = to[currLevel];
+            }
+            if(from != to){
+                matches = false;
+            }
+        }
+        if (matches){
+            ignoreMessages.splice(i,1);
+            console.log("ignoring message");
+            return;
+        }
+    }
+    ignoreActions.push(msg);
+    var pubUUID = escape(msg.route.publisher.clientName)+sep+escape(msg.route.publisher.remoteAddress.replace(/\./g,"-"))+sep+
+                    escape(msg.route.publisher.type)+sep+escape(msg.route.publisher.name),
+        subUUID = escape(msg.route.subscriber.clientName)+sep+escape(msg.route.subscriber.remoteAddress.replace(/\./g,"-"))+sep+
+                    escape(msg.route.subscriber.type)+sep+escape(msg.route.subscriber.name);
     if (msg.route.type === 'add'){
+        if (!myPlumb.connections[pubUUID]){
+            myPlumb.connections[pubUUID] = {};
+        }
+        if (!myPlumb.connections[pubUUID][subUUID]){
+            var connection = jsPlumb.connect({source:myPlumb.endpoints[pubUUID], 
+                                                target:myPlumb.endpoints[subUUID]});
+            connection.setPaintStyle(myPlumb.programmaticConnectorPaintStyle);
+            myPlumb.connections[pubUUID][subUUID] = connection;
+            myPlumb.revConnections[connection.id] = {source:pubUUID, target:subUUID};
+        } else {
+            //we already have this connection, don't attempt to add it again
+            //we pushed the action already, so let's pop it
+            ignoreActions.pop();
+        }
+
         routes.push({publisher:msg.route.publisher,
                     subscriber:msg.route.subscriber});
     } else if (msg.route.type === 'remove'){
+        if (myPlumb.connections[pubUUID] && myPlumb.connections[pubUUID][subUUID]){
+            var connection = myPlumb.connections[pubUUID][subUUID];
+            jsPlumb.detach(connection);
+            myPlumb.connections[pubUUID][subUUID] = undefined;
+            myPlumb.revConnections[connection.id] = undefined;
+        }
+
         for(var i = routes.length - 1; i >= 0; i--){
             var myPub = routes[i].publisher;
             var thePub = msg.route.publisher;
@@ -233,10 +250,10 @@ var handleRouteMsg = function(msg){
             }
         }
     }
-    displayRoutes();
+    this.displayRoutes();
 };
 
-var handleRemoveMsg = function(msg){
+myWS.handleRemoveMsg = function(msg){
     //for each entry in the remove list
     //for each entry in the clients list
     //if the name & address match, then remove it from the list
@@ -248,6 +265,9 @@ var handleRemoveMsg = function(msg){
                 break;
             }
         }
+        var el = $("#"+msg.remove[i].name);
+        jsPlumb.removeAllEndpoints(el);
+        el.remove();
     }
-    generateList();
+    this.generateList();
 };

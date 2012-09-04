@@ -11,7 +11,8 @@ function loadCSS(url){
 loadCSS("css/reset.css");
 loadCSS("css/main.css");
 loadCSS("css/bootstrap.css");
-loadCSS("css/bootstrap-responsive.css")
+loadCSS("css/bootstrap-responsive.css");
+loadCSS("css/style.css");
 require(["jsplumb/jsPlumb-util-1.3.13-RC1",
 		"jsplumb/jsPlumb-dom-adapter-1.3.13-RC1",
 		"jquery/jquery-1.7.1-min"],function(){
@@ -29,7 +30,12 @@ require(["jsplumb/jsPlumb-util-1.3.13-RC1",
 					"jsplumb/jsPlumb-renderers-canvas-1.3.13-RC1",
 					"jsplumb/jsPlumb-renderers-svg-1.3.13-RC1",
 					"jsplumb/jsPlumb-renderers-vml-1.3.13-RC1",
-					"main"], function(){
+					//"main",
+					//"flowchartConnectorsDemo",
+					"pmain",
+					"handlews"], function(){
+				require(["commander"],function(){
+				});
 			});
 		});
 	});
