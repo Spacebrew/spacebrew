@@ -1,0 +1,1119 @@
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800|Open+Sans+Condensed:700,300);
+
+/* ****************************************************
+This is the base style file. Don't put anything above
+the font imports. Style overrides should be placed
+in the styles.css file.
+**************************************************** */
+
+
+body {
+	font-family: "Open Sans", Helvetica;
+	color:#333;
+}
+html, body { width: 100%; height: 100%; overflow:auto; }
+
+
+h1 {
+	font-size: 32px;
+	color: #666;
+}
+
+hr {
+	background: #CCC;
+	border: 0;
+}
+
+input[type="textbox"] {
+	width:200px;
+}
+
+.contentContainer {
+	margin-top: 20px;
+	margin-left: 20px;
+	position: relative;
+}
+
+.component {
+	position: absolute;
+	padding: 0;
+	margin: 0;
+}
+
+.detailHeader {
+	background-color:#f4f4f4;
+	position: relative;
+	height:40px;
+	padding: 10px;
+	clear:both;	
+}
+
+.settingHeader {
+	font-size: 12px;
+	margin-bottom: 5px;
+}
+
+#btnSave {
+	width: 60px;
+	padding: 4px;
+	color: white;
+	font-family: "Open Sans";
+	border: 0px;
+	border-radius: 5px;
+	margin: 10px 2px 0 6px;
+	background-color:#008909;
+}
+
+#btnSave:hover {
+	background-color:#00C303;
+}
+
+/* content container for the app. All content elements nested below pageContent */
+#pageContent { position: relative; padding: 0; }
+
+/* header container for the app */
+#pageHeader {
+	position: relative;
+	padding: 0;
+	margin: 0;
+}
+
+.major-section {
+	border-top:3px solid #cccccc;
+	background-color:white;
+	display:block;
+	position:relative;
+	float:left;
+	width:100%;
+}
+
+.ui-right {
+	float:right;
+}
+.ui-button.ui-small {
+	padding:2px;
+}
+.input-chunk {
+	display:block;
+}
+.input-chunk:hover {
+	background-color:#ffffe7;
+}
+
+.floater {
+	float:left;
+	margin-right: 25px;
+}
+
+section.subsection h2{
+	font-size:14px;
+	font-weight:800;
+}
+section.subsection {
+	font-size:14px;
+	margin-bottom:10px;
+	padding-top:10px;
+	margin-left:18px;
+	border-top:1px solid #e2e2e2;
+}
+
+.presetBtns, .actionBtns {
+	padding:15px;
+	padding-bottom:0px;
+}
+
+.button.remove-slide {
+	font-size: 14px;
+	background: url(../images/deleteIcon.png) no-repeat;
+	padding: 6px;
+	padding-left: 25px;
+	background-position: 4px 4px;
+	border: solid 1px #CCC;
+	background-color:#f2f2f2;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	-khtml-border-radius: 4px;
+	border-radius: 4px;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+	position: relative;
+	float: none;
+	width: 136px;
+}
+
+select.presets {
+	padding:5px;
+	-moz-border-radius: 20px;
+	-webkit-border-radius: 20px;
+	-khtml-border-radius: 20px;
+	border-radius: 20px;
+}
+
+.add-preset:hover {
+	background:#666666;
+}
+.add-preset {
+	background:#bdbdbd;
+	color:#ffffff;
+	padding:1px;
+	width:25px;
+	height:25px;
+	margin-top:7px; 
+	margin-left:4px; 
+
+	-moz-border-radius: 20px;
+	-webkit-border-radius: 20px;
+	-khtml-border-radius: 20px;
+	border-radius: 20px;
+	float:left;
+	display: -webkit-box;
+	-webkit-box-align: center;
+	-webkit-box-pack: center;
+
+}
+
+/* set 'important' list items to red */
+li.important {
+	color: #FF0000;
+}
+
+
+/* Clearfix work arounds */
+/* Okay a lof of people have this using other class names so adding them here */
+
+.clearfix:after, .cf:after, .clear:after {
+     visibility: hidden;
+     display: block;
+     font-size: 0;
+     content: " ";
+     clear: both;
+     height: 0;
+}
+.clearfix, .cf, .clear { display: inline-block; }
+* html .clearfix, * html .cf, * html .clear { height: 1%; }
+.clearfix, .cf, .clear { display: block; }
+
+
+
+
+/****************  APP HEADER *****************/
+
+/* Main application header */
+#appHeader {
+	margin: 0px;
+	padding: 0px;
+	width: 100%;
+	background-color: #FFF;
+}
+
+/* Title bar containing app title, moment list, more list and user */
+#titleBar {
+	width: 100%;
+	height: 35px;
+	background-color: #666;
+}
+
+/* Area below title bar to display alerts */
+#alertBarContainer {
+	display: hidden;
+	width: 100%;
+	clear: both;
+}
+
+/* Application title in title bar */
+#appTitle {
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+	-webkit-user-select: none;
+	user-select: none;	
+	margin-left: 10px;
+	padding: 5px 10px 5px 10px;
+	height: 100%;
+	color: #FFF;
+	font-size: 20px;
+	cursor: default;
+	float: left;
+}
+
+#appTitle:hover {
+	color: #666;
+	background-color: #CCC;	
+}
+
+/* Style for drop-down buttons in header (moments, more, user) */
+.headerDrop {
+	position: relative;
+	float: left;
+	height: 100%;
+}
+
+
+/* Drop-down button style for header items */
+.headerDrop .dropdownBtn {
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+	-webkit-user-select: none;
+	user-select: none;	
+	padding: 9px 10px 0px 10px;
+	margin-left: 40px;
+	height: 100%;
+	font-size: 14px;
+	float: left;
+	color: #FFF;
+	background-color: none;
+}
+
+/* positioning for user drop down button in header */
+#userDropdown {
+	margin-right: 20px;
+	float: right;
+}
+
+#userDropdown .panel {
+	left: -75px;
+}
+
+#userDropdown li {
+	color: #666;
+}
+
+/* hover styling for dropdown buttons */
+.headerDrop .dropdownBtn:hover {
+	color: #666;
+	background-color: #CCC;
+}
+
+/* Dropdown button style when active (showing list) */
+.headerDrop .active {
+	color: #00ADEE;
+	background-color: white;
+}
+
+.dropdown {
+	cursor: default;
+}
+
+/* Style for drop-down panels in header */
+.dropdown .panel {
+	padding: 10px 0px 10px 0px;
+	background-color: #FFF;
+	box-shadow: 0px 5px 5px #888888;
+	font-size: 14px;
+	width: 200px;
+	z-index: 100;
+	left: 20px;
+	top: 35px;
+}
+
+.dropdown li {
+	padding: 10px 0px 10px 20px;
+}
+
+.dropdown li:hover {
+	background-color: rgba(125, 182, 213, 0.25);
+}
+
+#momentDropdown {
+	width: 150px;
+}
+
+#momentDropdown li {
+	padding: 10px 0px 10px 20px;
+	color: #666;
+	background-repeat: no-repeat;
+	background-position: 2% 50%;	
+}
+
+/* icon for running status in moment dropdown list */
+#momentDropdown .running {
+	background-image: url('../img/running_small.png');
+}
+
+/* icon and background color for error status in moment dropdown list */
+#momentDropdown .error {
+	background-image: url('../img/error_small.png');
+	background-color: rgba(255, 0, 0, 0.25);	
+}
+
+/* icon and background color for transitional (starting up, shutting down, etc) */
+/* status in moment dropdown list */
+#momentDropdown .transition {
+	background-image: url('../img/transition_small.png');
+	background-color: #F7F7F7;
+}
+
+/* icon for idle status in moment dropdown list */
+#momentDropdown .idle {
+	background-image: url('../img/idle_small.png');
+}
+
+/* style for contextual commands (start, stop, etc) in More dropdown panel */
+#moreDropdown .controlCommands {
+	margin-top: 10px;
+	color: #FF0000;
+}
+
+#moreDropdown .menuItems {
+	color: #666;
+}
+
+/**************** ALERT BAR *****************/
+
+#alertBarContainer .alerts {
+	position: relative;
+	background-color: rgba(255, 0, 0, 0.2);
+	margin-left: 20px;
+	margin-right: 20px;
+	padding: 15px 0px 15px 45px;
+	font-size: 14px;
+	color: #666;
+	border: 1px solid rgba(255, 0, 0, 0.25);
+}
+
+/* warning icon and icon placement in alert bar */
+#alertBarContainer .alerts.warning {
+	background-image: url('../img/warningIcon.png');
+	background-repeat: no-repeat;
+	background-position: 10px 50%;	
+}
+
+/* error icon and icon placement in alert bar */
+#alertBarContainer .alerts.error {
+	background-image: url('../img/errorIcon.png');
+	background-repeat: no-repeat;
+	background-position: 10px 50%;	
+}
+
+/* 'Fix Now' button in alert bar */
+#alertBarContainer .errorBtn {
+	position: absolute;
+	right: 10px;
+	top: 5px;
+	width: 150px;
+	height: 35px;
+	font-size: 16px;
+	color: #666;
+}
+
+/**************** DASHBOARD *****************/
+
+#dashboardMomentList {
+	cursor: default;	
+}
+
+/* Dashboard Moment list style */
+#dashboardMomentList li {
+	padding: 15px 0px 15px 35px;
+	color: #666;
+	background-color: #FFF;
+	border: solid 1px #CCC;
+	width: 220px;
+	background-repeat: no-repeat;
+	background-position: 2% 50%;	
+}
+
+#dashboardMomentList li:hover {
+	background-color: rgba(125, 182, 213, 0.25);
+}
+
+/* running icon for dashboard moment list */
+#dashboardMomentList .running {
+	background-image: url('../img/running.png');
+}
+
+/* error icon for dashboard moment list */
+#dashboardMomentList .error {
+	background-image: url('../img/error.png');
+	background-color: rgba(255, 0, 0, 0.25);
+}
+
+/* the moment or app is between states */
+#dashboardMomentList .transition {
+	background-image: url('../img/transition.png');
+}
+
+/* the moment or app is idle (no errors but not running) */
+#dashboardMomentList .idle {
+	background-image: url('../img/idle.png');
+	background-color: #F7F7F7;
+}
+
+/* general style and active state for tabs */
+.tabs {
+	-webkit-user-select: none;
+	user-select: none;	
+	border: 1px solid #CCC;
+	float: left;
+	padding: 5px;
+	margin-right: 5px;
+	color: #00ADEE;
+	cursor: default;
+}
+
+/* inactive state for tabs */
+.tabs.inactive {
+	background-color: #CCC;
+	color: #666;
+}
+
+/* container for the map images */
+.mapLevelsContainer {
+/*	width: 100%;
+	height: 100%;
+	border: 10px solid #CCC;*/
+	clear: both;
+}
+
+/* container for level 1 of map view */
+.level1Container {
+	position: absolute;
+}
+
+/* container for level 2 of map view */
+.level2Container {
+	position: absolute;
+}
+
+/* map marker styles */
+.marker {
+	background-image: url('../img/map_marker.png');
+	background-repeat: no-repeat;
+	height: 47px;
+	width: 33px;
+	z-index: 50;
+	cursor: default;
+}
+
+/* image for marker indicating error in moment */
+.marker.error {
+	background-image: url('../img/map_error.png');
+}
+
+/**************** CONTENT HEADER *****************/
+
+/* Moment Title in Monent view */
+.contentTitle {
+	font-size: 32px;
+	color: #666;
+	float: left;
+	margin-bottom: 20px; /* take this out if breadcrumbs are added back */
+}
+
+.contentHeader {
+	position: relative;
+}
+
+/* HR below Moment Title */
+hr.headerRule {
+	height: 4px;
+	margin-top: 80px;
+	margin-right: 20px;
+	clear: both;
+}
+
+/* Breadcrumb Text Styling */
+.breadcrumb {
+	color: #00ADEE;
+	font-size: 16px;
+	margin-bottom: 20px;
+}
+
+/* Settings Dropbown button styling */
+.contentSettings .dropdownBtn {
+	width: 80px;
+	height: 30px;
+	border: solid 1px #CCC;
+	background-color: #F7F7F7;
+	background-image: url('../img/settingsIcon.png');
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+}
+
+/* Hover state for dropdown button */
+.contentSettings .dropdownBtn:hover {
+	background-color: #CCC;
+}
+
+/* Settings drop-down style */
+.contentSettings {
+	position: absolute;
+	/*margin-right: 20px;
+	float: right;*/
+	right: 20px;
+	top: 0px;
+}
+
+/* Setting drop-down panel style */
+.contentSettings .panel {
+	padding: 10px 0px 10px 0px;
+	background-color: #FFF;
+	box-shadow: 0px 5px 5px #888888;
+	font-size: 14px;
+	width: 200px;
+	z-index: 100;
+	left: -120px;
+}
+
+/* Settings drop-down list item style */
+.contentSettings li {
+	padding: 10px 0px 10px 20px;
+	/*border: solid 1px #CCC;*/
+}
+
+/* Settings drop-down list item hover style */
+.contentSettings li:hover {
+	background-color: rgba(125, 182, 213, 0.25);
+}
+
+
+
+/************* MOMENT MODES: Header and App (Live Activity Groups) *************/
+
+/* hr between Activity Categories */
+hr.separator {
+	height: 1px;
+	margin-right: 20px;
+	margin-bottom: 20px;
+}
+
+/* Activity Category (ie Applications, Custom Texts, etc) */
+.momentModes .modeTitle {
+	font-size: 18px;
+	color: #666;
+	margin-bottom: 20px;
+}
+
+/* Activity Thumbnail */
+.momentModes .thumbnail {
+	position: relative;
+	float: left;
+	margin-right: 40px;
+	margin-bottom: 20px;
+}
+
+/* status graphic for thumbnail */
+.momentModes .appStatus {
+	display: none;
+	position: absolute;
+	top: 0px;
+	left: 0px;	
+}
+
+/* show status graphic for thumbnail */
+.momentModes .running {
+	display: block;
+}	
+
+/* Activity Name */
+.momentModes .caption {
+	font-size: 14px;
+}
+
+/* Activity that is currently running */
+.currentMode {
+	font-size: 22px;
+	color: #666;
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+/************* MOMENT MODES: Detail (Live Activity Groups) *************/
+
+/* Edit Presets link in Activity Detail Header */
+
+/* Current Setting text in Activity Detail Header */
+.detailHeader p {
+	padding: 10px 0px 0px 10px;
+	float: left;
+	font-size: 18px;
+	color: #666;		
+}
+
+
+/* Activity Configuration Drop-down box in Activity Detail Header */
+.detailHeader .presets {
+	/*margin-top: 10px;*/
+	/*margin-left: 40px;*/
+	float: left;
+	width: 200px;
+}
+
+/* Activity detail view */
+.momentModeDetail {
+	margin-top: 20px;
+}
+
+/* Activity Name */
+.momentModeDetail .modeDetailTitle {
+	font-size: 22px;
+	color: #666;
+}
+
+/* Activity Detail Header */
+.momentModeDetail .detailHeader {
+	margin-top: 20px;
+	margin-right: 20px;
+	height: 40px;
+	background-color: #F7F7F7;
+	border-top: 1px solid #000;
+	border-bottom: 1px solid #CCC;
+}
+
+/* Activity Status (ie "Currently Running") */
+.momentModeDetail .status {
+	font-size: 14px;
+	color: #666;
+	margin-bottom: 10px;
+}
+
+.momentModeDetail .iframeContainer {
+	margin-right: 20px;
+}
+
+.iframeContainer iframe {
+	padding-top: 20px;
+	padding-bottom: 20px;
+	width: 100%;
+	height: 100%;
+	border: none;
+}
+
+/************* MOMENT MODES: Presets (Live Activity Groups) *************/
+
+/* Edit Presets view for selected Activity Configuration */
+.momentPresets { margin-right: 20px; }
+
+/* Edit Presets Table */
+.editPresets {
+	width: 100%;
+	font-size: 16px;
+}
+
+/* Edit Presets Table Row Height */
+.editPresets td {
+	height: 45px;
+}
+
+.editPresets thead td {
+	height: 30px;
+	background-color: #F0F0F0;
+}
+
+/* Edit Presets right-column style */
+.editPresets .right {
+	text-align: right;
+	padding-right: 10px;
+}
+
+/* Edit Presets Title column style */
+.editPresets .title {
+	color: #00ADEE;
+	left: 50px;
+}
+
+/* Edit Presets row shading */
+.editPresets .tableRows:nth-child(odd) {
+	background-color: #F7F7F7;
+}
+
+/* Edit Presets Checkbox positioning */
+.editPresets .checkbox {
+	padding-left: 20px;
+	width: 40px;
+}
+
+/* Ediging presets for ... */
+.momentPresets .momentPresetTitle {
+	margin-top: 20px;
+	margin-bottom: 20px;
+	font-size: 20px;
+	color: #666;
+}
+
+/* Edit Presets Button styles */
+.momentPresets .button {
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;		
+	width: 80px;
+	height: 30px;
+	border: solid 1px #CCC;
+	background-color: #F7F7F7;
+	float: left;
+	margin-right: 10px;
+	margin-bottom: 20px;
+}
+
+/* Hover state for Edit Preset buttons */
+.momentPresets .button:hover {
+	background-color: #CCC;
+}
+
+/* Styling for Delete button */
+.momentPresets .button.delete {
+	background-image: url('../img/deleteIcon.png');
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+}
+
+/* Styling for Add New button */
+.momentPresets .button.add {
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;	
+	font-size: 14px;
+	color: #666;
+	text-align: center;
+	padding-top: 5px;
+}
+
+
+/**************** MOBILE GALLERY STATION LIST *****************/
+
+#mgStationList {
+	width: 100%;
+}
+
+/* Dashboard Moment list style */
+#mgStationList li {
+	padding: 20px 0px 20px 35px;
+	color: #666;
+	background-color: #FFF;
+	margin-right: 20px;
+	border-bottom: solid 1px #CCC;
+	background-repeat: no-repeat;
+	background-position: 5px 50%;
+}
+
+#mgStationList li:hover {
+	background-color: rgba(125, 182, 213, 0.25);
+}
+
+/* running icon for mobile gallery panel list */
+#mgStationList .running {
+	background-image: url('../img/running.png');
+}
+
+/* error icon for mobile gallery panel list */
+#mgStationList .error {
+	background-image: url('../img/error.png');
+	background-color: rgba(255, 0, 0, 0.25);
+}
+
+/* the moment or app is between states */
+#mgStationList .transition {
+	background-image: url('../img/transition.png');
+}
+
+/* the moment or app is idle (no errors but not running) */
+#mgStationList .idle {
+	background-image: url('../img/idle.png');
+	background-color: #F7F7F7;
+}
+
+/**************** STARTUP / SHUTDOWN PROGRESS POPUP *****************/
+.progressPopup {
+	position: absolute;
+	left: 50%;
+	top: 25%;
+	width: 300px;
+	height: 150px;
+	margin-left: -150px;
+	margin-top: -75px;
+	-webkit-border-radius: 10px;
+	border: 1px solid #f7f7f7;
+	background-color: #f7f7f7;
+	box-shadow: 3px 3px 5px #888888;
+	z-index: 1000;
+}
+
+.loaderAnimation {
+	position: relative;
+}
+.loadAnimation img {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-left: -16px;
+	margin-top: -16px;
+}
+
+.messageText {
+	text-align: center;
+	font-weight: bold;
+	font-size: 16px;
+	padding-top: 20px;
+	color: #666;
+}
+
+
+
+/* ************************************************* */
+/* ************************************************* */
+/* ************************************************* */
+
+
+body {
+	font-family: "Open Sans", Helvetica;
+	padding:0px;
+	margin:0px;
+}
+
+ul{
+	overflow:auto;
+}
+
+div.editPresets {
+	width: 45%;
+	font-size: 16px;
+	float: left;
+}
+div.preview {
+	width: 45%;
+	position: absolute;
+	top: 0px;
+	height: 400px;
+	float: left;
+	position: relative;
+}
+
+div.room-preview {
+	position: absolute;
+	top: 120px;
+	width: 480px;
+	left: 50%;
+	margin-left: -180px;
+}
+
+div.room-preview div{
+	display:inline-block;
+}
+
+div.section-actions {
+	position: relative;
+	float: left;
+	width: 85%;
+	text-align: center;
+}
+
+div.slide{
+	width:428px;
+	margin:42px -20px 38px -20px;
+}
+
+div.wall div{
+	position:absolute;
+}
+
+div.wall, div.wall div{
+	overflow:hidden;
+	width:140px;
+	height:105px;
+}
+
+div.wall div.layer{
+	width:1400px;
+	height:1050px;
+	/* */
+	-webkit-transform:
+	matrix3d(
+		.1,0,0,0,
+		0,.1,0,0,
+		0,0,1,0,
+		-630,-472.5,0,1);
+	
+
+}
+
+div.left-wall{
+	-webkit-transform:
+	perspective(800) 
+	matrix3d(
+		.8,0,-3,0,
+		0,1.1,0,0,
+		0,0,1,0,
+		27,0,100,1);
+}
+
+div.center-wall{
+	-webkit-transform:
+	matrix3d(
+		1,0,0,0,
+		0,1,0,0,
+		0,0,1,0,
+		0,0,0,1);
+}
+
+div.right-wall{
+	-webkit-transform:
+	perspective(800) 
+	matrix3d(
+		.8,0,3,0,
+		0,1.1,0,0,
+		0,0,1,0,
+		-27,0,100,1);
+}
+
+div.wall div img {
+	display:block;
+}
+
+div.wall div img.background {
+	width:420px; height:105px;
+}
+
+div.left-wall div img.background{}
+
+div.center-wall div img.background{
+	margin:0px 0px 0px -140px;
+}
+
+div.right-wall div img.background {
+	margin:0px 0px 0px -280px;
+}
+
+tr.even-row td {
+	background-color:#cccccc;
+}
+
+tr.odd-row td {
+	background-color:#ffffff;
+}
+
+
+
+/********************************************
+Default Styles Here
+********************************************* */
+
+
+/* Edit Presets Table */
+.editPresets {
+	width: 100%;
+	font-size: 16px;
+}
+
+/* Edit Presets Table Header */
+.editPresets .tableHeader td {
+	height: 30px;
+}
+
+/* Edit Presets Table Header color */
+.editPresets .tableHeader {
+	background-color: #F0F0F0;
+}
+
+/* Edit Presets Table Row Height */
+.editPresets td {
+	height: 45px;
+}
+
+/* Edit Presets Title column style */
+.editPresets .title {
+	color: #0000FF;
+	left: 50px;
+}
+
+/* Edit Presets row shading */
+.editPresets .tableRows:nth-child(odd) {
+	background-color: #F7F7F7;
+}
+
+/* Edit Presets Checkbox positioning */
+.editPresets .checkbox {
+	padding-left: 20px;
+	width: 40px;
+}
+
+/* Edit Presets Button styles */
+.button {
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;		
+	width: 80px;
+	height: 30px;
+	border: solid 1px #CCC;
+	background-color: #F7F7F7;
+	float: left;
+	margin-right: 10px;
+	margin-bottom: 20px;
+}
+
+/* Hover state for Edit Preset buttons */
+.button:hover {
+	background-color: #CCC;
+}
+
+/* Styling for Delete button */
+.button.delete {
+	background-image: url('../img/deleteIcon.png');
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+}
+
+/* Styling for Add New button */
+.button.add {
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+	font-size: 14px;
+	color: #666;
+	text-align: center;
+	padding-top: 5px;
+}
+
+
+
+/** ************************************ 
+* Updated Admin Styles - EIE
+*/
+
+div.detailHeader {
+	border:1px solid #b2b2b2;
+	width:100%;
+	top:0px;
+	padding:18px 0px 0px 0px;
+	box-shadow: 0px 3px 12px rgba(0, 0, 0, .15);
+	z-index:2000;
+}
+
+div.detailHeader .floater.title {
+	margin-left:20px;
+}
+
+#customAdminContent {
+	margin-top:40px;
+}
+
+.presetsLink {
+	font-style: italic;
+	text-decoration: none;
+	border-bottom:1px dashed #777;
+	color: #777;;
+}
+
+.reveal {
+	display:none;
+	position:absolute;
+	top:20px;
+	left:30px;
+	background-color:#666;
+	border-radius: 10px;
+	box-shadow: 0px 3px 12px rgba(0, 0, 0, .15);
+	border:1px solid #666;
+	padding:20px;
+
+}
+
+.floater {
+	position:relative;
+}
+
+#btnSave {
+	font-size: 16px;
+	position:absolute;
+	right: 10px;
+	top: 3px;
+}
+
+
+
