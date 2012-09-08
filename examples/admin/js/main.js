@@ -109,7 +109,9 @@ var handleMessageMsg = function(msg){
 
 var handleNameMsg = function(msg){
     for(var i = 0; i < msg.name.length; i++){
-        clients.push({name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress});
+        var currClient = {name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress}
+        clients.push(currClient);
+        $("#client_list").append($(clientTemplate(currClient)));
     };
     generateList();
 };
@@ -149,6 +151,8 @@ var routeTemplate;
 routeTemplate = Handlebars.compile(document.getElementById( 'route_handlebar' ).textContent);
 var clientTemplate;
 clientTemplate = Handlebars.compile(document.getElementById( 'client_handlebar' ).textContent);
+var pubsubTemplate;
+pubsubTemplate = Handlebars.compile(document.getElementById( 'pubsub_handlebar' ).textContent);
 
 var displayRoutes = function(){
     $("#route_list").html(routeTemplate({routes:routes}));
@@ -158,11 +162,8 @@ var handleConfigMsg = function(msg){
     for(var j = 0; j < clients.length; j++){
         if (clients[j].name === msg.config.name
             && clients[j].remoteAddress === msg.config.remoteAddress){
-            if (clients[j].config){
-                removeClient(clients[j]);
-            }
             clients[j].config = msg.config;
-            $("#client_list").append($(clientTemplate(clients[j])));
+            $("#"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify()).children().children().append($(pubsubTemplate(clients[j])));
             break;
         }
     }

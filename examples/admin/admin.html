@@ -58,7 +58,7 @@
         <br />
         <div style="overflow:auto">
           <ol id="client_list" start='0'></ol>
-          <button class="btn" id="btnRouteRadio"}>Route!</button>
+          <button class="btn" id="btnRouteRadio">Route!</button>
           <h2>Routes</h2>
           <div id='route_list'></div>
         </div>
@@ -117,25 +117,29 @@
   <div class="row">
     <div class="span8 client" title="{{config.description}}">
       {{name}} @ {{remoteAddress}}
-      <div class="row">
-        <div class="span3 offset2 publishers">
-          {{#each config.publish.messages}}
-          <label class="radio">
-            <input type="radio" name="pub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" />{{name}}, {{type}}
-          </label>
-          {{/each}}
-        </div>
-        <div class="span3 subscribers">
-          {{#each config.subscribe.messages}}
-          <label class="radio">
-            <input type="radio" name="sub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">{{name}}, {{type}}
-          </label>
-          {{/each}}
-        </div>
-      </div>
     </div>
   </div>
 </li>
+    </script>
+    <script type="text/x-handlebars-template" id="pubsub_handlebar">
+    <div class="row">
+      {{#if config.publish.messages}}
+      <div class="span3 offset2 publishers">
+        {{#each config.publish.messages}}
+        <label class="radio">
+          <input type="radio" name="pub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" />{{name}}, {{type}}
+        </label>
+        {{/each}}
+      </div>
+      {{/if}}
+      <div class="span3 {{#unless config.publish.messages}}offset5 {{/unless}}subscribers">
+        {{#each config.subscribe.messages}}
+        <label class="radio">
+          <input type="radio" name="sub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">{{name}}, {{type}}
+        </label>
+        {{/each}}
+      </div>
+    </div>
     </script>
     <script type="text/x-handlebars-template" id="route_handlebar">
 {{#each_with_index routes}}
