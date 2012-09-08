@@ -56,10 +56,12 @@
             </div>
         </div>
         <br />
-        <ol id="client_list" start='0'></ol>
-        <button class="btn" id="btnRouteRadio"}>Route!</button>
-        <h2>Routes</h2>
-        <div id='route_list'></div>
+        <div style="overflow:auto">
+          <ol id="client_list" start='0'></ol>
+          <button class="btn" id="btnRouteRadio"}>Route!</button>
+          <h2>Routes</h2>
+          <div id='route_list'></div>
+        </div>
         <!--
         <form class="form-horizontal">
           <fieldset>
@@ -110,6 +112,41 @@
     <!-- Placed at the end of the document so the pages load faster -->
 
         <!-- basic libraries -->
+    <script type="text/x-handlebars-template" id="client_handlebar">
+<li id="{{Safetify name}}_{{Safetify remoteAddress}}">
+  <div class="row">
+    <div class="span8 client" title="{{config.description}}">
+      {{name}} @ {{remoteAddress}}
+      <div class="row">
+        <div class="span3 offset2 publishers">
+          {{#each config.publish.messages}}
+          <label class="radio">
+            <input type="radio" name="pub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" />{{name}}, {{type}}
+          </label>
+          {{/each}}
+        </div>
+        <div class="span3 subscribers">
+          {{#each config.subscribe.messages}}
+          <label class="radio">
+            <input type="radio" name="sub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">{{name}}, {{type}}
+          </label>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+  </div>
+</li>
+    </script>
+    <script type="text/x-handlebars-template" id="route_handlebar">
+{{#each_with_index routes}}
+<div class="row {{even}}">
+  <div class='span5'>{{publisher.clientName}} @ {{publisher.remoteAddress}}: {{publisher.name}}, {{publisher.type}}</div>
+  <div class="span1">---TO---></div>
+  <div class='span5'>{{subscriber.clientName}} @ {{subscriber.remoteAddress}}: {{subscriber.name}}, {{subscriber.type}}</div>
+  <div class="span1"><button id="btnRouteRemove{{index}}" onclick="dorouteremove({{index}})" class="btn btn-inverse btn-mini">remove</button></div>
+</div>
+{{/each_with_index}}
+    </script>
     <script data-main="js/load.js" src="js/require-2.0.4.js"></script>
   </body>
 </html>

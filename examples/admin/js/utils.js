@@ -22,6 +22,29 @@ Unsafetify = function(s){
 	return s.Unsafetify();
 };
 
+Handlebars.registerHelper('Safetify', function(val){
+  return val.Safetify();
+});
+
+Handlebars.registerHelper("each_with_index", function(array, fn) {
+  var buffer = "";
+  for (var i = 0, j = array.length; i < j; i++) {
+    var item = array[i];
+
+    // stick an index property onto the item, starting with 0, may make configurable later
+    item.index = i;
+    //also adding an even/odd text for classing
+    item.even = ((i%2)===0?"even":"odd");
+
+    // show the inside of the block
+    buffer += fn(item);
+  }
+
+  // return the finished buffer
+  return buffer;
+
+});
+
 function gup( name ) {
   name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
   var regexS = "[\\?&]"+name+"=([^&#]*)";
@@ -31,4 +54,16 @@ function gup( name ) {
     return "";
   else
     return results[1];
+};
+
+/** 
+ * Load handlebars templates from external files
+ */
+getTemplateAjax = function(path, callback) {
+    $.ajax({
+        url: path,
+        dataType: "html",
+        cache: false,
+        success: callback
+    });         
 };

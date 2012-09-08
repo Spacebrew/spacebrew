@@ -1,33 +1,6 @@
 $(document).ready( function() {
-    //setup();
-    //$("#btnRoute").on('click', doroute);
     $("#btnRouteRadio").on('click', dorouteradio);
-    //$("#ddlPubClient").on('change',updatePubClient);
-    //$("#ddlSubClient").on('change',updateSubClient);
 });
-
-// var updatePubClient = function(e){
-//     if (e){e.preventDefault();};
-// }
-
-// var updateSubClient = function(e){
-//     if (e){e.preventDefault();};
-// }
-
-// var doroute = function(e){
-//     if (e){e.preventDefault();};
-//     ws.send(JSON.stringify({
-//         route:{type:'add',
-//                 publisher:{clientName:clients[$("#ddlPubClient").val()].name,
-//                             name:$("#pubName").val(),
-//                             type:$("#ddlType").val(),
-//                             remoteAddress:clients[$("#ddlPubClient").val()].remoteAddress},
-//                 subscriber:{clientName:clients[$("#ddlSubClient").val()].name,
-//                             name:$("#subName").val(),
-//                             type:$("#ddlType").val(),
-//                             remoteAddress:clients[$("#ddlSubClient").val()].remoteAddress}}
-//     }));
-// };
 
 var name = gup('name') || window.location.href; 
 var server = gup('server') || 'localhost';
@@ -143,8 +116,9 @@ var handleNameMsg = function(msg){
 
 //generates the list of clients for viewing
 var generateList = function(){
+    return;
+    //we should do this dynamically
     var olHtml = '';
-    var ddlHtml = '<option value="">Select One</option>';
     for(var i = 0; i < clients.length; i++){
         var name=clients[i].name;
         var addr = clients[i].remoteAddress, pubColumn = '<div class="span3 offset2 publishers">', title = '', subColumn = '<div class="span3 subscribers">';
@@ -167,37 +141,36 @@ var generateList = function(){
         subColumn += '</div>';
         var leftColumn = '<div class="span8 client" title="{title}">{name} @ {addr}<div class="row">{col2}{col3}</div></div>';
         olHtml += '<li><div class="row">{col1}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,name.Safetify()).replace(/{addr}/g,addr.Safetify()).replace(/{title}/g,title);
-        ddlHtml += '<option value="{i}">{i}</option>'.replace(/{i}/g,i);
     };
     $("#client_list").html(olHtml);
-    $("#ddlSubClient").html(ddlHtml);
-    $("#ddlPubClient").html(ddlHtml);
 };
 
+var routeTemplate;
+routeTemplate = Handlebars.compile(document.getElementById( 'route_handlebar' ).textContent);
+var clientTemplate;
+clientTemplate = Handlebars.compile(document.getElementById( 'client_handlebar' ).textContent);
+
 var displayRoutes = function(){
-    var html = '';
-    var even = false;
-    for(var i = routes.length - 1; i >= 0; i--){
-        var pub = routes[i].publisher;
-        var pubColumn = "<div class='span5'>{name} @ {addr}: {pubName}, {pubType}</div>".replace("{name}",pub.clientName).replace("{addr}",pub.remoteAddress).replace("{pubName}",pub.name).replace("{pubType}",pub.type);
-        var sub = routes[i].subscriber;
-        var subColumn = "<div class='span5'>{name} @ {addr}: {subName}, {subType}</div>".replace("{name}",sub.clientName).replace("{addr}",sub.remoteAddress).replace("{subName}",sub.name).replace("{subType}",sub.type);
-        var button = '<div class="span1"><button id="btnRouteRemove{index}" onclick="dorouteremove({index})" class="btn btn-inverse btn-mini">remove</button></div>';
-        html += '<div class="row {even}">{col1}<div class="span1">---TO---></div>{col3}{button}</div>'.replace("{col1}",pubColumn).replace("{col3}",subColumn).replace("{button}",button).replace("{even}",(even?"even":"odd")).replace(/{index}/g,i);
-        even = !even;
-    }
-    $("#route_list").html(html);
+    $("#route_list").html(routeTemplate({routes:routes}));
 };
 
 var handleConfigMsg = function(msg){
     for(var j = 0; j < clients.length; j++){
         if (clients[j].name === msg.config.name
             && clients[j].remoteAddress === msg.config.remoteAddress){
+            if (clients[j].config){
+                removeClient(clients[j]);
+            }
             clients[j].config = msg.config;
+            $("#client_list").append($(clientTemplate(clients[j])));
             break;
         }
     }
     generateList();
+};
+
+var removeClient = function(client){
+    $("#"+client.name.Safetify()+"_"+client.remoteAddress.Safetify()).remove();
 };
 
 var handleRouteMsg = function(msg){
@@ -233,7 +206,7 @@ var handleRemoveMsg = function(msg){
         for(var j = 0; j < clients.length; j++){
             if (clients[j].name === msg.remove[i].name
                 && clients[j].remoteAddress === msg.remove[i].remoteAddress){
-                clients.splice(j, 1);
+                removeClient(clients.splice(j, 1)[0]);
                 break;
             }
         }

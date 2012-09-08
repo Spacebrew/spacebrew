@@ -12,9 +12,12 @@ loadCSS("css/reset.css");
 loadCSS("css/bootstrap.css");
 loadCSS("css/bootstrap-responsive.css");
 loadCSS("css/style.css");
-require(["jquery/jq",
-		"utils"],function(){
-	//now jQuery is loaded
-	require(["main"],function(){
+require(["handlebars-1.0.0.beta.6"],function(){
+	//handlebars is loaded
+	require(["jquery/jq",
+			"utils"],function(){
+		//now jQuery is loaded
+		require(["main"],function(){
+		});
 	});
 });
