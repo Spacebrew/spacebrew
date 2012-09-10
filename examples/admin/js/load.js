@@ -12,12 +12,26 @@ loadCSS("css/reset.css");
 loadCSS("css/bootstrap.css");
 loadCSS("css/bootstrap-responsive.css");
 loadCSS("css/style.css");
-require(["handlebars-1.0.0.beta.6"],function(){
-	//handlebars is loaded
-	require(["jquery/jq",
+require(["handlebars-1.0.0.beta.6",
+		"jsplumb/jsPlumb-util-1.3.13-RC1",
+		"jsplumb/jsPlumb-dom-adapter-1.3.13-RC1",
+		"jquery/jquery-1.7.1-min"],function(){
+		//handlebars, jquery, jsplumbutil, jsplumbadapter is loaded
+	require(["jsplumb/jsPlumb-1.3.13-RC1",
 			"utils"],function(){
-		//now jQuery is loaded
-		require(["main"],function(){
+		//now jsPlumb is loaded
+		require(["jsplumb/jquery.jsPlumb-1.3.13-RC1",
+				"jsplumb/jsPlumb-connectors-statemachine-1.3.13-RC1",
+				"jsplumb/jsPlumb-defaults-1.3.13-RC1",
+				"jsplumb/jsPlumb-drag-1.3.13-RC1",
+				"jsplumb/jsPlumb-overlays-guidelines-1.3.13-RC1",
+				"jsplumb/jsPlumb-renderers-canvas-1.3.13-RC1",
+				"jsplumb/jsPlumb-renderers-svg-1.3.13-RC1",
+				"jsplumb/jsPlumb-renderers-vml-1.3.13-RC1"],function(){
+			require(["pmain"],function(){
+				require(["main"],function(){
+				});
+			});
 		});
 	});
 });

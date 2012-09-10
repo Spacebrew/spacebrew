@@ -1,5 +1,7 @@
 $(document).ready( function() {
     $("#btnRouteRadio").on('click', dorouteradio);
+    setupPlumbing();
+    setupWebsocket();
 });
 
 var name = gup('name') || window.location.href; 
@@ -42,7 +44,9 @@ var dorouteremove = function(index){
     }
 };
 
-var ws = new WebSocket("ws://"+server+":9000");
+var ws;
+var setupWebsocket = function(){
+    ws = new WebSocket("ws://"+server+":9000");
     ws.onopen = function() {
         console.log("WebSockets connection opened");
         var adminMsg = { "admin": [
@@ -69,6 +73,7 @@ var ws = new WebSocket("ws://"+server+":9000");
     ws.onclose = function() {
         console.log("WebSockets connection closed");
     };
+};
 
 var clients = [];
 var routes = [];
@@ -102,9 +107,24 @@ var handleMessageMsg = function(msg){
             break;
         }
     }
-    var selector2 = "input[name=pub][value='{name}_{addr}_{pubName}_{pubType}']:radio".replace("{name}",msg.message.clientName.Safetify()).replace("{addr}", msg.message.remoteAddress.Safetify()).replace("{pubName}",msg.message.name.Safetify()).replace("{pubType}",msg.message.type.Safetify());
-    $(selector2).parent().addClass('active');
-    setTimeout(function(){$(selector2).parent().removeClass('active');},200);
+    // var selector2 = "input[name=pub][value='{name}_{addr}_{pubName}_{pubType}']:radio".replace("{name}",.Safetify()).replace("{addr}", msg.message.remoteAddress.Safetify()).replace("{pubName}",msg.message.name.Safetify()).replace("{pubType}",msg.message.type.Safetify());
+    // $(selector2).parent().addClass('active');
+    var func = getCommItem.bind(this, true, msg.message.clientName, msg.message.remoteAddress, msg.message.name, msg.message.type);
+    func().addClass('active');
+    setTimeout(function(){func().removeClass('active');},200);
+};
+
+var commSelectorTemplate = Handlebars.compile("{{pub}}_{{Safetify clientName}}_{{Safetify remoteAddress}}_{{Safetify name}}_{{Safetify type}}");
+var getCommItem = function(a_bPublisher, a_sClientName, a_sRemoteAddress, a_sName, a_sType){
+    return $("#"+getCommItemSelector.apply(this, arguments));
+};
+
+var getCommItemSelector = function(a_bPublisher, a_sClientName, a_sRemoteAddress, a_sName, a_sType){
+    return commSelectorTemplate({ pub: (a_bPublisher?"pub":"sub"),
+                                    clientName: a_sClientName,
+                                    remoteAddress: a_sRemoteAddress,
+                                    name: a_sName,
+                                    type: a_sType});
 };
 
 var handleNameMsg = function(msg){
@@ -113,38 +133,6 @@ var handleNameMsg = function(msg){
         clients.push(currClient);
         $("#client_list").append($(clientTemplate(currClient)));
     };
-    generateList();
-};
-
-//generates the list of clients for viewing
-var generateList = function(){
-    return;
-    //we should do this dynamically
-    var olHtml = '';
-    for(var i = 0; i < clients.length; i++){
-        var name=clients[i].name;
-        var addr = clients[i].remoteAddress, pubColumn = '<div class="span3 offset2 publishers">', title = '', subColumn = '<div class="span3 subscribers">';
-        if (clients[i].config){
-            if (clients[i].config.publish && clients[i].config.publish.messages){
-                for(var j = clients[i].config.publish.messages.length - 1; j >= 0; j--){
-                    var currM = clients[i].config.publish.messages[j];
-                    pubColumn += '<label class="radio"><input type="radio" name="pub" value="{name}_{addr}_{pubName}_{pubType}">{pubName}, {pubType}</label>'.replace(/{pubName}/g,currM.name.Safetify()).replace(/{pubType}/g,currM.type.Safetify());
-                }
-            }
-            if (clients[i].config.subscribe && clients[i].config.subscribe.messages){
-                for (var j = clients[i].config.subscribe.messages.length - 1; j >= 0; j--){
-                    var currM = clients[i].config.subscribe.messages[j];
-                    subColumn += '<label class="radio"><input type="radio" name="sub" value="{name}_{addr}_{subName}_{subType}">{subName}, {subType}</label>'.replace(/{subName}/g,currM.name.Safetify()).replace(/{subType}/g,currM.type.Safetify());
-                }
-            }
-            title = clients[i].config.description;
-        }
-        pubColumn += '</div>';
-        subColumn += '</div>';
-        var leftColumn = '<div class="span8 client" title="{title}">{name} @ {addr}<div class="row">{col2}{col3}</div></div>';
-        olHtml += '<li><div class="row">{col1}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,name.Safetify()).replace(/{addr}/g,addr.Safetify()).replace(/{title}/g,title);
-    };
-    $("#client_list").html(olHtml);
 };
 
 var routeTemplate;
@@ -158,26 +146,65 @@ var displayRoutes = function(){
     $("#route_list").html(routeTemplate({routes:routes}));
 };
 
+var addEndpoints = function(msg){
+    var clientName = msg.config.name,
+        remoteAddress = msg.config.remoteAddress,
+        i,endpoint,currM,id;
+    if (msg.config.publish && msg.config.publish.messages){
+        i = msg.config.publish.messages.length;
+        while (i--){
+            currM = msg.config.publish.messages[i];
+            id = getCommItemSelector(true, clientName, remoteAddress, currM.name, currM.type);
+            endpoint = jsPlumb.addEndpoint(id, myPlumb.sourceEndpoint);
+            myPlumb.endpoints[id] = endpoint;
+        }
+    }
+    if (msg.config.subscribe && msg.config.subscribe.messages){
+        i = msg.config.subscribe.messages.length;
+        while(i--){
+            currM = msg.config.subscribe.messages[i];
+            id = getCommItemSelector(false, clientName, remoteAddress, currM.name, currM.type);
+            endpoint = jsPlumb.addEndpoint(id, myPlumb.targetEndpoint);
+            myPlumb.endpoints[id] = endpoint;
+        }
+    }
+};
+
 var handleConfigMsg = function(msg){
     for(var j = 0; j < clients.length; j++){
         if (clients[j].name === msg.config.name
             && clients[j].remoteAddress === msg.config.remoteAddress){
             clients[j].config = msg.config;
             $("#"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify()).children().children().append($(pubsubTemplate(clients[j])));
+            addEndpoints(msg);
             break;
         }
     }
-    generateList();
 };
 
 var removeClient = function(client){
     $("#"+client.name.Safetify()+"_"+client.remoteAddress.Safetify()).remove();
 };
 
+var addConnection = function(msg){
+    var item = msg.route.publisher;
+    var sourceid = getCommItemSelector(true, item.clientName, item.remoteAddress, item.name, item.type);
+    item = msg.route.subscriber;
+    var targetid = getCommItemSelector(false, item.clientName, item.remoteAddress, item.name, item.type);
+    var source = myPlumb.endpoints[sourceid];
+    var target = myPlumb.endpoints[targetid];
+    var connection = jsPlumb.connect({source:source,target:target}, myPlumb.connectionParams);
+    if (!myPlumb.connections[sourceid]){
+        myPlumb.connections[sourceid] = {};
+    }
+    myPlumb.connections[sourceid][targetid] = connection;
+};
+
 var handleRouteMsg = function(msg){
     if (msg.route.type === 'add'){
         routes.push({publisher:msg.route.publisher,
                     subscriber:msg.route.subscriber});
+        addConnection(msg);
     } else if (msg.route.type === 'remove'){
         for(var i = routes.length - 1; i >= 0; i--){
             var myPub = routes[i].publisher;
@@ -212,5 +239,4 @@ var handleRemoveMsg = function(msg){
             }
         }
     }
-    generateList();
 };

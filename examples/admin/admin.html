@@ -62,6 +62,8 @@
           <h2>Routes</h2>
           <div id='route_list'></div>
         </div>
+        <div id='connectionBin'>
+        </div>
         <!--
         <form class="form-horizontal">
           <fieldset>
@@ -126,7 +128,7 @@
       {{#if config.publish.messages}}
       <div class="span3 offset2 publishers">
         {{#each config.publish.messages}}
-        <label class="radio">
+        <label class="radio" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">
           <input type="radio" name="pub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" />{{name}}, {{type}}
         </label>
         {{/each}}
@@ -134,7 +136,7 @@
       {{/if}}
       <div class="span3 {{#unless config.publish.messages}}offset5 {{/unless}}subscribers">
         {{#each config.subscribe.messages}}
-        <label class="radio">
+        <label class="radio" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">
           <input type="radio" name="sub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">{{name}}, {{type}}
         </label>
         {{/each}}
