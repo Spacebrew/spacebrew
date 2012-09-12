@@ -10,8 +10,6 @@ function loadCSS(url){
 };
 
 loadCSS("css/reset.css");
-// loadCSS("css/bootstrap.css");
-// loadCSS("css/bootstrap-responsive.css");
 loadCSS("css/style.css");
 require(["handlebars-1.0.0.beta.6",
 		"jsplumb/jsPlumb-util-1.3.13-RC1",

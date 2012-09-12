@@ -18,6 +18,10 @@ myPlumb.connectorHoverStyle = {
 	strokeStyle:"#ff0",
 	outlineColor:"#ccc"
 };
+myPlumb.endpointActiveStyle = {
+	fillStyle:"magenta",
+	outlineColor:"#000"
+};
 myPlumb.endpointPaintStyle = {
 	fillStyle:"#000000"
 };
@@ -55,7 +59,8 @@ setupPlumbing = function() {
 		HoverPaintStyle:myPlumb.connectorHoverStyle,
 		LogEnabled:false,
 		MaxConnections:-1,
-		PaintStyle:myPlumb.connectorPaintStyle
+		PaintStyle:myPlumb.connectorPaintStyle,
+		Container:endpointBin
 	});
 	myPlumb.connectionParams = {container:$("#connectionBin")};
 };

@@ -1,3 +1,25 @@
+var overItem = function(event){
+	event.preventDefault();
+	if (currState == NONE_SELECTED){
+		var item = $(event.target);
+		var pub = item.hasClass("publisher");
+		var type = getItemType(item);
+		var context = {
+			type:type,
+			id:item.prop('id'),
+			pub:pub
+		};
+		$("style#selected").text(cssSelectedTemplate(context));
+	}
+};
+
+var outItem = function(event){
+	event.preventDefault();
+	if (currState == NONE_SELECTED){
+		$("style#selected").text('');
+	}
+};
+
 var clickItem = function(event){
 	event.preventDefault();
 	var item = $(event.target);
@@ -8,27 +30,24 @@ var clickItem = function(event){
 	} else {
 		secondClick(item, type, pub);
 	}
-}
+};
 
 var firstClick = function(item, type, pub){
 	item.addClass("selected");
 	var context = {
+		clicked:true,
 		type:type,
-		pub:pub ? "pub" : "sub"
+		id:item.prop('id'), 
+		pub:pub
 	};
 	var cssFile = cssTypeTemplate(context);
 	console.log('turning on ' + cssFile);
-	$("link#selected").attr('href',cssFile);
+	$("style#selected").text(cssSelectedTemplate(context));// attr('href',cssFile);
 	if (pub){
 		currState = PUB_SELECTED;
 	} else {
 		currState = SUB_SELECTED;
 	}
-	setSelected(item, type, pub);
-};
-
-var setSelected = function(item, type, pub){
-
 };
 
 var secondClick = function(item, type, pub){
@@ -38,8 +57,8 @@ var secondClick = function(item, type, pub){
 	if ((pubSelected && pub) ||
 			(!pubSelected && !pub)){
 		console.log('turning off');
-		$("link#selected").attr('href','');
-		$(".item").removeClass('selected');
+		$("style#selected").text('');
+		$(".item.selected").removeClass('selected');
 		currState = NONE_SELECTED;
 	} else {
 		var activeItem = $(pubSelected ? ".publisher.selected" : ".subscriber.selected");
@@ -47,8 +66,8 @@ var secondClick = function(item, type, pub){
 		//only do something if we clicked on a similar-type item
 		if (type == activeType){
 			//trigger (un)routing
-			var isSelected = item.hasClass('selected');
 			var activeId = activeItem.prop('id');
+			var isSelected = item.hasClass(activeId);
 			var myId = item.prop('id');
 			var pubId = pubSelected ? activeId : myId;
 			var subId = pubSelected ? myId : activeId;
@@ -64,7 +83,8 @@ var secondClick = function(item, type, pub){
 };
 
 var getItemType = function(_item){
-	return _item.hasClass("boolean") ? "boolean" : _item.hasClass("string") ? "string" : "range";
+	return _item.hasClass("boolean") ? "boolean" : _item.hasClass("string") ? "string" : _item.hasClass("number") ? "number" : "range";
 };
 
 var cssTypeTemplate = Handlebars.compile("css/{{pub}}_{{type}}.css");
+var cssSelectedTemplate = Handlebars.compile(document.getElementById( 'active_css_handlebar' ).textContent);

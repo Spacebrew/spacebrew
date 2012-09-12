@@ -55,20 +55,19 @@ var handleMsg = function(json){
 };
 
 var handleMessageMsg = function(msg){
-	for(var i = clients.length - 1; i >= 0; i--){
-		if (clients[i].name === msg.message.clientName
-			&& clients[i].remoteAddress === msg.message.remoteAddress){
-			var selector = "#client_list li:eq("+i+")";
-			$(selector).addClass('active');
-			setTimeout(function(){$(selector).removeClass('active');},200);
-			break;
-		}
-	}
+	// for(var i = clients.length - 1; i >= 0; i--){
+	// 	if (clients[i].name === msg.message.clientName
+	// 		&& clients[i].remoteAddress === msg.message.remoteAddress){
+	// 		break;
+	// 	}
+	// }
 	// var selector2 = "input[name=pub][value='{name}_{addr}_{pubName}_{pubType}']:radio".replace("{name}",.Safetify()).replace("{addr}", msg.message.remoteAddress.Safetify()).replace("{pubName}",msg.message.name.Safetify()).replace("{pubType}",msg.message.type.Safetify());
 	// $(selector2).parent().addClass('active');
-	var func = getCommItem.bind(this, true, msg.message.clientName, msg.message.remoteAddress, msg.message.name, msg.message.type);
-	func().addClass('active');
-	setTimeout(function(){func().removeClass('active');},200);
+	var fromEndpoint = myPlumb.endpoints[getCommItemSelector(true, msg.message.clientName, msg.message.remoteAddress, msg.message.name, msg.message.type)];
+	if (fromEndpoint){
+		fromEndpoint.setPaintStyle(myPlumb.endpointActiveStyle);
+		setTimeout(function(){fromEndpoint.setPaintStyle(myPlumb.endpointPaintStyle);},200);
+	}
 };
 
 var commSelectorTemplate = Handlebars.compile("{{pub}}_{{Safetify clientName}}_{{Safetify remoteAddress}}_{{Safetify name}}_{{Safetify type}}");
@@ -133,7 +132,7 @@ var handleConfigMsg = function(msg){
 			&& clients[j].remoteAddress === msg.config.remoteAddress){
 			clients[j].config = msg.config;
 			var itemsMarkup = $(pubsubTemplate(clients[j]));
-			itemsMarkup.find(".item").click(clickItem);
+			itemsMarkup.find(".item").click(clickItem).hover(overItem, outItem);
 			$("#"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify()).append(itemsMarkup);
 			addEndpoints(msg);
 			break;
@@ -163,23 +162,27 @@ var addConnection = function(msg){
 };
 
 var handleSelecting = function(pubId, subId){
-	if (currState == PUB_SELECTED){
-		if (pubId == $(".publisher.selected").prop('id')){
-			$("#"+subId).addClass("selected");
-		}
-	} else if (currState == SUB_SELECTED){
-		if (subId == $(".subscriber.selected").prop('id')){
-			$("#"+pubId).addClass("selected");
-		}
-	}
+	$("#"+subId).addClass(pubId);
+	$("#"+pubId).addClass(subId);
+	// if (currState == PUB_SELECTED){
+	// 	if (pubId == $(".publisher.selected").prop('id')){
+	// 		$("#"+subId).addClass("selected");
+	// 	}
+	// } else if (currState == SUB_SELECTED){
+	// 	if (subId == $(".subscriber.selected").prop('id')){
+	// 		$("#"+pubId).addClass("selected");
+	// 	}
+	// }
 };
 
 var handleUnselecting = function(pubId, subId){
-	if (currState == PUB_SELECTED){
-		$("#"+subId).removeClass("selected");
-	} else if (currState == SUB_SELECTED){
-		$("#"+pubId).removeClass("selected");
-	}
+	$("#"+subId).removeClass(pubId);
+	$("#"+pubId).removeClass(subId);
+	// if (currState == PUB_SELECTED){
+	// 	$("#"+subId).removeClass("selected");
+	// } else if (currState == SUB_SELECTED){
+	// 	$("#"+pubId).removeClass("selected");
+	// }
 };
 
 var removeConnection = function(msg){

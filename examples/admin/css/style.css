@@ -34,7 +34,7 @@ body
 	//background-image:url("../img/2012-09-10 Comp-Cnotop.png");
 }
 .container{
-	margin-top:28px;
+	margin-top:27px;
 	margin-left:0px;
 	margin-right:0px;
 }
@@ -64,6 +64,7 @@ body
 	float:right;
 	margin-right:23px;
 	margin-top:2px;
+	color:#000;
 }
 
 .navbar .sig img{
@@ -80,9 +81,9 @@ body
 .navbar{
 	height:50px;
 	line-height:50px;
-	color:#000;
+	color:#fff;
 	overflow:visible;
-	background-color:rgb(230,230,230);
+	background-color:rgb(51,51,51);
 }
 
 .navbar .brand {
@@ -94,8 +95,12 @@ body
   color:#999;
   text-decoration: none;
   letter-spacing:2px;
-  margin-left:4px;
-  margin-right:51px;
+  margin-left:9px;
+  margin-right:56px;
+}
+.navbar .brand img{
+	vertical-align:middle;
+	margin-top:-10px;
 }
 
 #route_stuff{
@@ -123,14 +128,16 @@ div#route_list div.even
 	text-align:right;
 }
 .subscriber{
-	background-color:rgb(176,255,216);
+	background-color:rgb(177,255,216);
 }
+.publisher[class*='sub_'],
 .connected.publisher{
-	background-color:rgb(189,203,255);
+	background-color:rgb(168,182,255);
 	text-align:right;
 }
+.subscriber[class*='pub_'],
 .connected.subscriber{
-	background-color:rgb(145,218,184);
+	background-color:rgb(129,212,170);
 }
 .item{
 	padding-right:18px;
@@ -142,15 +149,27 @@ div#route_list div.even
 	font-family:DinPro;
 	font-weight:500;
 	font-size:10pt;
+	-webkit-transition:all .4s ease-in-out;
+}
+.pubsubsep{
+	height:10000px;
+	position:absolute;
+	margin-left:-36px;
+	border-right:1px dashed black;
 }
 .clientrow{
 	margin-bottom:62px;
-	margin-left:35px;
 	overflow:hidden;
 	min-width:940px;
+	position:relative;
 }
-.client
-{
+.clientanchor{
+	position:absolute;
+	width:16px;
+	height:100%;
+	background-color:rgb(230,230,230);
+}
+.client{
 
 }
 .clientdata{
@@ -169,6 +188,7 @@ div#route_list div.even
 .clientcol{
 	float:left;
 	min-width:231px;
+	margin-left:35px;
 }
 .pubcol{
 	float:left;
@@ -183,6 +203,9 @@ div#route_list div.even
 
 }
 .itemdata div{
+	z-index:5;
+}
+#endpointBin div{
 	z-index:5;
 }
 .headerrow{
