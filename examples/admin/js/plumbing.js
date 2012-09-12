@@ -7,7 +7,7 @@ myPlumb.revConnections = {};
 // this is the paint style for the connecting lines..
 myPlumb.connectorPaintStyle = {
 	lineWidth:2,
-	strokeStyle:"#aaaaaa",
+	strokeStyle:"#000000",// "#aaaaaa",
 	joinstyle:"round",
 	outlineColor:"white",
 	outlineWidth:0
@@ -15,23 +15,22 @@ myPlumb.connectorPaintStyle = {
 // .. and this is the hover style. 
 myPlumb.connectorHoverStyle = {
 	lineWidth:2,
-	strokeStyle:"#2e2aF8"
+	strokeStyle:"#ff0",
+	outlineColor:"#ccc"
 };
+myPlumb.endpointPaintStyle = {
+	fillStyle:"#000000"
+};
+myPlumb.endpointHoverStyle = {
+	fillStyle:"#ff0",
+	outlineColor:"#ccc"
+}
 myPlumb.sourceEndpoint = {
-	endpoint:"Blank",
 	isSource:true,
 	enabled:false,
-	connector:"Straight",								
-	connectorStyle:myPlumb.connectorPaintStyle,
-	hoverPaintStyle:myPlumb.connectorHoverStyle,
-	connectorHoverStyle:myPlumb.connectorHoverStyle,
-    maxConnections:-1,
     anchor:"RightMiddle"
 };
 myPlumb.targetEndpoint = {
-	endpoint:"Blank",
-	hoverPaintStyle:myPlumb.connectorHoverStyle,
-	maxConnections:-1,
 	enabled:false,
 	isTarget:true,
 	anchor:"LeftMiddle"
@@ -43,13 +42,20 @@ myPlumb.connectionParams;
 
 
 setupPlumbing = function() {
-
 	jsPlumb.importDefaults({
 		// blue endpoints 7 px; green endpoints 11.
-		Endpoints : ["Blank", "Blank"],
-		ConnectorZIndex:1,
 		Anchors:["RightMiddle","LeftMiddle"],
-		ConnectionsDetachable:false
+		ConnectionsDetachable:false,
+		Connector:["Bezier",{curviness:50}],
+		ConnectorZIndex:1,
+		Endpoint : ["Dot",{radius:7}],
+		//Endpoints : ["Blank", "Blank"],
+		EndpointStyle:myPlumb.endpointPaintStyle,
+		EndpointHoverStyle:myPlumb.endpointHoverStyle,
+		HoverPaintStyle:myPlumb.connectorHoverStyle,
+		LogEnabled:false,
+		MaxConnections:-1,
+		PaintStyle:myPlumb.connectorPaintStyle
 	});
 	myPlumb.connectionParams = {container:$("#connectionBin")};
 };

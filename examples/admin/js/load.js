@@ -6,11 +6,12 @@ function loadCSS(url){
     link.rel = "stylesheet";
     link.href = url;
     document.getElementsByTagName("head")[0].appendChild(link);
+    return link;
 };
 
 loadCSS("css/reset.css");
-loadCSS("css/bootstrap.css");
-loadCSS("css/bootstrap-responsive.css");
+// loadCSS("css/bootstrap.css");
+// loadCSS("css/bootstrap-responsive.css");
 loadCSS("css/style.css");
 require(["handlebars-1.0.0.beta.6",
 		"jsplumb/jsPlumb-util-1.3.13-RC1",
@@ -28,7 +29,9 @@ require(["handlebars-1.0.0.beta.6",
 				"jsplumb/jsPlumb-renderers-canvas-1.3.13-RC1",
 				"jsplumb/jsPlumb-renderers-svg-1.3.13-RC1",
 				"jsplumb/jsPlumb-renderers-vml-1.3.13-RC1"],function(){
-			require(["pmain"],function(){
+			require(["plumbing",
+					"wsevents",
+					"userevents"],function(){
 				require(["main"],function(){
 				});
 			});

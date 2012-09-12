@@ -7,57 +7,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
-
-    <!-- Le styles -->
-    <style>
-      body {
-        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-      }
-    </style>
-
-    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
-    <!--[if lt IE 9]>
-      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <link id='selected' rel='stylesheet' type='text/css' />
   </head>
 
   <body>
 
-    <div class="navbar navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
-          <a class="brand" href="#">Spacebrew Admin</a>
-          <div class="nav-collapse">
-            <ul class="nav">
-              <li class="active"><a href="#">Home</a></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#contact">Contact</a></li>
-            </ul>
-          </div><!--/.nav-collapse -->
-        </div>
-      </div>
+    <div class="navbar navbar-fixed-bottom">
+          <div class="brand"><img src="img/spacebrew-logo.png"></img></div>
+          <div><span class='prefix'>/</span>About</div>
+          <div><span class='prefix'>/</span>Contact</div>
+          <div class="sig">Developed by <img src="img/lab-logo.png"></img></div>
     </div>
 
     <div class="container">
-
-        <h1>Admin</h1>
-        <div class='row'>
-            <div class='span8 client'>
-                Clients
-                <div class="row">
-                    <div class='span3 offset2 publishers'>Publishers (outputs)</div>
-                    <div class='span3 subscribers'>Subscribers (inputs)</div>
-                </div>
-            </div>
+      <div class='headerrow'>
+        <div class='clientcol header' id='clientdataheader'>
+          <span class='prefix'>/</span>Clients
         </div>
-        <br />
-        <div style="overflow:auto">
-          <ol id="client_list" start='0'></ol>
+        <div class='pubcol header' id='pubdataheader'>
+          <span class='prefix'>/</span>Publishers
+        </div>
+        <div class='subcol header' id='subdataheader'>
+          <span class='prefix'>/</span>Subscribers
+        </div>
+      </div>
+        <div style="overflow:auto" id='client_list'>
+        </div>
+        <div id='route_stuff'>
           <button class="btn" id="btnRouteRadio">Route!</button>
           <h2>Routes</h2>
           <div id='route_list'></div>
@@ -115,32 +91,31 @@
 
         <!-- basic libraries -->
     <script type="text/x-handlebars-template" id="client_handlebar">
-<li id="{{Safetify name}}_{{Safetify remoteAddress}}">
-  <div class="row">
-    <div class="span8 client" title="{{config.description}}">
+<div class='clientrow' id="{{Safetify name}}_{{Safetify remoteAddress}}">
+  <div class="clientcol clientdata">
+    <div class="clientnickname" title="{{config.description}}">
+      {{name}}
+    </div>
+    <div class="clientname">
       {{name}} @ {{remoteAddress}}
     </div>
   </div>
-</li>
+</div>
     </script>
     <script type="text/x-handlebars-template" id="pubsub_handlebar">
-    <div class="row">
-      {{#if config.publish.messages}}
-      <div class="span3 offset2 publishers">
-        {{#each config.publish.messages}}
-        <label class="radio" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">
-          <input type="radio" name="pub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" />{{name}}, {{type}}
-        </label>
-        {{/each}}
+    <div class="pubcol pubdata itemdata">
+      {{#each config.publish.messages}}
+      <div class="item publisher {{type}}" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        {{name}}
       </div>
-      {{/if}}
-      <div class="span3 {{#unless config.publish.messages}}offset5 {{/unless}}subscribers">
-        {{#each config.subscribe.messages}}
-        <label class="radio" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">
-          <input type="radio" name="sub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">{{name}}, {{type}}
-        </label>
-        {{/each}}
+      {{/each}}
+    </div>
+    <div class="subcol subdata itemdata">
+      {{#each config.subscribe.messages}}
+      <div class="item subscriber {{type}}" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        {{name}}
       </div>
+      {{/each}}
     </div>
     </script>
     <script type="text/x-handlebars-template" id="route_handlebar">

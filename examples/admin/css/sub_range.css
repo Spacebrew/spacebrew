@@ -1,0 +1,20 @@
+.publisher.string,
+.publisher.boolean{
+	background-color:gray;
+}
+.publisher.range,
+.publisher.number{
+	background-color:pink;
+}
+.selected.publisher{
+	background-color:red;
+}
+.subscriber.range,
+.subscriber.number,
+.subscriber.string,
+.subscriber.boolean{
+	background-color:gray;
+}
+.selected.subscriber{
+	background-color:red;
+}
