@@ -24,6 +24,11 @@ var firstClick = function(item, type, pub){
 	} else {
 		currState = SUB_SELECTED;
 	}
+	setSelected(item, type, pub);
+};
+
+var setSelected = function(item, type, pub){
+
 };
 
 var secondClick = function(item, type, pub){
@@ -41,10 +46,19 @@ var secondClick = function(item, type, pub){
 		var activeType = getItemType(activeItem);
 		//only do something if we clicked on a similar-type item
 		if (type == activeType){
-			var isSelected = item.hasClass('selected');
 			//trigger (un)routing
-			//temporarily, toggle selected class
-			item.toggleClass('selected');
+			var isSelected = item.hasClass('selected');
+			var activeId = activeItem.prop('id');
+			var myId = item.prop('id');
+			var pubId = pubSelected ? activeId : myId;
+			var subId = pubSelected ? myId : activeId;
+			//if this is selected, then we need to unroute it
+			if (isSelected){
+				removeRoute(pubId, subId);
+			} else {
+			//otherwise, route it
+				addRoute(pubId, subId);
+			}
 		}
 	}
 };
