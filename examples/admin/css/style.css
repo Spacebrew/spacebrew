@@ -124,11 +124,42 @@ div#route_list div.even
 	background-color:lightcyan;
 }
 .publisher{
+	padding-right:18px;
 	background-color:rgb(176,237,255);
 	text-align:right;
 }
 .subscriber{
+	padding-left:16px;
 	background-color:rgb(177,255,216);
+}
+.key{
+	line-height:1;
+}
+.key div{
+	font-size:8pt;
+}
+.key .itemanchor{
+	height:9px;
+	width:3px;
+	margin-right:8px;
+}
+.itemanchor{
+	height:25px;
+	width:4px;
+	float:left;
+}
+.subscriber .itemanchor{
+	float:right;
+}
+.string .itemanchor{
+	background-color:#ff0000;
+}
+.number .itemanchor,
+.range .itemanchor{
+	background-color:#c600f8;
+}
+.boolean .itemanchor{
+	background-color:#ffae00;
 }
 .publisher[class*='sub_'],
 .connected.publisher{
@@ -140,8 +171,6 @@ div#route_list div.even
 	background-color:rgb(129,212,170);
 }
 .item{
-	padding-right:18px;
-	padding-left:16px;
 	line-height:25px;
 	height:25px;
 	margin:4px;
