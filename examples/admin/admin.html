@@ -100,16 +100,16 @@
   <div class="clientanchor"></div>
   <div class="clientcol clientdata">
     <div class="clientnickname" title="{{config.description}}">
-      {{name}}
+      <span>{{name}}</span>
     </div>
     <div class="clientname">
-      {{name}} @ {{remoteAddress}}
+      <span>{{name}} @ {{remoteAddress}}</span>
     </div>
   </div>
 </div>
     </script>
     <script type="text/x-handlebars-template" id="pubsub_handlebar">
-    <div class="pubcol pubdata itemdata">
+    <div class="pubcol pubdata clientdata">
       {{#each config.publish.messages}}
       <div class="item publisher {{type}}" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
         <div class="itemanchor"></div>
@@ -117,7 +117,7 @@
       </div>
       {{/each}}
     </div>
-    <div class="subcol subdata itemdata">
+    <div class="subcol subdata clientdata">
       {{#each config.subscribe.messages}}
       <div class="item subscriber {{type}}" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
         <div class="itemanchor"></div>
@@ -165,6 +165,9 @@
   background-color:rgb(129,212,170);
 }
 {{#if clicked}}
+.clientrow:not(.selected){
+  background-image:url();
+}
 .subscriber#{{id}}{
   outline:2px solid rgb(129,212,170);
   -webkit-transition:all 0s ease-in-out;

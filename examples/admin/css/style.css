@@ -31,7 +31,7 @@
 body
 {
 	background-color:#fff;
-	//background-image:url("../img/2012-09-10 Comp-Cnotop.png");
+	//background-image:url("../img/design/Spacebrew_0000_Default A notop.png");
 }
 .container{
 	margin-top:27px;
@@ -145,7 +145,7 @@ div#route_list div.even
 }
 .itemanchor{
 	height:25px;
-	width:4px;
+	width:5px;
 	float:left;
 }
 .subscriber .itemanchor{
@@ -174,7 +174,7 @@ div#route_list div.even
 	line-height:25px;
 	height:25px;
 	margin:4px;
-	min-width:266px;
+	min-width:282px;
 	font-family:DinPro;
 	font-weight:500;
 	font-size:10pt;
@@ -187,14 +187,18 @@ div#route_list div.even
 	border-right:1px dashed black;
 }
 .clientrow{
-	margin-bottom:62px;
+	margin-bottom:53px;
 	overflow:hidden;
-	min-width:940px;
+	min-width:973px;
 	position:relative;
+}
+.clientrow:hover,
+.clientrow.selected{
+	background-image:url("../img/dot-bg.png");
 }
 .clientanchor{
 	position:absolute;
-	width:16px;
+	width:17px;
 	height:100%;
 	background-color:rgb(230,230,230);
 }
@@ -202,7 +206,8 @@ div#route_list div.even
 
 }
 .clientdata{
-	margin-top:0px;
+	padding-top:5px;
+	padding-bottom:4px;
 }
 .clientnickname{
 	font-family:DinPro;
@@ -213,6 +218,13 @@ div#route_list div.even
 	font-family:DinPro;
 	font-size:9pt;
 	margin-top:-3px;
+}
+.clientnickname span,
+.clientname span{
+	display:inline-block;
+	background-color:white;
+	padding-left:3px;
+	margin-left:-3px;
 }
 .clientcol{
 	float:left;
@@ -228,17 +240,12 @@ div#route_list div.even
 .pubdata{
 	margin-right:93px;
 }
-.itemdata{
-
-}
-.itemdata div{
-	z-index:5;
-}
-#endpointBin div{
+#endpointBin div,
+#endpointBin img{
 	z-index:5;
 }
 .headerrow{
-	margin-bottom:34px;
+	margin-bottom:29px;
 	margin-left:14px;
 	overflow:hidden;
 	min-width:940px;

@@ -63,10 +63,18 @@ var handleMessageMsg = function(msg){
 	// }
 	// var selector2 = "input[name=pub][value='{name}_{addr}_{pubName}_{pubType}']:radio".replace("{name}",.Safetify()).replace("{addr}", msg.message.remoteAddress.Safetify()).replace("{pubName}",msg.message.name.Safetify()).replace("{pubType}",msg.message.type.Safetify());
 	// $(selector2).parent().addClass('active');
-	var fromEndpoint = myPlumb.endpoints[getCommItemSelector(true, msg.message.clientName, msg.message.remoteAddress, msg.message.name, msg.message.type)];
+	var itemSelector = getCommItemSelector(true, msg.message.clientName, msg.message.remoteAddress, msg.message.name, msg.message.type);
+	var fromEndpoint = myPlumb.endpoints[itemSelector];
 	if (fromEndpoint){
-		fromEndpoint.setPaintStyle(myPlumb.endpointActiveStyle);
-		setTimeout(function(){fromEndpoint.setPaintStyle(myPlumb.endpointPaintStyle);},200);
+		var getImage = function(active){
+			return "img/node-"+($("#"+itemSelector).attr('class').indexOf('sub_') < 0 
+				? "open" 
+				: "closed")+(active ? "-active-i" : "") + ".png";
+		};
+		fromEndpoint.setImage(getImage(true));//.setPaintStyle(myPlumb.endpointActiveStyle);
+		setTimeout(function(){
+			fromEndpoint.setImage(getImage(false));/*setPaintStyle(myPlumb.endpointPaintStyle);*/
+		},200);
 	}
 };
 
@@ -130,6 +138,8 @@ var handleConfigMsg = function(msg){
 	for(var j = 0; j < clients.length; j++){
 		if (clients[j].name === msg.config.name
 			&& clients[j].remoteAddress === msg.config.remoteAddress){
+			//TODO: if the client already has a config, lets cleanup
+			//the old endpoints and old markup
 			clients[j].config = msg.config;
 			var itemsMarkup = $(pubsubTemplate(clients[j]));
 			itemsMarkup.find(".item").click(clickItem).hover(overItem, outItem);
@@ -142,6 +152,7 @@ var handleConfigMsg = function(msg){
 
 var removeClient = function(client){
 	$("#"+client.name.Safetify()+"_"+client.remoteAddress.Safetify()).remove();
+	//TODO: go through config and remove endpoints
 };
 
 var addConnection = function(msg){
@@ -151,6 +162,8 @@ var addConnection = function(msg){
 	var targetid = getCommItemSelector(false, item.clientName, item.remoteAddress, item.name, item.type);
 	var source = myPlumb.endpoints[sourceid];
 	var target = myPlumb.endpoints[targetid];
+	source.setImage("img/node-closed.png");
+	target.setImage("img/node-closed.png");
 	if (!myPlumb.connections[sourceid]){
 		myPlumb.connections[sourceid] = {};
 	}
@@ -176,13 +189,16 @@ var handleSelecting = function(pubId, subId){
 };
 
 var handleUnselecting = function(pubId, subId){
-	$("#"+subId).removeClass(pubId);
-	$("#"+pubId).removeClass(subId);
-	// if (currState == PUB_SELECTED){
-	// 	$("#"+subId).removeClass("selected");
-	// } else if (currState == SUB_SELECTED){
-	// 	$("#"+pubId).removeClass("selected");
-	// }
+	var subscriber = $("#"+subId);
+	var publisher = $("#"+pubId);
+	subscriber.removeClass(pubId);
+	publisher.removeClass(subId);
+	if (subscriber.attr('class').indexOf('pub_') < 0){
+		myPlumb.endpoints[subId].setImage("img/node-open.png");
+	}
+	if (publisher.attr('class').indexOf('sub_') < 0){
+		myPlumb.endpoints[pubId].setImage("img/node-open.png");
+	}
 };
 
 var removeConnection = function(msg){

@@ -52,7 +52,7 @@ setupPlumbing = function() {
 		ConnectionsDetachable:false,
 		Connector:["Bezier",{curviness:50}],
 		ConnectorZIndex:1,
-		Endpoint : ["Dot",{radius:7}],
+		Endpoint : ["Image",{src:"img/node-open.png"}],//["Dot",{radius:7}],
 		//Endpoints : ["Blank", "Blank"],
 		EndpointStyle:myPlumb.endpointPaintStyle,
 		EndpointHoverStyle:myPlumb.endpointHoverStyle,

@@ -4,11 +4,15 @@ var overItem = function(event){
 		var item = $(event.target);
 		var pub = item.hasClass("publisher");
 		var type = getItemType(item);
+		var itemId = item.prop('id');
+		var pieces = itemId.split('_');
 		var context = {
 			type:type,
 			id:item.prop('id'),
-			pub:pub
+			pub:pub,
+			clientid:pieces[1]+'_'+pieces[2]
 		};
+		console.log(pieces[1]+'_'+pieces[2]);
 		$("style#selected").text(cssSelectedTemplate(context));
 	}
 };
@@ -34,6 +38,7 @@ var clickItem = function(event){
 
 var firstClick = function(item, type, pub){
 	item.addClass("selected");
+	item.closest(".clientrow").addClass("selected");
 	var context = {
 		clicked:true,
 		type:type,
@@ -59,6 +64,7 @@ var secondClick = function(item, type, pub){
 		console.log('turning off');
 		$("style#selected").text('');
 		$(".item.selected").removeClass('selected');
+		$(".clientrow.selected").removeClass('selected');
 		currState = NONE_SELECTED;
 	} else {
 		var activeItem = $(pubSelected ? ".publisher.selected" : ".subscriber.selected");
