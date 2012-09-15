@@ -28,10 +28,12 @@
 	src: url("../fonts/DIN/DINPro-Medium.otf") format("opentype");
 }
 body{
+	height:100%;
 	background-color:#fff;
 	//background-image:url("../img/design/Spacebrew_0000_Default A notop.png");
 }
 .container{
+	height:100%;
 	margin-top:27px;
 	margin-left:0px;
 	margin-right:0px;
@@ -100,12 +102,12 @@ body{
 	vertical-align:middle;
 	margin-top:-10px;
 }
-.publisher{
+.item.publisher{
 	padding-right:18px;
 	background-color:rgb(176,237,255);
 	text-align:right;
 }
-.subscriber{
+.item.subscriber{
 	padding-left:16px;
 	background-color:rgb(177,255,216);
 }
@@ -138,28 +140,44 @@ body{
 .boolean .itemanchor{
 	background-color:#ffae00;
 }
-.publisher[class*='sub_'],
-.connected.publisher{
+.item.publisher[class*='sub_'],
+.item.connected.publisher{
 	background-color:rgb(168,182,255);
 	text-align:right;
 }
-.subscriber[class*='pub_'],
-.connected.subscriber{
+.item.subscriber[class*='pub_'],
+.item.connected.subscriber{
 	background-color:rgb(129,212,170);
 }
 .item{
 	line-height:25px;
 	height:25px;
-	margin:4px;
+	//margin:4px;
 	min-width:282px;
 	font-family:DinPro;
 	font-weight:500;
 	font-size:10pt;
+	//-webkit-transition:all .4s ease-in-out;
+	pointer-events:none;
+}
+.itemwrapper{
+	padding:2px 4px 2px 4px;
 	cursor:pointer;
-	-webkit-transition:all .4s ease-in-out;
+}
+.publisher.itemwrapper{
+	padding-right:8px;
+	padding-left:0px;
+	margin-left:4px;
+	margin-right:-4px;
+}
+.subscriber.itemwrapper{
+	padding-right:0px;
+	padding-left:8px;
+	margin-left:-4px;
+	margin-right:4px;
 }
 .pubsubsep{
-	height:10000px;
+	height:100%;
 	position:absolute;
 	margin-left:-36px;
 	border-right:1px dashed black;
@@ -206,8 +224,9 @@ body{
 }
 .clientcol{
 	float:left;
-	min-width:231px;
+	width:231px;
 	margin-left:35px;
+	overflow:hidden;
 }
 .pubcol{
 	float:left;
@@ -217,6 +236,7 @@ body{
 }
 .pubdata{
 	margin-right:93px;
+	min-width:308px;
 }
 ._jsPlumb_endpoint{
 	z-index:5;

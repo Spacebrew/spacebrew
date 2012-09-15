@@ -61,9 +61,12 @@ setupPlumbing = function() {
 		LogEnabled:false,
 		MaxConnections:-1,
 		PaintStyle:myPlumb.connectorPaintStyle,
-		Container:endpointBin,
+		//Container:endpointBin,
 		//RenderMode:jsPlumb.SVG,
 		setAutomaticRepaint:true
 	});
 	myPlumb.connectionParams = {container:$("#connectionBin")};
+	//probably a horrible idea, but it keeps everything aligned
+	//might want to increase the interval timeout, but then it just looks choppy
+	setInterval(jsPlumb.repaintEverything, 10);
 };

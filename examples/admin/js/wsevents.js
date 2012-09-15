@@ -142,7 +142,7 @@ var handleConfigMsg = function(msg){
 			//the old endpoints and old markup
 			clients[j].config = msg.config;
 			var itemsMarkup = $(pubsubTemplate(clients[j]));
-			itemsMarkup.find(".item").click(clickItem).hover(overItem, outItem);
+			itemsMarkup.find(".itemwrapper").click(clickItem).hover(overItem, outItem);
 			$("#"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify()).append(itemsMarkup);
 			addEndpoints(msg);
 			break;

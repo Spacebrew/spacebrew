@@ -34,11 +34,14 @@
           <span class='prefix'>/</span>Subscribers
         </div>
       </div>
-        <div style="overflow:auto" id='client_list'>
-        </div>
-        <div id='connectionBin'>
-        </div>
-        <div id='endpointBin'>
+        <div style="overflow:scroll;height:100%;">
+          <div style="overflow:auto;" id='client_list'>
+            <div id='connectionBin'>
+            </div>
+            <div id='endpointBin'>
+            </div>
+          </div>
+          <div style="height:110px;"></div>
         </div>
 
     </div> <!-- /container -->
@@ -64,17 +67,21 @@
     <script type="text/x-handlebars-template" id="pubsub_handlebar">
     <div class="pubcol pubdata clientdata">
       {{#each config.publish.messages}}
+      <div class="itemwrapper publisher">
       <div class="item publisher {{type}}" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
         <div class="itemanchor"></div>
         {{name}}
+      </div>
       </div>
       {{/each}}
     </div>
     <div class="subcol subdata clientdata">
       {{#each config.subscribe.messages}}
+      <div class="itemwrapper subscriber">
       <div class="item subscriber {{type}}" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
         <div class="itemanchor"></div>
         {{name}}
+      </div>
       </div>
       {{/each}}
     </div>
@@ -91,48 +98,48 @@
     </script>
     <script type="text/x-handlebars-template" id="active_css_handlebar">
 {{#if pub}}
-.publisher:not(#{{id}}){
+.item.publisher:not(#{{id}}){
   background-color:gray;
 }
-.subscriber:not([class*='{{type}}']){
+.item.subscriber:not([class*='{{type}}']){
   background-color:gray;
 }
-.subscriber.{{type}}{
+.item.subscriber.{{type}}{
   background-color:rgb(177,255,216);
 }
 {{else}}
-.subscriber:not(#{{id}}){
+.item.subscriber:not(#{{id}}){
   background-color:gray;
 }
-.publisher:not([class*='{{type}}']){
+.item.publisher:not([class*='{{type}}']){
   background-color:gray;
 }
-.publisher.{{type}}{
+.item.publisher.{{type}}{
   background-color:rgb(176,237,255);
 }
 {{/if}}
-.publisher.{{id}}{
+.item.publisher.{{id}}{
   background-color:rgb(168,182,255);
 }
-.subscriber.{{id}}{
+.item.subscriber.{{id}}{
   background-color:rgb(129,212,170);
 }
 {{#if clicked}}
 .clientrow:not(.selected){
   background-image:url();
 }
-.subscriber#{{id}}{
+.item.subscriber#{{id}}{
   outline:2px solid rgb(129,212,170);
   -webkit-transition:all 0s ease-in-out;
 }
-.publisher#{{id}}{
+.item.publisher#{{id}}{
   outline:2px solid rgb(111,193,222);
   -webkit-transition:all 0s ease-in-out;
 }
-.subscriber#{{id}}[class*='pub_']{
+.item.subscriber#{{id}}[class*='pub_']{
   outline:2px solid rgb(71,158,116);
 }
-.publisher#{{id}}[class*='sub_']{
+.item.publisher#{{id}}[class*='sub_']{
   outline:2px solid rgb(116,131,222);
 }
 {{/if}}

@@ -1,7 +1,7 @@
 var overItem = function(event){
 	event.preventDefault();
 	if (currState == NONE_SELECTED){
-		var item = $(event.target);
+		var item = $(event.target).children();
 		var pub = item.hasClass("publisher");
 		var type = getItemType(item);
 		var itemId = item.prop('id');
@@ -26,7 +26,7 @@ var outItem = function(event){
 
 var clickItem = function(event){
 	event.preventDefault();
-	var item = $(event.target);
+	var item = $(event.target).children();
 	var pub = item.hasClass("publisher");
 	var type = getItemType(item);
 	if (currState == NONE_SELECTED){
