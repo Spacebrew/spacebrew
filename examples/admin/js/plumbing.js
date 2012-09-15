@@ -46,6 +46,7 @@ myPlumb.connectionParams;
 
 
 setupPlumbing = function() {
+	//jsPlumb.setRenderMode(jsPlumb.SVG);
 	jsPlumb.importDefaults({
 		// blue endpoints 7 px; green endpoints 11.
 		Anchors:["RightMiddle","LeftMiddle"],
@@ -60,7 +61,9 @@ setupPlumbing = function() {
 		LogEnabled:false,
 		MaxConnections:-1,
 		PaintStyle:myPlumb.connectorPaintStyle,
-		Container:endpointBin
+		Container:endpointBin,
+		//RenderMode:jsPlumb.SVG,
+		setAutomaticRepaint:true
 	});
 	myPlumb.connectionParams = {container:$("#connectionBin")};
 };

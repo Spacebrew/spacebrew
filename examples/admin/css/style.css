@@ -27,9 +27,7 @@
 	font-weight: 500;
 	src: url("../fonts/DIN/DINPro-Medium.otf") format("opentype");
 }
-
-body
-{
+body{
 	background-color:#fff;
 	//background-image:url("../img/design/Spacebrew_0000_Default A notop.png");
 }
@@ -102,27 +100,6 @@ body
 	vertical-align:middle;
 	margin-top:-10px;
 }
-
-#route_stuff{
-	display:none;
-}
-
-ol li.active
-{
-	background-color:cyan;
-}
-ol li label.active
-{
-	background-color:orchid;
-}
-div#route_list div.odd
-{
-	background-color:ghostwhite;
-}
-div#route_list div.even
-{
-	background-color:lightcyan;
-}
 .publisher{
 	padding-right:18px;
 	background-color:rgb(176,237,255);
@@ -178,6 +155,7 @@ div#route_list div.even
 	font-family:DinPro;
 	font-weight:500;
 	font-size:10pt;
+	cursor:pointer;
 	-webkit-transition:all .4s ease-in-out;
 }
 .pubsubsep{
@@ -240,9 +218,9 @@ div#route_list div.even
 .pubdata{
 	margin-right:93px;
 }
-#endpointBin div,
-#endpointBin img{
+._jsPlumb_endpoint{
 	z-index:5;
+	pointer-events:none;
 }
 .headerrow{
 	margin-bottom:29px;

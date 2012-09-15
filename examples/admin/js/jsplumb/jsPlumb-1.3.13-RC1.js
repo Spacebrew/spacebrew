@@ -4990,7 +4990,11 @@ between this method and jsPlumb.reset).
 					_endpoint = new jsPlumb.Endpoints[renderMode][ep](endpointArgs);
 				else if (_isArray(ep)) {
 					endpointArgs = jsPlumb.extend(ep[1], endpointArgs);
-					_endpoint = new jsPlumb.Endpoints[renderMode][ep[0]](endpointArgs);
+					if (ep[0] == "Image"){
+						_endpoint = new jsPlumb.Endpoints[ep[0]](endpointArgs);
+					} else {
+						_endpoint = new jsPlumb.Endpoints[renderMode][ep[0]](endpointArgs);
+					}
 				}
 				else {
 					_endpoint = ep.clone();

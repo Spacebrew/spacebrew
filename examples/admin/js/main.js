@@ -1,8 +1,11 @@
 //$(document).ready( function() {
 $(window).bind('load', function(){
-    $("#btnRouteRadio").on('click', dorouteradio);
-    setupPlumbing();
-    setupWebsocket();
+    $(document).ready(function(){
+        jsPlumb.ready(function(){
+            setupPlumbing();
+            setupWebsocket();
+        });
+    });
 });
 
 var NONE_SELECTED = {},
