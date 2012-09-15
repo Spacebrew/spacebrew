@@ -61,7 +61,7 @@ setupPlumbing = function() {
 		LogEnabled:false,
 		MaxConnections:-1,
 		PaintStyle:myPlumb.connectorPaintStyle,
-		//Container:endpointBin,
+		Container:endpointBin,
 		//RenderMode:jsPlumb.SVG,
 		setAutomaticRepaint:true
 	});
