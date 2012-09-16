@@ -151,8 +151,25 @@ var handleConfigMsg = function(msg){
 };
 
 var removeClient = function(client){
-	$("#"+client.name.Safetify()+"_"+client.remoteAddress.Safetify()).remove();
+	var clientName = client.name,
+		remoteAddress = client.remoteAddress,
+		name, type;
+	$("#"+clientName.Safetify()+"_"+remoteAddress.Safetify()).remove();
 	//TODO: go through config and remove endpoints
+	if (client.config && client.config.publish && client.config.publish.messages){
+		for(var i = 0; i < client.config.publish.messages.length; i++){
+			name = client.config.publish.messages[i].name;
+			type = client.config.publish.messages[i].type;
+			jsPlumb.deleteEndpoint(myPlumb.endpoints[["pub",clientName, remoteAddress, name, type].map(Safetify).join("_")]);
+		}
+	}
+	if (client.config && client.config.subscribe && client.config.subscribe.messages){
+		for(var i = 0; i < client.config.subscribe.messages.length; i++){
+			name = client.config.subscribe.messages[i].name;
+			type = client.config.subscribe.messages[i].type;
+			jsPlumb.deleteEndpoint(myPlumb.endpoints[["sub",clientName, remoteAddress, name, type].map(Safetify).join("_")]);
+		}
+	}
 };
 
 var addConnection = function(msg){
