@@ -124,7 +124,9 @@ body{
 }
 .itemanchor{
 	height:25px;
-	width:5px;
+	width:55px;
+	padding-right:10px;
+	padding-left:10px;
 	float:left;
 }
 .subscriber .itemanchor{

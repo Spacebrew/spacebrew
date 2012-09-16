@@ -13,9 +13,6 @@
 
     <div class="navbar navbar-fixed-bottom">
           <div class="brand"><img src="img/spacebrew-logo-2.png"></img></div>
-          <div class="string key"><div class="itemanchor"></div><div>String</div></div>
-          <div class="range key"><div class="itemanchor"></div><div>Range</div></div>
-          <div class="boolean key"><div class="itemanchor"></div><div>Boolean</div></div>
           <div><span class='prefix'>/</span>About</div>
           <div><span class='prefix'>/</span>Contact</div>
           <div class="sig">Developed by <img src="img/lab-logo.png"></img></div>
@@ -69,7 +66,7 @@
       {{#each config.publish.messages}}
       <div class="itemwrapper publisher">
       <div class="item publisher {{type}}" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
-        <div class="itemanchor"></div>
+        <div class="itemanchor">{{type}}</div>
         {{name}}
       </div>
       </div>
@@ -79,7 +76,7 @@
       {{#each config.subscribe.messages}}
       <div class="itemwrapper subscriber">
       <div class="item subscriber {{type}}" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
-        <div class="itemanchor"></div>
+        <div class="itemanchor">{{type}}</div>
         {{name}}
       </div>
       </div>
