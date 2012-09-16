@@ -80,21 +80,6 @@ myWS.handleNameMsg = function(msg){
     };
 };
 
-myWS.displayRoutes = function(){
-    var html = '';
-    var even = false;
-    for(var i = routes.length - 1; i >= 0; i--){
-        var pub = routes[i].publisher;
-        var pubColumn = "<div class='span5'>{name} @ {addr}: {pubName}, {pubType}</div>".replace("{name}",pub.clientName).replace("{addr}",pub.remoteAddress).replace("{pubName}",pub.name).replace("{pubType}",pub.type);
-        var sub = routes[i].subscriber;
-        var subColumn = "<div class='span5'>{name} @ {addr}: {subName}, {subType}</div>".replace("{name}",sub.clientName).replace("{addr}",sub.remoteAddress).replace("{subName}",sub.name).replace("{subType}",sub.type);
-        var button = '<div class="span1"><button id="btnRouteRemove{index}" onclick="dorouteremove({index})" class="btn btn-inverse btn-mini">remove</button></div>';
-        html += '<div class="row {even}">{col1}<div class="span1">---TO---></div>{col3}{button}</div>'.replace("{col1}",pubColumn).replace("{col3}",subColumn).replace("{button}",button).replace("{even}",(even?"even":"odd")).replace(/{index}/g,i);
-        even = !even;
-    }
-    $("#route_list").html(html);
-};
-
 myWS.handleConfigMsg = function(msg){
     var endpointList = [];
     if (msg.config.publish && msg.config.publish.messages){
@@ -193,7 +178,6 @@ myWS.handleRouteMsg = function(msg){
             }
         }
     }
-    this.displayRoutes();
 };
 
 myWS.handleRemoveMsg = function(msg){
