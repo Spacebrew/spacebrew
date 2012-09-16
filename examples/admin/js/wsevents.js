@@ -155,7 +155,7 @@ var removeClient = function(client){
 		remoteAddress = client.remoteAddress,
 		name, type;
 	$("#"+clientName.Safetify()+"_"+remoteAddress.Safetify()).remove();
-	//TODO: go through config and remove endpoints
+	
 	if (client.config && client.config.publish && client.config.publish.messages){
 		for(var i = 0; i < client.config.publish.messages.length; i++){
 			name = client.config.publish.messages[i].name;
