@@ -192,7 +192,7 @@ myWS.handleRemoveMsg = function(msg){
                 break;
             }
         }
-        var el = $("#"+msg.remove[i].name);
+        var el = $("#"+msg.remove[i].name.Safetify()+"_"+msg.remove[i].remoteAddress.Safetify());
         jsPlumb.removeAllEndpoints(el);
         el.remove();
     }
