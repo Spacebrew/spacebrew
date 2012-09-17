@@ -125,27 +125,40 @@ myPlumb.confirmDetachConnection = function(conn, originalEvent) {
 
 //expecting Anchors:[{commType:'string'|'bool'|'int', source:true|false, label:<string>},...]
 myPlumb.addEndpoints = function(toId, anchors) {
+	var numberStuff = {source:this.sourceEndpointInt,target:this.targetEndpointInt};
 	var endpointList = {string:{source:this.sourceEndpointString,target:this.targetEndpointString},
 						boolean:{source:this.sourceEndpointBool,target:this.targetEndpointBool},
-						number:{source:this.sourceEndpointInt,target:this.targetEndpointInt}};
+						number:numberStuff,
+						range:numberStuff};
 
-	var location = {0:"Left",1:"Center",2:"Right",target:"Top",source:"Bottom"};
-	var num = {source:0,target:0};
+	var location = {target:{ypos:0,xdir:0,ydir:-1},source:{ypos:1,xdir:0,ydir:1}};
+	var total = {source:0,target:0}, curr = {source:0,target:0};
 	var endpointGroups = {source:this.allSourceEndpoints, target:this.allTargetEndpoints};
 
+	var type;
+	var currAnchor;
 	var numAnchors = anchors.length;
+	//first find out how many there are total of each publisher and subscriber
 	while (numAnchors--){
-		var currAnchor = anchors[numAnchors];
-		var type = (currAnchor.source ? "source" : "target");
-		var currNumber = num[type]++;
-		if (location[currNumber]){
-			var anchorUUID = toId+sep+currAnchor.commType.Safetify()+sep+currAnchor.label.Safetify();
-			var endpoint = jsPlumb.addEndpoint(toId, endpointList[currAnchor.commType][type], {anchor:location[type]+location[currNumber], parameters:{uuid:anchorUUID}});
-			endpoint.setLabel({label:currAnchor.label, cssClass:type+"Label"/*, location:[0.5, 1.5*(currAnchor.source ? 1 : -1)]*/});
-			endpointGroups[type].push(endpoint);
-			this.endpoints[anchorUUID] = endpoint;
-		}
+		currAnchor = anchors[numAnchors];
+		type = (currAnchor.source ? "source" : "target");
+		total[type]++;
 	}
+	numAnchors = anchors.length;
+	//now add and place them correctly
+	while (numAnchors--){
+		currAnchor = anchors[numAnchors];
+		type = (currAnchor.source ? "source" : "target");
+		var currNumber = curr[type]++;//post-increment
+		var xpos = currNumber/(total[type]-1);
+		var myLoc = location[type];
+		var anchorUUID = toId+sep+currAnchor.commType.Safetify()+sep+currAnchor.label.Safetify();
+		var endpoint = jsPlumb.addEndpoint(toId, endpointList[currAnchor.commType][type], {anchor:[xpos, myLoc.ypos, myLoc.xdir, myLoc.ydir], parameters:{uuid:anchorUUID}});
+		endpoint.setLabel({label:currAnchor.label, cssClass:type+"Label"/*, location:[0.5, 1.5*(currAnchor.source ? 1 : -1)]*/});
+		endpointGroups[type].push(endpoint);
+		this.endpoints[anchorUUID] = endpoint;
+	}
+	$("#"+toId).css("min-width",Math.max(total.source, total.target)*20+"px");
 };
 
 // this is the paint style for the connecting lines..
