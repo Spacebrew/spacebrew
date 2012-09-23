@@ -215,7 +215,7 @@ body{
 .clientname{
 	font-family:DinPro;
 	font-size:9pt;
-	margin-top:-3px;
+	//margin-top:-3px;
 }
 .clientnickname span,
 .clientname span{
