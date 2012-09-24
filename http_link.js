@@ -8,6 +8,26 @@ var spacebrewHost = 'localhost';
 var spacebrewPort = 9000;
 var clients = {};
 
+/*
+ 
+Node.js server that accepts pure HTTP requests and pipes the requests through websockets.
+The server keeps track of different clients and maintains a websocket connection with spacebrew to pass along future messages.
+The main driving force behind this is that electric imp only allows HTTP requests in and out (no websockets), but this generally opens up the capabilities of spacebrew to work with pure HTTP clients.
+
+Next steps:
+- Accept configuration message from HTTP client.
+- Complete the loop and allow responses to be sent to HTTP client
+- Check for client timeouts (right now clients are persistent)
+
+HTTP request:
+
+http://localhost:9092/?value=512&name=imp
+
+name = client name
+value = sensor value
+
+ */
+
 // TODO add per-client timeout interval at config time
 // TODO handle timeout
 
@@ -85,10 +105,11 @@ function processMessage(name, value) {
 
 http.createServer(function (req, res) {
     
-    // TODO figure out why we get a blank request
+    
     sys.puts("request: " + sys.inspect(url.parse(req.url, true).query));
     var vals = url.parse(req.url, true).query;
     
+    // TODO figure out why we get a blank request
     sys.puts(vals);
     if(!vals.hasOwnProperty("name")) {
         sys.puts("Detected blank request.");
