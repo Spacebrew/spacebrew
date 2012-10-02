@@ -8,7 +8,6 @@ var spacebrewHost = 'localhost';
 var spacebrewPort = 9000;
 var clients = {};
 var TIMEOUT = 12*60*60; // 12 hour timeout
-TIMEOUT = 10;    // tease
 var DEBUG = true
 
 /*
