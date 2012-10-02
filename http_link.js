@@ -7,6 +7,9 @@ var port = 9092;
 var spacebrewHost = 'localhost';
 var spacebrewPort = 9000;
 var clients = {};
+var TIMEOUT = 12*60*60; // 12 hour timeout
+TIMEOUT = 10;    // tease
+var DEBUG = true
 
 /*
  
@@ -17,7 +20,7 @@ The main driving force behind this is that electric imp only allows HTTP request
 Next steps:
 - Accept configuration message from HTTP client.
 - Complete the loop and allow responses to be sent to HTTP client
-- Check for client timeouts (right now clients are persistent)
+- Custom client timeout
 
 HTTP request:
 
@@ -29,11 +32,21 @@ value = sensor value
  */
 
 // TODO add per-client timeout interval at config time
-// TODO handle timeout
 
-function clientHolder(name, connetion) {
-    this.name = name;
-    this.connection = connection;
+
+function dir(object) {
+    stuff = [];
+    for (s in object) {
+        stuff.push(s);
+    }
+    stuff.sort();
+    return stuff;
+}
+
+function getSecondsEpoch(){
+    var d = new Date();
+    var seconds = d.getTime() / 1000;
+    return seconds;
 }
 
 // TODO handle websocket disconnect
@@ -57,10 +70,12 @@ function configureClient(name, value) {
     sys.puts("jsonConfig: " + jsonConfig);
     
     client = new wsc();
+    
     client.on("connect", function(conn){
         this.connection = conn;
         this.name = name;
         this.initialValue = value;
+        this.lastUpdate = getSecondsEpoch()
         sys.puts("Websocket connected\n");
         
         this.connection.send(jsonName);
@@ -92,6 +107,8 @@ function processMessage(name, value) {
         return;
     }
     
+    targetClient.lastUpdate = getSecondsEpoch()
+    
     msgObj = { "message" : {
                              "clientName" : name,
                              "name" : "value",      // TODO build this out
@@ -103,10 +120,33 @@ function processMessage(name, value) {
     targetClient.connection.send(jsonMsg);
 }
 
+var checkTimeouts = function()
+{
+    //sys.puts("clients are: " + dir(clients))
+    
+    for (var name in clients) {
+        var client = clients[name]
+        //sys.puts("client is : " + dir(client.connection))
+        if( client.lastUpdate + TIMEOUT < getSecondsEpoch() ) {
+            
+            client.connection.close()
+            delete clients[name]
+            client = undefined
+            //sys.puts("timedout: " + name)
+        }
+    }
+    
+    //sys.puts("clients are: " + dir(clients))
+}
+
+// check timeout every minute
+setInterval(checkTimeouts, 1000 * 1);
+
 http.createServer(function (req, res) {
     
-    
-    sys.puts("request: " + sys.inspect(url.parse(req.url, true).query));
+    if(DEBUG) {
+        sys.puts("request: " + sys.inspect(url.parse(req.url, true).query));
+    }
     var vals = url.parse(req.url, true).query;
     
     // TODO figure out why we get a blank request
@@ -118,6 +158,7 @@ http.createServer(function (req, res) {
         return;
     }
     
+    // string is name=whatever&value=5 ...
     var name = vals.name;
     var value = vals.value;
     
