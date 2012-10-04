@@ -279,7 +279,9 @@ wss.on('connection', function(ws) {
                                                                 name:currBase.name,
                                                                 type:currBase.type,
                                                                 remoteAddress:trustedClients[i].remoteAddress};
-                                handleRouteMessage({route:messageContent});
+                                if (handleRouteMessage({route:messageContent})){
+                                    sendToAdmins({route:messageContent});
+                                }
                             }
                         }
                     }
@@ -340,7 +342,8 @@ var handleRouteMessage = function(tMsg){
         }
         //if we have found a matching publisher and subscriber, 
         //handle the adding or deleting of references
-        //then tell the admins about it
+        //and notify the calling function that they can forward the message
+        //to all the admins
         if (pubEntry && subEntry){
             bValidMessage = true;
             if (tMsg.route.type == "add"){
