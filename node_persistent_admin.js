@@ -13,9 +13,13 @@ var routes = [];
 var connection;
 var persistentRoutes = [];
 
+var clean = function(str){
+    return str.replace(/(^\s*|\s*$)/g,'');
+}
+
 stdin.on('data',function(command){
     //strip leading and trailing spaces
-    command = command.toString().replace(/(^\s*|\s*$)/g,'');
+    command = clean(command.toString());
     if (command == "ls"){
         //list all publishers, then all subscribers, then all persistent routes
         var n = 0;
@@ -41,17 +45,30 @@ stdin.on('data',function(command){
         //add the specified persistent route
         //input is either an index pair, or a specified client,pub/sub pairs
         command = command.substr("add ".length);
-        parts = command.split(',');
+        parts = command.split(',').map(clean);
         if (parts.length == 2){
             //we are dealing with indices
+            l("please explicitly specify publisher and subscriber client and name");
         } else if (parts.length == 4){
             persistentRoutes.push({publisher:{clientName:parts[0],name:parts[1]},subscriber:{clientName:parts[2],name:parts[3]}});
             //and now lets make sure we are all connected!
             ensureConnected();
+            l("added persistent route");
+        } else {
+            l("invalid arguments, must be in the form of \"add <publisher client>,<publisher name>,<subscriber client>,<subscriber name>\"");
         }
     } else if (command.indexOf("remove") == 0){
         //removes the specified persistent route
-        persistentRoutes.splice(parseInt(command.substr("remove ".length)), 1);
+        var index = parseInt(command.substr("remove ".length));
+        if (index != index){
+            //NaN
+            l("invalid arguments, must be in the form of \"remove <index>\" where <index> matches the appropriate index as listed via the \"ls\" command");
+        } else if (index < 0 || index >= persistentRoutes.length){
+            l("index out of range");
+        } else{
+            var removed = persistentRoutes.splice(index, 1);
+            l("removed route");
+        }
     } else if (command == "save"){
         fs.writeFile('./persistent_config.json', JSON.stringify(persistentRoutes), function(err){
             if (err){
@@ -62,7 +79,9 @@ stdin.on('data',function(command){
             }
         });
     } else if (command == "load"){
-        loadConfig(true);
+        if (loadConfig(true)){
+            l("successfully loaded");
+        }
     } else if (command == "help"){
         l("This is a CLI admin for maintaining persistent routes in a spacebrew network.");
         l("commands:");
@@ -87,6 +106,8 @@ stdin.on('data',function(command){
         l("    quits this persistent route admin (same as [ctrl]+c)");
     } else if (command == 'exit'){
         process.exit();
+    } else {
+        l("unrecognized command, use \"help\" to see valid commands");
     }
 });
 
@@ -95,6 +116,7 @@ var loadConfig = function(expectFile){
         var config = fs.readFileSync("./persistent_config.json");
         try{
             persistentRoutes = JSON.parse(config);
+            return true;
         }catch(err){
             l("there was an error while parsing the config file");
             l(err);
@@ -105,6 +127,7 @@ var loadConfig = function(expectFile){
             l(err);
         }
     }
+    return false;
 };
 //auto-load config on startup
 loadConfig(false);
