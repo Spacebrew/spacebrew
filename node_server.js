@@ -4,7 +4,7 @@ if (process.argv[2]) {
 } 
 
 var WebSocketServer = require('ws').Server
-  , wss = new WebSocketServer({port: spacePort});
+  , wss = new WebSocketServer({port: spacePort,host:'0.0.0.0'});
 var http = require('http');
 
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
@@ -67,7 +67,8 @@ var buildTrustedClientsForAdmin = function(){
 
 // WebSocket server
 wss.on('connection', function(ws) {
-    
+    //console.log("Listening of socket connections");
+
     var connection = ws;
     clientconnections.push(ws);
 
