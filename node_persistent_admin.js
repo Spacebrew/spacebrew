@@ -74,21 +74,28 @@ stdin.on('data',function(command){
             l(err.message);
         });
     } else if (command == "load"){
-        loadConfig();
+        loadConfig(true);
     }
 });
 
-var loadConfig = function(){
-    var config = fs.readFileSync("./persistent_config.json");
+var loadConfig = function(expectFile){
     try{
-        persistentRoutes = JSON.parse(config);
-    }catch(err){
-        l("there was an error while parsing the config file");
-        l(err);
+        var config = fs.readFileSync("./persistent_config.json");
+        try{
+            persistentRoutes = JSON.parse(config);
+        }catch(err){
+            l("there was an error while parsing the config file");
+            l(err);
+        }
+    } catch(err){
+        if (expectFile){
+            l("there was an error while reading the config file");
+            l(err);
+        }
     }
 };
 //auto-load config on startup
-loadConfig();
+loadConfig(false);
 
 var ensureConnected = function(){
     //for each publisher, if that publisher is in the persistent routes
