@@ -66,6 +66,7 @@
       {{#each config.publish.messages}}
       <div class="itemwrapper publisher">
       <div class="item publisher {{type}}" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        <div class="deletebutton">X</div>
         <div class="itemanchor">{{type}}</div>
         {{name}}
       </div>
@@ -76,6 +77,7 @@
       {{#each config.subscribe.messages}}
       <div class="itemwrapper subscriber">
       <div class="item subscriber {{type}}" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        <div class="deletebutton">X</div>
         <div class="itemanchor">{{type}}</div>
         {{name}}
       </div>
@@ -131,6 +133,11 @@
 .item.publisher:not([class*='{{type}}']){
 {{/if}}
   opacity:.5;
+}
+
+.item.subscriber.{{id}} .deletebutton,
+.item.publisher.{{id}} .deletebutton{
+  display:block;
 }
 
 .clientrow:not(.selected){

@@ -143,6 +143,7 @@ var handleConfigMsg = function(msg){
 			clients[j].config = msg.config;
 			var itemsMarkup = $(pubsubTemplate(clients[j]));
 			itemsMarkup.find(".itemwrapper").click(clickItem).hover(overItem, outItem);
+			//itemsMarkup.find(".deletebutton").click(clickDelete);
 			$("#"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify()).append(itemsMarkup);
 			addEndpoints(msg);
 			break;

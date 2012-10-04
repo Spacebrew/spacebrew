@@ -134,6 +134,8 @@ body{
 	color:white;
 	font-size:7.5pt;
 	text-align:center;
+	letter-spacing:1px;DinPro;
+	background-color:black;
 }
 .subscriber .itemanchor{
 	float:right;
@@ -141,7 +143,6 @@ body{
 .string .itemanchor{
 	background-color:#ff0000;
 }
-.number .itemanchor,
 .range .itemanchor{
 	background-color:#c600f8;
 }
@@ -278,4 +279,25 @@ body{
 .header .prefix{
 	font-size:9pt;
 	margin-right:7px;
+}
+.publisher .deletebutton{
+	float:left;
+	border-right:solid white 2px;
+}
+.subscriber .deletebutton{
+	float:right;
+	border-left:solid white 2px;
+}
+.deletebutton{
+	display:none;
+	pointer-events:auto;
+	width:20px;
+	text-align: center;
+	background-color:black;
+	color:white;
+	font-weight:bolder;
+	font-family:DinPro;
+}
+.deletebutton:hover{
+	color:red;
 }
