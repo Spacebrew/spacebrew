@@ -1,5 +1,34 @@
+var fs = require("fs");
 var WebSocketClient = require('websocket').client;
 var stdin = process.openStdin();
+
+//print out info:
+var l = console.log;
+l("This is a CLI admin for maintaining persistent routes in a spacebrew network.");
+l("commands:");
+l("  ls");
+l("    lists all clients, their publishers and subscribers, and the configured persistent routes");
+l("  add <publisher>,<subscriber>");
+l("    adds the route from the specified <publisher> to <subscriber> to the list of maintained routes.");
+l("    you can either reference publishers and subscribers by <client_name>,<publisher/subscriber_name>");
+l("    or by index as listed in the 'ls' command [not yet implemented]");
+l("    examples:");
+l("      add button,click,signage,power");
+l("      add 1,5 [not yet implemented]");
+l("  remove <index>");
+l("    removes the specified persistent route from being persistent");
+l("    will also break the route if it is currently connected [not yet implemented]");
+l("  save");
+l("    saves the current persistent route list to disk");
+l("  load");
+l("    overwrites the current persistent route list with the one on disk");
+l("    when the server starts up, it will automatically load an existing list from disk");
+
+var clients = [];
+var routes = [];
+var connection;
+var persistentRoutes = [];
+
 stdin.on('data',function(command){
     //strip leading and trailing spaces
     command = command.toString().replace(/(^\s*|\s*$)/g,'');
@@ -39,8 +68,27 @@ stdin.on('data',function(command){
     } else if (command.indexOf("remove") == 0){
         //removes the specified persistent route
         persistentRoutes.splice(parseInt(command.substr("remove ".length)), 1);
+    } else if (command == "save"){
+        fs.writeFile('./persistent_config.json', JSON.stringify(persistentRoutes), function(err){
+            l("there was an error while writing the config file");
+            l(err.message);
+        });
+    } else if (command == "load"){
+        loadConfig();
     }
 });
+
+var loadConfig = function(){
+    var config = fs.readFileSync("./persistent_config.json");
+    try{
+        persistentRoutes = JSON.parse(config);
+    }catch(err){
+        l("there was an error while parsing the config file");
+        l(err);
+    }
+};
+//auto-load config on startup
+loadConfig();
 
 var ensureConnected = function(){
     //for each publisher, if that publisher is in the persistent routes
@@ -79,28 +127,6 @@ var ensureConnected = function(){
         }
     }
 };
-
-//print out info:
-var l = console.log;
-l("This is a CLI admin for maintaining persistent routes in a spacebrew network.");
-l("commands:");
-l("  ls");
-l("    lists all clients, their publishers and subscribers, and the configured persistent routes");
-l("  add <publisher>,<subscriber>");
-l("    adds the route from the specified <publisher> to <subscriber> to the list of maintained routes.");
-l("    you can either reference publishers and subscribers by <client_name>,<publisher/subscriber_name>");
-l("    or by index as listed in the 'ls' command [not yet implemented]");
-l("    examples:");
-l("      add button,click,signage,power");
-l("      add 1,5 [not yet implemented]");
-l("  remove <index>");
-l("    removes the specified persistent route from being persistent");
-l("    will also break the route if it is currently connected [not yet implemented]");
-
-var clients = [];
-var routes = [];
-var connection;
-var persistentRoutes = [];
 
 // create the wsclient and register as an admin
 wsClient = new WebSocketClient();
