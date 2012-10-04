@@ -22,6 +22,7 @@ Next steps:
 - Custom client timeout
 
 HTTP request:
+currently only tested as a GET request
 
 http://localhost:9092/?value=512&name=imp
 
@@ -89,6 +90,12 @@ function configureClient(name, value) {
             sys.puts("Message: " + this.name + " : received message : " + message + "\n");
         });
     });
+    
+    // untested
+    client.on("message", function(message) {
+        sys.puts("Message: " + this.name + " : received message : " + message + "\n");
+    });        
+        
     var url = "ws://" + spacebrewHost + ":" + String(spacebrewPort);
     sys.puts("url: " + url);
     client.connect(url);
@@ -114,6 +121,7 @@ function processMessage(name, value) {
                              "type" : "range",
                              "value" : value }
               };
+              
     jsonMsg = JSON.stringify(msgObj)
     //sys.puts(sys.inspect(targetClient));
     targetClient.connection.send(jsonMsg);
@@ -133,37 +141,62 @@ var checkTimeouts = function()
             client = undefined
             //sys.puts("timedout: " + name)
         }
+        
+        // TODO check to see if the socket is dead
+        
     }
     
     //sys.puts("clients are: " + dir(clients))
 }
 
-// check timeout every minute
-setInterval(checkTimeouts, 1000 * 1);
+// check timeout every 5 seconds
+setInterval(checkTimeouts, 5 * 1);
 
 http.createServer(function (req, res) {
     
     if(DEBUG) {
-        sys.puts("request: " + sys.inspect(url.parse(req.url, true).query));
+        sys.puts("request: " + req.url);
     }
-    var vals = url.parse(req.url, true).query;
     
-    // TODO figure out why we get a blank request
-    sys.puts(vals);
-    if(!vals.hasOwnProperty("name")) {
-        sys.puts("Detected blank request.");
-        res.writeHead(200, {"Content-Type": "text/plain"});
-        res.end("OK");
+    var name = undefined;
+    var value = undefined;
+    
+    if(req.method == "POST") {
+        sys.puts("POST type not supported");
+        res.end("501");
         return;
+    
+    } else if(req.method == "GET") {
+        
+        var vals = url.parse(req.url, true).query;
+        name = vals.name;
+        value = vals.value;
+        
+    } else {
+        
+        sys.puts("UNKNOWN request method of " + req.method);
+        res.end("501");
+        return;
+    
     }
+    
+    if( name == undefined || value == undefined ) {
+        sys.puts("name and value not defined.");
+        res.end("500");
+    }
+    
+    // TODO wrap this in a try/catch type block
     
     // string is name=whatever&value=5 ...
     var name = vals.name;
     var value = vals.value;
     
+    // TODO check to see if both params are passed and valid
     if( !clients.hasOwnProperty(name) ) {
+        sys.puts("Client not found, configuring.");
         configureClient(name, value);
     } else {
+        sys.puts("Processing message from: " + name);
         processMessage(name, value);
     }
     
