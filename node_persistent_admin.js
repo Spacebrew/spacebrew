@@ -158,7 +158,7 @@ var ensureConnected = function(){
                                                     remoteAddress:clients[i].remoteAddress},
                                         subscriber:{clientName:persistentRoutes[k].subscriber.clientName,
                                                     name:persistentRoutes[k].subscriber.name,
-                                                    type:clients[m].publish.messages[n].type,
+                                                    type:clients[m].subscribe.messages[n].type,
                                                     remoteAddress:clients[m].remoteAddress}}
                                 }));
                             }
