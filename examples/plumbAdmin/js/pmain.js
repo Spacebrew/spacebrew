@@ -30,7 +30,7 @@ myPlumb.shouldIgnore = function(msg){
         }
     }
     return false;
-}
+};
 
 myPlumb.init = function(connection) {
 	console.log("init");
@@ -45,8 +45,8 @@ myPlumb.init = function(connection) {
 	}
 	pubUUID = pubInfo.getParameter("uuid");
 	subUUID = subInfo.getParameter("uuid");
-	pubInfo = pubUUID.split(sep).map(unescape);
-	subInfo = subUUID.split(sep).map(unescape);
+	pubInfo = pubUUID.split(sep).map(Unsafetify);
+	subInfo = subUUID.split(sep).map(Unsafetify);
 	var clientName = 0,addr = 1, type = 2, name = 3;
 
 	var msg = {
@@ -54,11 +54,11 @@ myPlumb.init = function(connection) {
                 publisher:{clientName:pubInfo[clientName],
                             name:pubInfo[name],
                             type:pubInfo[type],
-                            remoteAddress:pubInfo[addr].replace(/-/g,".")},
+                            remoteAddress:pubInfo[addr]},
                 subscriber:{clientName:subInfo[clientName],
                             name:subInfo[name],
                             type:subInfo[type],
-                            remoteAddress:subInfo[addr].replace(/-/g,".")}}
+                            remoteAddress:subInfo[addr]}}
     };
     console.log(msg);
     if (!this.shouldIgnore(msg)){
@@ -91,8 +91,8 @@ myPlumb.detachConnection = function(e){
 	// }
 	// pubUUID = pubInfo.getParameter("uuid");
 	// subUUID = subInfo.getParameter("uuid");
-	pubInfo = pubUUID.split(sep).map(unescape);
-	subInfo = subUUID.split(sep).map(unescape);
+	pubInfo = pubUUID.split(sep).map(Unsafetify);
+	subInfo = subUUID.split(sep).map(Unsafetify);
 	var clientName = 0,addr = 1, type = 2, name = 3;
 
 	var msg = {
@@ -100,11 +100,11 @@ myPlumb.detachConnection = function(e){
                 publisher:{clientName:pubInfo[clientName],
                             name:pubInfo[name],
                             type:pubInfo[type],
-                            remoteAddress:pubInfo[addr].replace(/-/g,".")},
+                            remoteAddress:pubInfo[addr]},
                 subscriber:{clientName:subInfo[clientName],
                             name:subInfo[name],
                             type:subInfo[type],
-                            remoteAddress:subInfo[addr].replace(/-/g,".")}}
+                            remoteAddress:subInfo[addr]}}
     };
     console.log(msg);
     if (!this.shouldIgnore(msg)){
@@ -139,7 +139,7 @@ myPlumb.addEndpoints = function(toId, anchors) {
 		var type = (currAnchor.source ? "source" : "target");
 		var currNumber = num[type]++;
 		if (location[currNumber]){
-			var anchorUUID = toId+sep+escape(currAnchor.commType)+sep+escape(currAnchor.label);
+			var anchorUUID = toId+sep+currAnchor.commType.Safetify()+sep+currAnchor.label.Safetify();
 			var endpoint = jsPlumb.addEndpoint(toId, endpointList[currAnchor.commType][type], {anchor:location[type]+location[currNumber], parameters:{uuid:anchorUUID}});
 			endpoint.setLabel({label:currAnchor.label, location:[0.5, -0.5+(currAnchor.source ? 2+currNumber : -currNumber/2)]});
 			endpointGroups[type].push(endpoint);
@@ -154,7 +154,7 @@ myPlumb.connectorPaintStyle = {
 	strokeStyle:"#deea18",
 	joinstyle:"round",
 	outlineColor:"white",
-	outlineWidth:5
+	outlineWidth:3
 };
 myPlumb.programmaticConnectorPaintStyle = {
 	lineWidth:2,
@@ -167,6 +167,10 @@ myPlumb.programmaticConnectorPaintStyle = {
 myPlumb.connectorHoverStyle = {
 	lineWidth:7,
 	strokeStyle:"#2e2aF8"
+};
+myPlumb.activeEndpointPaintStyle = {
+	fillStyle:"#ff00ff",
+	radius:7
 };
 myPlumb.sourceEndpointBool = {
 	endpoint:"Dot",

@@ -1,14 +1,3 @@
-function gup( name ) {
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( window.location.href );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
-
 var name = gup('name') || window.location.href; 
 var server = gup('server') || 'localhost';
 
@@ -71,6 +60,15 @@ myWS.handleMsg = function(json){
 }
 
 myWS.handleMessageMsg = function(msg){
+    var endpointList = {string:{source:myPlumb.sourceEndpointString,target:myPlumb.targetEndpointString},
+                        boolean:{source:myPlumb.sourceEndpointBool,target:myPlumb.targetEndpointBool},
+                        number:{source:myPlumb.sourceEndpointInt,target:myPlumb.targetEndpointInt}};
+
+    var from = msg.message;
+    var endpoint = myPlumb.endpoints[[from.clientName, from.remoteAddress, from.type, from.name].map(Safetify).join(sep)];
+    endpoint.setPaintStyle(myPlumb.activeEndpointPaintStyle);
+    setTimeout(function(){endpoint.setPaintStyle(endpointList[from.type].source.paintStyle);},200);
+            
     // for(var i = clients.length - 1; i >= 0; i--){
     //     if (clients[i].name === msg.message.clientName
     //         && clients[i].remoteAddress === msg.message.remoteAddress){
@@ -88,7 +86,7 @@ myWS.handleMessageMsg = function(msg){
 myWS.handleNameMsg = function(msg){
     for(var i = 0; i < msg.name.length; i++){
         clients.push({name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress});
-        var newDiv = $("<div>").addClass("window").prop("id",escape(msg.name[i].name)+sep+escape(msg.name[i].remoteAddress.replace(/\./g,"-")));
+        var newDiv = $("<div>").addClass("window").prop("id",msg.name[i].name.Safetify()+sep+msg.name[i].remoteAddress.Safetify());
         newDiv.append($("<div>").css("white-space","nowrap").text(msg.name[i].name));
         jsPlumb.draggable(newDiv);
         $("#bucket").append(newDiv);
@@ -108,13 +106,13 @@ myWS.generateList = function(){
             if (clients[i].config.publish && clients[i].config.publish.messages){
                 for(var j = clients[i].config.publish.messages.length - 1; j >= 0; j--){
                     var currM = clients[i].config.publish.messages[j];
-                    pubColumn += '<label class="radio"><input type="radio" name="pub" value="{name}:{addr}:{pubName}:{pubType}">{pubName}, {pubType}</label>'.replace(/{pubName}/g,escape(currM.name)).replace(/{pubType}/g,escape(currM.type));
+                    pubColumn += '<label class="radio"><input type="radio" name="pub" value="{name}:{addr}:{pubName}:{pubType}">{pubName}, {pubType}</label>'.replace(/{pubName}/g,currM.name.Safetify()).replace(/{pubType}/g,currM.type.Safetify());
                 }
             }
             if (clients[i].config.subscribe && clients[i].config.subscribe.messages){
                 for (var j = clients[i].config.subscribe.messages.length - 1; j >= 0; j--){
                     var currM = clients[i].config.subscribe.messages[j];
-                    subColumn += '<label class="radio"><input type="radio" name="sub" value="{name}:{addr}:{subName}:{subType}">{subName}, {subType}</label>'.replace(/{subName}/g,escape(currM.name)).replace(/{subType}/g,escape(currM.type));
+                    subColumn += '<label class="radio"><input type="radio" name="sub" value="{name}:{addr}:{subName}:{subType}">{subName}, {subType}</label>'.replace(/{subName}/g,currM.name.Safetify()).replace(/{subType}/g,currM.type.Safetify());
                 }
             }
             title = clients[i].config.description;
@@ -122,7 +120,7 @@ myWS.generateList = function(){
         pubColumn += '</div>';
         subColumn += '</div>';
         var leftColumn = '<div class="span8 client" title="{title}">{name} @ {addr}<div class="row">{col2}{col3}</div></div>';
-        olHtml += '<li><div class="row">{col1}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,escape(name)).replace(/{addr}/g,escape(addr)).replace(/{title}/g,title);
+        olHtml += '<li><div class="row">{col1}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,name.Safetify()).replace(/{addr}/g,addr.Safetify()).replace(/{title}/g,title);
         ddlHtml += '<option value="{i}">{i}</option>'.replace(/{i}/g,i);
     };
     $("#client_list").html(olHtml);
@@ -159,7 +157,7 @@ myWS.handleConfigMsg = function(msg){
             endpointList.push({commType:currSub.type, source:false, label:currSub.name});
         }
     }
-    myPlumb.addEndpoints(escape(msg.config.name)+sep+escape(msg.config.remoteAddress.replace(/\./g,"-")), endpointList);
+    myPlumb.addEndpoints(msg.config.name.Safetify()+sep+msg.config.remoteAddress.Safetify(), endpointList);
     // [{commType:'string',source:true,label:'test'},
     //                                         {commType:'bool', source:true,label:'btest'},
     //                                         {commType:'int',source:true,label:'itest'},
@@ -203,10 +201,10 @@ myWS.handleRouteMsg = function(msg){
         }
     }
     ignoreActions.push(msg);
-    var pubUUID = escape(msg.route.publisher.clientName)+sep+escape(msg.route.publisher.remoteAddress.replace(/\./g,"-"))+sep+
-                    escape(msg.route.publisher.type)+sep+escape(msg.route.publisher.name),
-        subUUID = escape(msg.route.subscriber.clientName)+sep+escape(msg.route.subscriber.remoteAddress.replace(/\./g,"-"))+sep+
-                    escape(msg.route.subscriber.type)+sep+escape(msg.route.subscriber.name);
+    var pubUUID = msg.route.publisher.clientName.Safetify()+sep+msg.route.publisher.remoteAddress.Safetify()+sep+
+                    msg.route.publisher.type.Safetify()+sep+msg.route.publisher.name.Safetify(),
+        subUUID = msg.route.subscriber.clientName.Safetify()+sep+msg.route.subscriber.remoteAddress.Safetify()+sep+
+                    msg.route.subscriber.type.Safetify()+sep+msg.route.subscriber.name.Safetify();
     if (msg.route.type === 'add'){
         if (!myPlumb.connections[pubUUID]){
             myPlumb.connections[pubUUID] = {};

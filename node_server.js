@@ -4,7 +4,7 @@ if (process.argv[2]) {
 } 
 
 var WebSocketServer = require('ws').Server
-  , wss = new WebSocketServer({port: spacePort});
+  , wss = new WebSocketServer({port: spacePort,host:'0.0.0.0'});
 var http = require('http');
 
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
@@ -67,7 +67,8 @@ var buildTrustedClientsForAdmin = function(){
 
 // WebSocket server
 wss.on('connection', function(ws) {
-    
+    //console.log("Listening of socket connections");
+
     var connection = ws;
     clientconnections.push(ws);
 
@@ -279,7 +280,9 @@ wss.on('connection', function(ws) {
                                                                 name:currBase.name,
                                                                 type:currBase.type,
                                                                 remoteAddress:trustedClients[i].remoteAddress};
-                                handleRouteMessage({route:messageContent});
+                                if (handleRouteMessage({route:messageContent})){
+                                    sendToAdmins({route:messageContent});
+                                }
                             }
                         }
                     }
@@ -340,7 +343,8 @@ var handleRouteMessage = function(tMsg){
         }
         //if we have found a matching publisher and subscriber, 
         //handle the adding or deleting of references
-        //then tell the admins about it
+        //and notify the calling function that they can forward the message
+        //to all the admins
         if (pubEntry && subEntry){
             bValidMessage = true;
             if (tMsg.route.type == "add"){

@@ -20,7 +20,8 @@ require(["jsplumb/jsPlumb-util-1.3.13-RC1",
 	require(["jquery/jquery.ui.touch-punch.min",
 			"jquery/jquery-ui-1.8.16-min"], function(){
 		//now JQueryUI is loaded
-		require(["jsplumb/jsPlumb-1.3.13-RC1"],function(){
+		require(["jsplumb/jsPlumb-1.3.13-RC1", 
+				"utils"],function(){
 			//now jsPlumb is loaded
 			require(["jsplumb/jquery.jsPlumb-1.3.13-RC1",
 					"jsplumb/jsPlumb-connectors-statemachine-1.3.13-RC1",
