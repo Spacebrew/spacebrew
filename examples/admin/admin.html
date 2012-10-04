@@ -38,7 +38,7 @@
             <div id='endpointBin'>
             </div>
           </div>
-          <div style="height:110px;"></div>
+          <div style="height:110px;" id='scroll_padding'></div>
         </div>
 
     </div> <!-- /container -->
@@ -96,20 +96,20 @@
     <script type="text/x-handlebars-template" id="active_css_handlebar">
 {{#if pub}}
 .item.publisher:not(#{{id}}){
-  background-color:gray;
+  background-color:rgb(193,193,193);
 }
 .item.subscriber:not([class*='{{type}}']){
-  background-color:gray;
+  background-color:rgb(193,193,193);
 }
 .item.subscriber.{{type}}{
   background-color:rgb(177,255,216);
 }
 {{else}}
 .item.subscriber:not(#{{id}}){
-  background-color:gray;
+  background-color:rgb(193,193,193);
 }
 .item.publisher:not([class*='{{type}}']){
-  background-color:gray;
+  background-color:rgb(193,193,193);
 }
 .item.publisher.{{type}}{
   background-color:rgb(176,237,255);
@@ -122,22 +122,33 @@
   background-color:rgb(129,212,170);
 }
 {{#if clicked}}
+
+{{#if pub}}
+.item.publisher:not(#{{id}}),
+.item.subscriber:not([class*='{{type}}']){
+{{else}}
+.item.subscriber:not(#{{id}}),
+.item.publisher:not([class*='{{type}}']){
+{{/if}}
+  opacity:.5;
+}
+
 .clientrow:not(.selected){
   background-image:url();
 }
 .item.subscriber#{{id}}{
-  outline:2px solid rgb(129,212,170);
+  outline:10px solid rgb(129,212,170);
   -webkit-transition:all 0s ease-in-out;
 }
 .item.publisher#{{id}}{
-  outline:2px solid rgb(111,193,222);
+  outline:10px solid rgb(111,193,222);
   -webkit-transition:all 0s ease-in-out;
 }
 .item.subscriber#{{id}}[class*='pub_']{
-  outline:2px solid rgb(71,158,116);
+  outline:10px solid rgb(71,158,116);
 }
 .item.publisher#{{id}}[class*='sub_']{
-  outline:2px solid rgb(116,131,222);
+  outline:10px solid rgb(116,131,222);
 }
 {{/if}}
     </script>

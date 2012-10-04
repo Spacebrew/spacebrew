@@ -128,6 +128,12 @@ body{
 	padding-right:10px;
 	padding-left:10px;
 	float:left;
+	text-transform:uppercase;
+	font-family:Din;
+	font-weight:bold;
+	color:white;
+	font-size:7.5pt;
+	text-align:center;
 }
 .subscriber .itemanchor{
 	float:right;
@@ -165,6 +171,12 @@ body{
 .itemwrapper{
 	padding:2px 4px 2px 4px;
 	cursor:pointer;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 .publisher.itemwrapper{
 	padding-right:8px;

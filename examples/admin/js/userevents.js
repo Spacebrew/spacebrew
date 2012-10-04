@@ -1,3 +1,44 @@
+var setupUserEvents = function(){
+	//clicking & hovering over publishers and subscribers is handled when
+	//the publishers and subscribers are created in wsevents.js
+
+	//setup click handler when nothing else is clicked
+	$(document.body).click(clickBody);
+};
+
+var clickBody = function(event){
+	event.preventDefault();
+	//if we are in a selected state, then when we click somewhere innocuous, 
+	//we should go to an unselected state
+	if (currState != NONE_SELECTED){
+		if (!event.target.classList.contains("itemwrapper")){
+			turnOffSelected();
+		}
+		// //if the target matches any specific whitelist elements
+		// //then turn off selected mode
+		// var id = event.target.id;
+		// var okIds = ['client_list','scroll_padding'];
+		// var numIds = okIds.length;
+		// while(numIds--){
+		// 	if (id == okIds[numIds]){
+		// 		turnOffSelected();
+		// 		return;
+		// 	}
+		// }
+		// //otherwise, if the target matches any whitelist element classes
+		// //then turn off selected mode
+		// var classList = event.target.classList;
+		// var okClasses = ['clientrow','header','headerrow'];
+		// var numClasses = okClasses.length;
+		// while (numClasses--){
+		// 	if (classList.contains(okClasses)){
+		// 		turnOffSelected();
+		// 		return;
+		// 	}
+		// }
+	}
+};
+
 var overItem = function(event){
 	event.preventDefault();
 	if (currState == NONE_SELECTED){
@@ -55,17 +96,21 @@ var firstClick = function(item, type, pub){
 	}
 };
 
+var turnOffSelected = function(){
+	console.log('turning off');
+	$("style#selected").text('');
+	$(".item.selected").removeClass('selected');
+	$(".clientrow.selected").removeClass('selected');
+	currState = NONE_SELECTED;
+}
+
 var secondClick = function(item, type, pub){
 	var pubSelected = (currState == PUB_SELECTED);
 	//if we clicked in the same column as the first click,
 	//then turn off 'selected' mode
 	if ((pubSelected && pub) ||
 			(!pubSelected && !pub)){
-		console.log('turning off');
-		$("style#selected").text('');
-		$(".item.selected").removeClass('selected');
-		$(".clientrow.selected").removeClass('selected');
-		currState = NONE_SELECTED;
+		turnOffSelected();
 	} else {
 		var activeItem = $(pubSelected ? ".publisher.selected" : ".subscriber.selected");
 		var activeType = getItemType(activeItem);

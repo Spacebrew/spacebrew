@@ -4,6 +4,7 @@ $(window).bind('load', function(){
         jsPlumb.ready(function(){
             setupPlumbing();
             setupWebsocket();
+            setupUserEvents();
         });
     });
 });
