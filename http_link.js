@@ -183,6 +183,7 @@ http.createServer(function (req, res) {
     if( name == undefined || value == undefined ) {
         sys.puts("name and value not defined.");
         res.end("500");
+        return;
     }
     
     // TODO wrap this in a try/catch type block
