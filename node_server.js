@@ -1,20 +1,18 @@
-var WebSocketServer = require('websocket').server;
+var spacePort = 9000;
+if (process.argv[2]) {
+    spacePort = process.argv[2];    
+} 
+
+var WebSocketServer = require('ws').Server
+  , wss = new WebSocketServer({port: spacePort});
 var http = require('http');
 
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
 var trustedClients = []; // list of clients that have sent names
 var adminConnections = [];
 
-var server = http.createServer(function(request, response) {
-    // process HTTP request. Since we're writing just WebSockets server
-    // we don't have to implement anything.
-});
-server.listen(9000, function() { });
-
-// create the server
-wsServer = new WebSocketServer({
-    httpServer: server
-});
+console.log("\nRunning Spacebrew on PORT "+spacePort);
+console.log("More info at http://www.spacebrew.cc");
 
 var buildTrustedClientsForAdmin = function(){
     var output = [];
@@ -68,50 +66,32 @@ var buildTrustedClientsForAdmin = function(){
 };
 
 // WebSocket server
-wsServer.on('request', function(request) {
+wss.on('connection', function(ws) {
     
-    var connection = request.accept(null, request.origin);
-    //console.log(tClient);
+    var connection = ws;
+    clientconnections.push(ws);
 
-    // var repeatConnection = false;
-    // console.log("Going to check "+clientconnections.length+" connections.");
-    // for (var i=0; i<clientconnections.length; i++) {
-    //     // console.log(clientconnections[i]);
-    //     // console.log(connection);
-    //     if (clientconnections[i] === connection) {
-    //          repeatConnection = true; // flag if it exists
-    //          console.log("rejected existing user, already connected");
-
-    //     }
-    // }
-    //if (repeatConnection === false) {
-        clientconnections.push(connection);
-    //}
-
-    //console.log(connection);
     // This is the most important callback for us, we'll handle
     // all messages from users here.
-    connection.on('message', function(message) {
+    ws.on('message', function(message) {
+        console.log(message);
         var bValidMessage = false;
-        if (message.type === 'utf8') {
+        if (message) {
             // process WebSocket message
-            //console.log(message);
-            //console.log(message.utf8Data.name);
-            //console.log(JSON.parse(message.utf8Data));
-            var tMsg = JSON.parse(message.utf8Data);
-            //console.log(tMsg);
-
-            // console.log(tMsg);
+            var tMsg = JSON.parse(message);
 
             if (tMsg['name']) {
                 //a connection is registering themselves
+                //console.log(tMsg['name']);
                 for (var index = 0; index < tMsg['name'].length; index++){
-                    var tVar = [tMsg['name'][index].name, connection['remoteAddress'], connection];
+                    var tVar = [tMsg['name'][index].name, connection.upgradeReq.headers.host, connection];
                     //add the remote address to the message for the admins
-                    tMsg['name'][index].remoteAddress = connection['remoteAddress'];
+                    tMsg['name'][index].remoteAddress = connection.upgradeReq.headers.host;
 
                     var existingClient = false;
                     for(var i=0; i<trustedClients.length; i++) {
+                        //console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
+                        //console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
                         if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
                             existingClient = true;
                             console.log("client is already connected");
@@ -146,7 +126,7 @@ wsServer.on('request', function(request) {
                 var trustedClient = undefined;
                 for(var i = 0; i < trustedClients.length; i++){
                     if (trustedClients[i].name === tMsg['config']['name'] &&
-                        trustedClients[i].remoteAddress === connection.remoteAddress){
+                        trustedClients[i].remoteAddress === connection.upgradeReq.headers.host){
                         trustedClient = trustedClients[i];
                         break;
                     }
@@ -208,7 +188,7 @@ wsServer.on('request', function(request) {
                     }
                 }
             } else if (tMsg['message']) {
-                console.log("I got sent a message from "+connection);
+                //console.log("I got sent a message from "+connection);
 
                 // BROADCAST
                 // var messageToSend = JSON.stringify(tMsg);
@@ -216,7 +196,7 @@ wsServer.on('request', function(request) {
                 //     trustedClients[j].connection.sendUTF(messageToSend);
                 // }
                 //add the remote address for the admins
-                tMsg['message'].remoteAddress = connection.remoteAddress;
+                tMsg['message'].remoteAddress = connection.upgradeReq.headers.host;
 
                 //ROUTING
                 var pub;
@@ -240,7 +220,7 @@ wsServer.on('request', function(request) {
                                 bValidMessage = true;
                                 for(var j = pub.subscribers.length - 1; j >= 0; j--){
                                     var currSub = pub.subscribers[j];
-                                    currSub.client.connection.sendUTF(JSON.stringify({message:{
+                                    currSub.client.connection.send(JSON.stringify({message:{
                                         name:currSub.subscriber.name,
                                         type:tMsg.message.type,
                                         value:tMsg.message.value
@@ -252,7 +232,7 @@ wsServer.on('request', function(request) {
                     }
                 }
             } else if (tMsg['admin']) {
-                connection.sendUTF(JSON.stringify(buildTrustedClientsForAdmin()));
+                connection.send(JSON.stringify(buildTrustedClientsForAdmin()));
                 adminConnections.push(connection);
                 bValidMessage = true;
             } else if (tMsg['route']){
@@ -264,13 +244,19 @@ wsServer.on('request', function(request) {
         }
     });
 
-    connection.on('close', function(connection) {
+    ws.on('close', function(ws) {
         // close user connection
         console.log("close");
+        //console.log(ws);
         var removed = [];
         //remove clients
+        //console.log("There are this many clients: "+trustedClients.length);
+
         for(var i = 0; i < trustedClients.length;){
-            if (trustedClients[i]['connection'].state === 'closed'){
+            //console.log(trustedClients);
+            //if (trustedClients[i]['connection'].state === 'closed'){
+            if (!trustedClients[i].connection._socket){
+                
                 //for each publisher
                 //for each subscriber to that publisher
                 //remove route
@@ -304,11 +290,11 @@ wsServer.on('request', function(request) {
                 i++;
             }
         }
-        //tell the admins about removed clients
-        sendToAdmins({remove:removed});
+
         //remove admins
+        //console.log("There are admins: "+ adminConnections.length);
         for(var i = 0; i < adminConnections.length;){
-            if (adminConnections[i].state === 'closed'){
+            if (adminConnections[i]._socket == null){
                 adminConnections.splice(i, 1);
             } else {
                 i++;
@@ -316,12 +302,15 @@ wsServer.on('request', function(request) {
         }
         //remove connections
         for(var i = 0; i<clientconnections.length;){
-            if (clientconnections[i].state === 'closed'){
+            if (clientconnections[i]._socket == null){
                 clientconnections.splice(i, 1);
             } else {
                 i++;
             }
         }
+        //tell the admins about removed clients
+        sendToAdmins({remove:removed});
+
     });
 });
 
@@ -379,6 +368,6 @@ var handleRouteMessage = function(tMsg){
 
 var sendToAdmins = function(json){
     for(var i = adminConnections.length - 1; i >= 0; i--){
-        adminConnections[i].sendUTF(JSON.stringify(json));
+        adminConnections[i].send(JSON.stringify(json));
     }
 }
