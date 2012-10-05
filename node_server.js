@@ -82,47 +82,89 @@ wss.on('connection', function(ws) {
             var tMsg = JSON.parse(message);
 
             if (tMsg['name']) {
-                //a connection is registering themselves
-                //console.log(tMsg['name']);
-                for (var index = 0; index < tMsg['name'].length; index++){
-                    var tVar = [tMsg['name'][index].name, connection.upgradeReq.headers.host, connection];
-                    //add the remote address to the message for the admins
-                    tMsg['name'][index].remoteAddress = connection.upgradeReq.headers.host;
+                //IGNORING FOR NOW, ONLY CONFIG MESSAGES ARE SUPPORTED
+                // //a connection is registering themselves
+                // //console.log(tMsg['name']);
+                // for (var index = 0; index < tMsg['name'].length; index++){
+                //     var tVar = [tMsg['name'][index].name, connection.upgradeReq.headers.host, connection];
+                //     //add the remote address to the message for the admins
+                //     tMsg['name'][index].remoteAddress = connection.upgradeReq.headers.host;
 
-                    var existingClient = false;
-                    for(var i=0; i<trustedClients.length; i++) {
-                        //console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
-                        //console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
-                        if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
-                            existingClient = true;
-                            console.log("client is already connected");
+                //     var existingClient = false;
+                //     for(var i=0; i<trustedClients.length; i++) {
+                //         //console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
+                //         //console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
+                //         if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
+                //             existingClient = true;
+                //             console.log("client is already connected -- denying new connection");
+                //             connection.close();
+                //         }
+                //     }
+                //     if (existingClient === false) {
+                //         //console.log("Logged new connection");
+                //         var tClient = {
+                //             "name": tVar[0],
+                //             "remoteAddress": tVar[1],
+                //             "description": "",
+                //             "connection": connection,
+                //             "publishers": {},
+                //             "subscribers": {},
+                //             "config":""
+                //         };
+                //         console.log("Client is new");
+
+                //         trustedClients.push(tClient);
+                //         console.log("client added");
+                //         bValidMessage = true;
+                //     }
+                // }
+
+                // console.log("Here are the current trustedClients "+trustedClients.length);
+
+                // for (var i=0; i<trustedClients.length; i++) {
+                //     console.log(trustedClients[i]['name']);
+                // }
+            } else if (tMsg['config']) {
+                //first check to see if client exists already
+                if (!connection.spacebrew_already_processed){
+                    //check to see if the name alredy exists, if so, close this connection.
+                    var numTrusted = trustedClients.length;
+                    var msgName = tMsg['config']['name'],
+                        msgAddress = connection.upgradeReq.headers.host;
+                    while (numTrusted--){
+                        if (trustedClients[numTrusted]['name'] === msgName &&
+                            trustedClients[numTrusted]['remoteAddress'] === msgAddress){
+                            console.log("client is already connected -- denying new connection");
+                            connection.close();
+                            return;
                         }
                     }
-                    if (existingClient === false) {
-                        //console.log("Logged new connection");
-                        var tClient = {
-                            "name": tVar[0],
-                            "remoteAddress": tVar[1],
-                            "description": "",
-                            "connection": connection,
-                            "publishers": {},
-                            "subscribers": {},
-                            "config":""
-                        };
-                        console.log("Client is new");
+                    //it passes muster, lets add it as a trusted client
+                    connection.spacebrew_already_processed = true;
+                    //console.log("Logged new connection");
+                    var tClient = {
+                        "name": msgName,
+                        "remoteAddress": msgAddress,
+                        "description": "",
+                        "connection": connection,
+                        "publishers": {},
+                        "subscribers": {},
+                        "config":""
+                    };
+                    console.log("Client is new");
 
-                        trustedClients.push(tClient);
-                        console.log("client added");
-                        bValidMessage = true;
+                    trustedClients.push(tClient);
+                    console.log("client added");
+                    bValidMessage = true;
+                    console.log("Here are the current trustedClients "+trustedClients.length);
+
+                    for (var i=0; i<trustedClients.length; i++) {
+                        console.log(trustedClients[i]['name']);
                     }
+                    //and send the config to the admins
+                    sendToAdmins({name:[{name:msgName, remoteAddress:msgAddress}]});
                 }
 
-                console.log("Here are the current trustedClients "+trustedClients.length);
-
-                for (var i=0; i<trustedClients.length; i++) {
-                    console.log(trustedClients[i]['name']);
-                }
-            } else if (tMsg['config']) {
                 // accept each apps config and add it to its respect publisher and subscriber list
                 var trustedClient = undefined;
                 for(var i = 0; i < trustedClients.length; i++){
@@ -138,6 +180,7 @@ wss.on('connection', function(ws) {
                     //add the remote address to the message for the admins
                     tMsg['config'].remoteAddress = trustedClient.remoteAddress;
                     trustedClient.config = tMsg['config'];
+                    trustedClient.description = tMsg['config']['description'];
                     var tSubs = [];
                     if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
                         tSubs = tMsg.config.subscribe.messages;
