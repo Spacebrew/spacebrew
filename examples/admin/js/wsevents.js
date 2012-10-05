@@ -146,8 +146,16 @@ var handleConfigMsg = function(msg){
 			var itemsMarkup = $(pubsubTemplate(clients[j]));
 			itemsMarkup.find(".itemwrapper").click(clickItem).hover(overItem, outItem);
 			//itemsMarkup.find(".deletebutton").click(clickDelete);
-			$("#"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify()).append(itemsMarkup);
+			var client = $("#"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify());
+			client.append(itemsMarkup);
 			addEndpoints(msg);
+			//update the description
+			if (msg.config.description){
+				var idPart ="info_"+msg.config.name.Safetify()+"_"+msg.config.remoteAddress.Safetify(); 
+				$("#button_"+idPart).css("display","inline-block");
+				$("#"+idPart+" span").html(msg.config.description);
+				client.find(".clientnickname, .clientname").attr("title",msg.config.description);
+			}
 			break;
 		}
 	}

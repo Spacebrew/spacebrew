@@ -317,7 +317,10 @@ body{
 	font-size:9pt;
 	width:10px;
 	margin-left:2px;
+	cursor:pointer;
+	display:none;
 }
 .clientinfo span{
 	background-color:yellow;
+	margin-right:10px;
 }
