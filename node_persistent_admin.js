@@ -181,7 +181,7 @@ wsClient.on("connect", function(conn){
     ]};
     connection.send(JSON.stringify(adminMsg));
 });
-wsClient.connect("ws://ec2-184-72-140-184.compute-1.amazonaws.com:9000");
+wsClient.connect("ws://localhost:9000");
 
 var receivedMessage = function(data){
     //console.log(data);
