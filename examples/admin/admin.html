@@ -56,7 +56,12 @@
       <span>{{name}}</span>
     </div>
     <div class="clientname">
-      <span>{{name}}</span>
+      <span>{{name}}</span><span class="infobutton" id="button_info_{{Safetify name}}_{{Safetify remoteAddress}}">?</span>
+    </div>
+    <div class="clientinfo" id="info_{{Safetify name}}_{{Safetify remoteAddress}}">
+      <span>
+        {{config.description}}
+      </span>
     </div>
   </div>
 </div>

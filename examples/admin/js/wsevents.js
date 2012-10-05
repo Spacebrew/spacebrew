@@ -95,7 +95,9 @@ var handleNameMsg = function(msg){
 	for(var i = 0; i < msg.name.length; i++){
 		var currClient = {name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress}
 		clients.push(currClient);
-		$("#client_list").append($(clientTemplate(currClient)));
+		var clientMarkup = $(clientTemplate(currClient));
+		clientMarkup.find(".infobutton").click(clickInfo);
+		$("#client_list").append(clientMarkup);
 	};
 };
 

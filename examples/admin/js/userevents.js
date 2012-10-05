@@ -6,9 +6,14 @@ var setupUserEvents = function(){
 	$(document.body).click(clickBody);
 };
 
-var clickDelete = function(event){
+var clickInfo = function(event){
 	console.log("clicked!");
+	$("#"+event.target.id.substr("button_".length)).toggleClass('show');
 };
+
+// var clickDelete = function(event){
+// 	console.log("clicked!");
+// };
 
 var clickBody = function(event){
 	event.preventDefault();

@@ -225,13 +225,15 @@ body{
 	font-weight:bold;
 	font-size:13pt;
 }
-.clientname{
+.clientname,
+.clientinfo{
 	font-family:DinPro;
 	font-size:9pt;
 	//margin-top:-3px;
 }
 .clientnickname span,
-.clientname span{
+.clientname span,
+.clientinfo span{
 	display:inline-block;
 	background-color:white;
 	padding-left:3px;
@@ -300,4 +302,22 @@ body{
 }
 .deletebutton:hover{
 	color:red;
+}
+.clientinfo{
+	display:none;
+}
+.clientinfo.show{
+	display:block;
+}
+.clientname span.infobutton{
+	font-family:DinPro;
+	font-weight:bolder;
+	color:black;
+	background-color:#FFBE00;
+	font-size:9pt;
+	width:10px;
+	margin-left:2px;
+}
+.clientinfo span{
+	background-color:yellow;
 }
