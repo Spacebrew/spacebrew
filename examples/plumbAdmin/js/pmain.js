@@ -125,56 +125,67 @@ myPlumb.confirmDetachConnection = function(conn, originalEvent) {
 
 //expecting Anchors:[{commType:'string'|'bool'|'int', source:true|false, label:<string>},...]
 myPlumb.addEndpoints = function(toId, anchors) {
+	var numberStuff = {source:this.sourceEndpointInt,target:this.targetEndpointInt};
 	var endpointList = {string:{source:this.sourceEndpointString,target:this.targetEndpointString},
 						boolean:{source:this.sourceEndpointBool,target:this.targetEndpointBool},
-						number:{source:this.sourceEndpointInt,target:this.targetEndpointInt}};
+						number:numberStuff,
+						range:numberStuff};
 
-	var location = {0:"Left",1:"Center",2:"Right",target:"Top",source:"Bottom"};
-	var num = {source:0,target:0};
+	var location = {target:{ypos:0,xdir:0,ydir:-1},source:{ypos:1,xdir:0,ydir:1}};
+	var total = {source:0,target:0}, curr = {source:0,target:0};
 	var endpointGroups = {source:this.allSourceEndpoints, target:this.allTargetEndpoints};
 
+	var type;
+	var currAnchor;
 	var numAnchors = anchors.length;
+	//first find out how many there are total of each publisher and subscriber
 	while (numAnchors--){
-		var currAnchor = anchors[numAnchors];
-		var type = (currAnchor.source ? "source" : "target");
-		var currNumber = num[type]++;
-		if (location[currNumber]){
-			var anchorUUID = toId+sep+currAnchor.commType.Safetify()+sep+currAnchor.label.Safetify();
-			var endpoint = jsPlumb.addEndpoint(toId, endpointList[currAnchor.commType][type], {anchor:location[type]+location[currNumber], parameters:{uuid:anchorUUID}});
-			endpoint.setLabel({label:currAnchor.label, location:[0.5, -0.5+(currAnchor.source ? 2+currNumber : -currNumber/2)]});
-			endpointGroups[type].push(endpoint);
-			this.endpoints[anchorUUID] = endpoint;
-		}
+		currAnchor = anchors[numAnchors];
+		type = (currAnchor.source ? "source" : "target");
+		total[type]++;
 	}
+	numAnchors = anchors.length;
+	//now add and place them correctly
+	while (numAnchors--){
+		currAnchor = anchors[numAnchors];
+		type = (currAnchor.source ? "source" : "target");
+		var currNumber = curr[type]++;//post-increment
+		var xpos = currNumber/(total[type]-1);
+		var myLoc = location[type];
+		var anchorUUID = toId+sep+currAnchor.commType.Safetify()+sep+currAnchor.label.Safetify();
+		var endpoint = jsPlumb.addEndpoint(toId, endpointList[currAnchor.commType][type], {anchor:[xpos, myLoc.ypos, myLoc.xdir, myLoc.ydir], parameters:{uuid:anchorUUID}});
+		endpoint.setLabel({label:currAnchor.label, cssClass:type+"Label"/*, location:[0.5, 1.5*(currAnchor.source ? 1 : -1)]*/});
+		endpointGroups[type].push(endpoint);
+		this.endpoints[anchorUUID] = endpoint;
+	}
+	$("#"+toId).css("min-width",Math.max(total.source, total.target)*20+"px");
 };
 
 // this is the paint style for the connecting lines..
 myPlumb.connectorPaintStyle = {
-	lineWidth:7,
+	lineWidth:2,
 	strokeStyle:"#deea18",
 	joinstyle:"round",
-	outlineColor:"white",
-	outlineWidth:3
+	outlineColor:"white"
 };
 myPlumb.programmaticConnectorPaintStyle = {
-	lineWidth:2,
+	lineWidth:1,
 	strokeStyle:"#aaaaaa",
 	joinstyle:"round",
-	outlineColor:"white",
-	outlineWidth:2
+	outlineColor:"white"
 }
 // .. and this is the hover style. 
 myPlumb.connectorHoverStyle = {
-	lineWidth:7,
+	lineWidth:2,
 	strokeStyle:"#2e2aF8"
 };
 myPlumb.activeEndpointPaintStyle = {
 	fillStyle:"#ff00ff",
-	radius:7
+	radius:3
 };
 myPlumb.sourceEndpointBool = {
 	endpoint:"Dot",
-	paintStyle:{ fillStyle:"#225588",radius:7 },
+	paintStyle:{ fillStyle:"#225588",radius:3 },
 	isSource:true,
 	scope:'bool',
 	connector:[ "Flowchart", { stub:[40, 60], gap:10 } ],								
@@ -186,7 +197,7 @@ myPlumb.sourceEndpointBool = {
 };
 myPlumb.targetEndpointBool = {
 	endpoint:"Dot",					
-	paintStyle:{ fillStyle:"#225588",radius:11 },
+	paintStyle:{ fillStyle:"#225588",radius:3 },
 	hoverPaintStyle:myPlumb.connectorHoverStyle,
 	maxConnections:-1,
 	scope:'bool',
@@ -195,7 +206,7 @@ myPlumb.targetEndpointBool = {
 };
 myPlumb.sourceEndpointInt = {
 	endpoint:"Dot",
-	paintStyle:{ fillStyle:"#882255",radius:7 },
+	paintStyle:{ fillStyle:"#882255",radius:3 },
 	isSource:true,
 	scope:'int',
 	connector:[ "Flowchart", { stub:[40, 60], gap:10 } ],								
@@ -207,7 +218,7 @@ myPlumb.sourceEndpointInt = {
 };
 myPlumb.targetEndpointInt = {
 	endpoint:"Dot",					
-	paintStyle:{ fillStyle:"#882255",radius:11 },
+	paintStyle:{ fillStyle:"#882255",radius:3 },
 	hoverPaintStyle:myPlumb.connectorHoverStyle,
 	maxConnections:-1,
 	scope:'int',
@@ -217,7 +228,7 @@ myPlumb.targetEndpointInt = {
 // the definition of source endpoints (the small blue ones)
 myPlumb.sourceEndpointString = {
 	endpoint:"Dot",
-	paintStyle:{ fillStyle:"#558822",radius:7 },
+	paintStyle:{ fillStyle:"#558822",radius:3 },
 	isSource:true,
 	scope:'string',
 	connector:[ "Flowchart", { stub:[40, 60], gap:10 } ],								
@@ -232,7 +243,7 @@ myPlumb.sourceEndpointString = {
 // the definition of target endpoints (will appear when the user drags a connection) 
 myPlumb.targetEndpointString = {
 	endpoint:"Dot",					
-	paintStyle:{ fillStyle:"#558822",radius:11 },
+	paintStyle:{ fillStyle:"#558822",radius:3 },
 	hoverPaintStyle:myPlumb.connectorHoverStyle,
 	maxConnections:-1,
 	scope:'string',
@@ -252,11 +263,11 @@ setupPlumbing = function() {
 		// default to blue at one end and green at the other
 		EndpointStyles : [{ fillStyle:'#225588' }, { fillStyle:'#558822' }],
 		// blue endpoints 7 px; green endpoints 11.
-		Endpoints : [ [ "Dot", {radius:7} ], [ "Dot", { radius:11 } ]],
+		Endpoints : [ [ "Dot", {radius:3} ], [ "Dot", { radius:3 } ]],
 		// the overlays to decorate each connection with.  note that the label overlay uses a function to generate the label text; in this
 		// case it returns the 'labelText' member that we set on each connection in the 'init' method below.
 		ConnectionOverlays : [
-			[ "Arrow", { location:0.9 } ]/*,
+			/*[ "Arrow", { location:0.9 } ],
 			[ "Label", { 
 				location:0.1,
 				id:"label",

@@ -7,103 +7,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
-
-    <!-- Le styles -->
-    <style>
-      body {
-        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-      }
-    </style>
-
-    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
-    <!--[if lt IE 9]>
-      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
   </head>
 
   <body>
 
-    <div class="navbar navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
-          <a class="brand" href="#">Spacebrew Admin</a>
-          <div class="nav-collapse">
-            <ul class="nav">
-              <li class="active"><a href="#">Home</a></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#contact">Contact</a></li>
-            </ul>
-          </div><!--/.nav-collapse -->
-        </div>
-      </div>
+    <div class="navbar navbar-fixed-bottom">
+          <div class="brand"><img src="img/spacebrew-logo-2.png"></img></div>
+          <div><span class='prefix'>/</span>About</div>
+          <div><span class='prefix'>/</span>Contact</div>
+          <div class="sig">Developed by <img src="img/lab-logo.png"></img></div>
     </div>
 
     <div class="container">
-
-        <h1>Admin</h1>
-        <div class='row'>
-            <div class='span8 client'>
-                Clients
-                <div class="row">
-                    <div class='span3 offset2 publishers'>Publishers (outputs)</div>
-                    <div class='span3 subscribers'>Subscribers (inputs)</div>
-                </div>
-            </div>
+      <div class='headerrow'>
+        <div class='clientcol header' id='clientdataheader'>
+          <span class='prefix'>/</span>Clients
         </div>
-        <br />
-        <div style="overflow:auto">
-          <ol id="client_list" start='0'></ol>
-          <button class="btn" id="btnRouteRadio">Route!</button>
-          <h2>Routes</h2>
-          <div id='route_list'></div>
+        <div class='pubcol header' id='pubdataheader'>
+          <span class='prefix'>/</span>Publishers
         </div>
-        <!--
-        <form class="form-horizontal">
-          <fieldset>
-            <legend>Create Route</legend>
-            <div class="control-group">
-              <label class="control-label" for="ddlPubClient">pubClient</label>
-              <div class="controls">
-                <select id="ddlPubClient"></select>
-              </div>
+        <div class='subcol header' id='subdataheader'>
+          <div class="pubsubsep"></div>
+          <span class='prefix'>/</span>Subscribers
+        </div>
+      </div>
+        <div style="overflow:scroll;height:100%;">
+          <div style="overflow:auto;" id='client_list'>
+            <div id='connectionBin'>
             </div>
-            <div class="control-group">
-              <label class="control-label" for="pubName">pubName</label>
-              <div class="controls">
-                <input type="text" class="input-xlarge" id="pubName">
-              </div>
+            <div id='endpointBin'>
             </div>
-            <div class="control-group">
-              <label class="control-label" for="ddlSubClient">subClient</label>
-              <div class="controls">
-                <select id="ddlSubClient"></select>
-              </div>
-            </div>
-            <div class="control-group">
-              <label class="control-label" for="subName">subName</label>
-              <div class="controls">
-                <input type="text" class="input-xlarge" id="subName">
-              </div>
-            </div>
-            <div class="control-group">
-              <label class="control-label" for="ddlType">type</label>
-              <div class="controls">
-                <select id="ddlType">
-                    <option value="">Select One</option>
-                    <option value="boolean">boolean</option>
-                    <option value="string">string</option>
-                    <option value="number">number</option>
-                </select>
-              </div>
-            </div>
-          </fieldset>
-          <button class="btn" id="btnRoute"}>Route!</button>
-        </form>-->
+          </div>
+          <div style="height:110px;" id='scroll_padding'></div>
+        </div>
 
     </div> <!-- /container -->
 
@@ -113,32 +49,44 @@
 
         <!-- basic libraries -->
     <script type="text/x-handlebars-template" id="client_handlebar">
-<li id="{{Safetify name}}_{{Safetify remoteAddress}}">
-  <div class="row">
-    <div class="span8 client" title="{{config.description}}">
-      {{name}} @ {{remoteAddress}}
+<div class='clientrow' id="{{Safetify name}}_{{Safetify remoteAddress}}">
+  <div class="clientanchor"></div>
+  <div class="clientcol clientdata">
+    <div class="clientnickname" title="(no description)">
+      <span>{{name}}</span>
+    </div>
+    <div class="clientname" title="(no description)">
+      <span>{{name}}</span><span class="infobutton" id="button_info_{{Safetify name}}_{{Safetify remoteAddress}}">?</span>
+    </div>
+    <div class="clientinfo" id="info_{{Safetify name}}_{{Safetify remoteAddress}}">
+      <span>
+      </span>
     </div>
   </div>
-</li>
+</div>
     </script>
     <script type="text/x-handlebars-template" id="pubsub_handlebar">
-    <div class="row">
-      {{#if config.publish.messages}}
-      <div class="span3 offset2 publishers">
-        {{#each config.publish.messages}}
-        <label class="radio">
-          <input type="radio" name="pub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" />{{name}}, {{type}}
-        </label>
-        {{/each}}
+    <div class="pubcol pubdata clientdata">
+      {{#each config.publish.messages}}
+      <div class="itemwrapper publisher">
+      <div class="item publisher {{type}}" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        <div class="deletebutton">X</div>
+        <div class="itemanchor">{{type}}</div>
+        {{name}}
       </div>
-      {{/if}}
-      <div class="span3 {{#unless config.publish.messages}}offset5 {{/unless}}subscribers">
-        {{#each config.subscribe.messages}}
-        <label class="radio">
-          <input type="radio" name="sub" value="{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}">{{name}}, {{type}}
-        </label>
-        {{/each}}
       </div>
+      {{/each}}
+    </div>
+    <div class="subcol subdata clientdata">
+      {{#each config.subscribe.messages}}
+      <div class="itemwrapper subscriber">
+      <div class="item subscriber {{type}}" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        <div class="deletebutton">X</div>
+        <div class="itemanchor">{{type}}</div>
+        {{name}}
+      </div>
+      </div>
+      {{/each}}
     </div>
     </script>
     <script type="text/x-handlebars-template" id="route_handlebar">
@@ -151,7 +99,72 @@
 </div>
 {{/each_with_index}}
     </script>
+    <script type="text/x-handlebars-template" id="active_css_handlebar">
+{{#if pub}}
+.item.publisher:not(#{{id}}){
+  background-color:rgb(193,193,193);
+}
+.item.subscriber:not([class*='{{type}}']){
+  background-color:rgb(193,193,193);
+}
+.item.subscriber.{{type}}{
+  background-color:rgb(177,255,216);
+}
+{{else}}
+.item.subscriber:not(#{{id}}){
+  background-color:rgb(193,193,193);
+}
+.item.publisher:not([class*='{{type}}']){
+  background-color:rgb(193,193,193);
+}
+.item.publisher.{{type}}{
+  background-color:rgb(176,237,255);
+}
+{{/if}}
+.item.publisher.{{id}}{
+  background-color:rgb(168,182,255);
+}
+.item.subscriber.{{id}}{
+  background-color:rgb(129,212,170);
+}
+{{#if clicked}}
+
+{{#if pub}}
+.item.publisher:not(#{{id}}),
+.item.subscriber:not([class*='{{type}}']){
+{{else}}
+.item.subscriber:not(#{{id}}),
+.item.publisher:not([class*='{{type}}']){
+{{/if}}
+  opacity:.5;
+}
+
+.item.subscriber.{{id}} .deletebutton,
+.item.publisher.{{id}} .deletebutton{
+  display:block;
+}
+
+.clientrow:not(.selected){
+  background-image:url();
+}
+.item.subscriber#{{id}}{
+  outline:10px solid rgb(129,212,170);
+  -webkit-transition:all 0s ease-in-out;
+}
+.item.publisher#{{id}}{
+  outline:10px solid rgb(111,193,222);
+  -webkit-transition:all 0s ease-in-out;
+}
+.item.subscriber#{{id}}[class*='pub_']{
+  outline:10px solid rgb(71,158,116);
+}
+.item.publisher#{{id}}[class*='sub_']{
+  outline:10px solid rgb(116,131,222);
+}
+{{/if}}
+    </script>
     <script data-main="js/load.js" src="js/require-2.0.4.js"></script>
+    <style id='selected' type='text/css'></style>
   </body>
 </html>
 

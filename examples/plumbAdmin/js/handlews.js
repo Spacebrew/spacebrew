@@ -20,8 +20,8 @@ setupWS = function(){
     }
     ws.onmessage = function(e) {
         //console.log("Got WebSockets message: " + e.data);
-        console.log("Got WebSockets message:");
-        console.log(e);
+        // console.log("Got WebSockets message:");
+        // console.log(e);
         //try {
             var json = JSON.parse(e.data);
             if (!myWS.handleMsg(json)){
@@ -68,19 +68,6 @@ myWS.handleMessageMsg = function(msg){
     var endpoint = myPlumb.endpoints[[from.clientName, from.remoteAddress, from.type, from.name].map(Safetify).join(sep)];
     endpoint.setPaintStyle(myPlumb.activeEndpointPaintStyle);
     setTimeout(function(){endpoint.setPaintStyle(endpointList[from.type].source.paintStyle);},200);
-            
-    // for(var i = clients.length - 1; i >= 0; i--){
-    //     if (clients[i].name === msg.message.clientName
-    //         && clients[i].remoteAddress === msg.message.remoteAddress){
-    //         var selector = "#client_list li:eq("+i+")";
-    //         $(selector).addClass('active');
-    //         setTimeout(function(){$(selector).removeClass('active');},200);
-    //         break;
-    //     }
-    // }
-    // var selector2 = "input[name=pub][value='{name}:{addr}:{pubName}:{pubType}']:radio".replace("{name}",msg.message.clientName).replace("{addr}", msg.message.remoteAddress).replace("{pubName}",msg.message.name).replace("{pubType}",msg.message.type);
-    // $(selector2).parent().addClass('active');
-    // setTimeout(function(){$(selector2).parent().removeClass('active');},200);
 };
 
 myWS.handleNameMsg = function(msg){
@@ -91,56 +78,6 @@ myWS.handleNameMsg = function(msg){
         jsPlumb.draggable(newDiv);
         $("#bucket").append(newDiv);
     };
-    this.generateList();
-};
-
-//generates the list of clients for viewing
-myWS.generateList = function(){
-    return;
-    var olHtml = '';
-    var ddlHtml = '<option value="">Select One</option>';
-    for(var i = 0; i < clients.length; i++){
-        var name=clients[i].name;
-        var addr = clients[i].remoteAddress, pubColumn = '<div class="span3 offset2 publishers">', title = '', subColumn = '<div class="span3 subscribers">';
-        if (clients[i].config){
-            if (clients[i].config.publish && clients[i].config.publish.messages){
-                for(var j = clients[i].config.publish.messages.length - 1; j >= 0; j--){
-                    var currM = clients[i].config.publish.messages[j];
-                    pubColumn += '<label class="radio"><input type="radio" name="pub" value="{name}:{addr}:{pubName}:{pubType}">{pubName}, {pubType}</label>'.replace(/{pubName}/g,currM.name.Safetify()).replace(/{pubType}/g,currM.type.Safetify());
-                }
-            }
-            if (clients[i].config.subscribe && clients[i].config.subscribe.messages){
-                for (var j = clients[i].config.subscribe.messages.length - 1; j >= 0; j--){
-                    var currM = clients[i].config.subscribe.messages[j];
-                    subColumn += '<label class="radio"><input type="radio" name="sub" value="{name}:{addr}:{subName}:{subType}">{subName}, {subType}</label>'.replace(/{subName}/g,currM.name.Safetify()).replace(/{subType}/g,currM.type.Safetify());
-                }
-            }
-            title = clients[i].config.description;
-        }
-        pubColumn += '</div>';
-        subColumn += '</div>';
-        var leftColumn = '<div class="span8 client" title="{title}">{name} @ {addr}<div class="row">{col2}{col3}</div></div>';
-        olHtml += '<li><div class="row">{col1}</div></li>'.replace(/{col1}/g,leftColumn).replace(/{col2}/g,pubColumn).replace(/{col3}/g,subColumn).replace(/{name}/g,name.Safetify()).replace(/{addr}/g,addr.Safetify()).replace(/{title}/g,title);
-        ddlHtml += '<option value="{i}">{i}</option>'.replace(/{i}/g,i);
-    };
-    $("#client_list").html(olHtml);
-    $("#ddlSubClient").html(ddlHtml);
-    $("#ddlPubClient").html(ddlHtml);
-};
-
-myWS.displayRoutes = function(){
-    var html = '';
-    var even = false;
-    for(var i = routes.length - 1; i >= 0; i--){
-        var pub = routes[i].publisher;
-        var pubColumn = "<div class='span5'>{name} @ {addr}: {pubName}, {pubType}</div>".replace("{name}",pub.clientName).replace("{addr}",pub.remoteAddress).replace("{pubName}",pub.name).replace("{pubType}",pub.type);
-        var sub = routes[i].subscriber;
-        var subColumn = "<div class='span5'>{name} @ {addr}: {subName}, {subType}</div>".replace("{name}",sub.clientName).replace("{addr}",sub.remoteAddress).replace("{subName}",sub.name).replace("{subType}",sub.type);
-        var button = '<div class="span1"><button id="btnRouteRemove{index}" onclick="dorouteremove({index})" class="btn btn-inverse btn-mini">remove</button></div>';
-        html += '<div class="row {even}">{col1}<div class="span1">---TO---></div>{col3}{button}</div>'.replace("{col1}",pubColumn).replace("{col3}",subColumn).replace("{button}",button).replace("{even}",(even?"even":"odd")).replace(/{index}/g,i);
-        even = !even;
-    }
-    $("#route_list").html(html);
 };
 
 myWS.handleConfigMsg = function(msg){
@@ -158,12 +95,6 @@ myWS.handleConfigMsg = function(msg){
         }
     }
     myPlumb.addEndpoints(msg.config.name.Safetify()+sep+msg.config.remoteAddress.Safetify(), endpointList);
-    // [{commType:'string',source:true,label:'test'},
-    //                                         {commType:'bool', source:true,label:'btest'},
-    //                                         {commType:'int',source:true,label:'itest'},
-    //                                         {commType:'bool',source:false,label:'intest'},
-    //                                         {commType:'string',source:false,label:'instest'},
-    //                                         {commType:'int',source:false,label:'intintest'}]);
     for(var j = 0; j < clients.length; j++){
         if (clients[j].name === msg.config.name
             && clients[j].remoteAddress === msg.config.remoteAddress){
@@ -171,7 +102,6 @@ myWS.handleConfigMsg = function(msg){
             break;
         }
     }
-    this.generateList();
 };
 
 myWS.handleRouteMsg = function(msg){
@@ -248,7 +178,6 @@ myWS.handleRouteMsg = function(msg){
             }
         }
     }
-    this.displayRoutes();
 };
 
 myWS.handleRemoveMsg = function(msg){
@@ -263,9 +192,8 @@ myWS.handleRemoveMsg = function(msg){
                 break;
             }
         }
-        var el = $("#"+msg.remove[i].name);
+        var el = $("#"+msg.remove[i].name.Safetify()+"_"+msg.remove[i].remoteAddress.Safetify());
         jsPlumb.removeAllEndpoints(el);
         el.remove();
     }
-    this.generateList();
 };

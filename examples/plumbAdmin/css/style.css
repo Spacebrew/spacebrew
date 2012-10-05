@@ -4,17 +4,19 @@ box-shadow: 2px 2px 19px #aaa;
    -webkit-box-shadow: 2px 2px 19px #aaa;
    -moz-box-shadow: 2px 2px 19px #aaa;
 -moz-border-radius:0.5em;
-border-radius:0.5em;
+border-radius:0.2em;
 opacity:0.8;
 filter:alpha(opacity=80);
-width:5em; height:5em;
-line-height:5em;
+//width:5em; 
+height:1em;
+line-height:1em;
 text-align:center;
 z-index:20; position:absolute;
 background-color:#eeeeef;
 color:black;
 font-family:helvetica;padding:0.5em;
-font-size:0.9em;}
+font-size:0.9em;
+display:inline-block;}
 .window:hover {
 
 box-shadow: 2px 2px 19px #444;
@@ -38,6 +40,12 @@ filter:alpha(opacity=60);
 #window3 { top:20em;left:45em; }
 #window4 { top:17em; left:22em;}
 ._jsPlumb_connector { z-index:4; }
+.sourceLabel{
+	-webkit-transform: rotate(90deg) translateX(50%) translateY(-50%) translateX(3px) translateY(-1px);
+}
+.targetLabel{
+	-webkit-transform: rotate(90deg) translateX(-50%) translateY(-50%) translateX(-3px) translateY(-1px);
+}
 ._jsPlumb_endpoint, .endpointTargetLabel, .endpointSourceLabel{ z-index:21;cursor:pointer; }
 .hl { border:3px solid red; }
 #debug { position:absolute; background-color:black; color:red; z-index:5000 }
