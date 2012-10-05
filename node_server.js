@@ -79,7 +79,12 @@ wss.on('connection', function(ws) {
         var bValidMessage = false;
         if (message) {
             // process WebSocket message
-            var tMsg = JSON.parse(message);
+            try{
+                var tMsg = JSON.parse(message);
+            }catch(err){
+                console.log("invalid message");
+                return;
+            }
 
             if (tMsg['name']) {
                 //IGNORING FOR NOW, ONLY CONFIG MESSAGES ARE SUPPORTED
