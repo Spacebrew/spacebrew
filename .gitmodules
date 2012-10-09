@@ -1,0 +1,9 @@
+[submodule "WebSocket-Node"]
+	path = WebSocket-Node
+	url = git://github.com/Worlize/WebSocket-Node.git
+[submodule "log4js-node"]
+	path = log4js-node
+	url = git://github.com/nomiddlename/log4js-node.git
+[submodule "async"]
+	path = async
+	url = git://github.com/caolan/async.git
