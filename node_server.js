@@ -133,199 +133,11 @@ wss.on('connection', function(ws) {
             }
 
             if (tMsg['name']) {
-                //IGNORING FOR NOW, ONLY CONFIG MESSAGES ARE SUPPORTED
-                // //a connection is registering themselves
-                // //console.log(tMsg['name']);
-                // for (var index = 0; index < tMsg['name'].length; index++){
-                //     var tVar = [tMsg['name'][index].name, connection.upgradeReq.headers.host, connection];
-                //     //add the remote address to the message for the admins
-                //     tMsg['name'][index].remoteAddress = connection.upgradeReq.headers.host;
-
-                //     var existingClient = false;
-                //     for(var i=0; i<trustedClients.length; i++) {
-                //         //console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
-                //         //console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
-                //         if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
-                //             existingClient = true;
-                //             console.log("client is already connected -- denying new connection");
-                //             connection.close();
-                //         }
-                //     }
-                //     if (existingClient === false) {
-                //         //console.log("Logged new connection");
-                //         var tClient = {
-                //             "name": tVar[0],
-                //             "remoteAddress": tVar[1],
-                //             "description": "",
-                //             "connection": connection,
-                //             "publishers": {},
-                //             "subscribers": {},
-                //             "config":""
-                //         };
-                //         console.log("Client is new");
-
-                //         trustedClients.push(tClient);
-                //         console.log("client added");
-                //         bValidMessage = true;
-                //     }
-                // }
-
-                // console.log("Here are the current trustedClients "+trustedClients.length);
-
-                // for (var i=0; i<trustedClients.length; i++) {
-                //     console.log(trustedClients[i]['name']);
-                // }
+                bValidMessage = handleNameMessage(connection, tMsg);
             } else if (tMsg['config']) {
-                //first check to see if client exists already
-                if (!connection.spacebrew_already_processed){
-                    //check to see if the name alredy exists, if so, close this connection.
-                    var numTrusted = trustedClients.length;
-                    var msgName = tMsg['config']['name'],
-                        msgAddress = connection.upgradeReq.headers.host;
-                    while (numTrusted--){
-                        if (trustedClients[numTrusted]['name'] === msgName &&
-                            trustedClients[numTrusted]['remoteAddress'] === msgAddress){
-                            console.log("client is already connected -- denying new connection");
-                            connection.close();
-                            return;
-                        }
-                    }
-                    //it passes muster, lets add it as a trusted client
-                    connection.spacebrew_already_processed = true;
-                    //console.log("Logged new connection");
-                    var tClient = {
-                        "name": msgName,
-                        "remoteAddress": msgAddress,
-                        "description": "",
-                        "connection": connection,
-                        "publishers": {},
-                        "subscribers": {},
-                        "config":""
-                    };
-                    console.log("Client is new");
-
-                    trustedClients.push(tClient);
-                    console.log("client added");
-                    bValidMessage = true;
-                    console.log("Here are the current trustedClients "+trustedClients.length);
-
-                    for (var i=0; i<trustedClients.length; i++) {
-                        console.log(trustedClients[i]['name']);
-                    }
-                    //and send the config to the admins
-                    sendToAdmins({name:[{name:msgName, remoteAddress:msgAddress}]});
-                }
-
-                // accept each apps config and add it to its respect publisher and subscriber list
-                var trustedClient = undefined;
-                for(var i = 0; i < trustedClients.length; i++){
-                    if (trustedClients[i].name === tMsg['config']['name'] &&
-                        trustedClients[i].remoteAddress === connection.upgradeReq.headers.host){
-                        trustedClient = trustedClients[i];
-                        break;
-                    }
-                }
-
-                if (trustedClient !== undefined){
-                    bValidMessage = true;
-                    //add the remote address to the message for the admins
-                    tMsg['config'].remoteAddress = trustedClient.remoteAddress;
-                    trustedClient.config = tMsg['config'];
-                    trustedClient.description = tMsg['config']['description'];
-                    var tSubs = [];
-                    if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
-                        tSubs = tMsg.config.subscribe.messages;
-                    } else {
-                        tMsg.config['subscribe'] = {};
-                        tMsg.config.subscribe['messages'] = [];
-                    }
-                    var tPubs = [];
-                    if (tMsg.config.publish && tMsg.config.publish.messages){
-                        tPubs = tMsg.config.publish.messages;
-                    } else {
-                        tMsg.config['publish'] = {};
-                        tMsg.config.publish['messages'] = [];
-                    }
-                    var items = [[tSubs, trustedClient.subscribers,'publishers'], [tPubs, trustedClient.publishers,'subscribers']];
-                    //we are storing in a structure
-                    // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
-                    //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
-                    //so you need to access them by trustedClients[i][<sub_or_pub>][<name>][<type>]
-                    for (var j = 0; j<items.length; j++){
-                        item = items[j];
-                        var hash = {};
-                        //add new subscribers/publishers to hash
-                        for (var i=0; i<item[0].length; i++) {
-                            if (!hash[item[0][i].name]){
-                                hash[item[0][i].name] = {};
-                            }
-                            hash[item[0][i].name][item[0][i].type] = item[0][i];
-                            if (!item[1][item[0][i].name]){
-                                item[1][item[0][i].name] = {};
-                            }
-                            if (!item[1][item[0][i].name][item[0][i].type]){
-                                item[0][i][item[2]] = [];
-                                item[1][item[0][i].name][item[0][i].type] = item[0][i];
-                            }
-                        }
-                        //remove stale subscribers/publishers from hash
-                        for (var key in item[1]){
-                            if (hash[key] === undefined){
-                                delete item[1][key];
-                            } else {
-                                for (var type in item[1][key]){
-                                    if (hash[key][type] === undefined){
-                                        delete item[1][key][type];
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                bValidMessage = handleConfigMessage(connection, tMsg);
             } else if (tMsg['message']) {
-                //console.log("I got sent a message from "+connection);
-
-                // BROADCAST
-                // var messageToSend = JSON.stringify(tMsg);
-                // for (var j=0, end=trustedClients.length; j<end; j++) {
-                //     trustedClients[j].connection.sendUTF(messageToSend);
-                // }
-                //add the remote address for the admins
-                tMsg['message'].remoteAddress = connection.upgradeReq.headers.host;
-
-                //ROUTING
-                var pub;
-                //find the associated client
-                //get the appropriate publisher on that client
-                //for each subscriber to that publisher,
-                //translate the message to the subscriber's name
-                //and send the type & value
-                for(var i = trustedClients.length - 1; i>= 0; i--){
-                    var currClient = trustedClients[i];
-                    if (currClient.name === tMsg.message.clientName
-                        && currClient.remoteAddress === tMsg.message.remoteAddress){
-                        pub = currClient.publishers[tMsg.message.name];
-                        if (!pub){
-                            console.log("an un-registered publisher name: " + tMsg.message.name);
-                        } else {
-                            pub = pub[tMsg.message.type];
-                            if (!pub){
-                                console.log("an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
-                            } else {
-                                bValidMessage = true;
-                                for(var j = pub.subscribers.length - 1; j >= 0; j--){
-                                    var currSub = pub.subscribers[j];
-                                    currSub.client.connection.send(JSON.stringify({message:{
-                                        name:currSub.subscriber.name,
-                                        type:tMsg.message.type,
-                                        value:tMsg.message.value
-                                    }}));
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
+                bValidMessage = routeMessage(connection, tMsg);
             } else if (tMsg['admin']) {
                 connection.send(JSON.stringify(buildTrustedClientsForAdmin()));
                 adminConnections.push(connection);
@@ -424,12 +236,76 @@ wss.on('connection', function(ws) {
 });
 
 /**
+ * A helper function to handle routing messages from a publisher to the appropriate subscribers.
+ * @param  {ws Connection Obj} connection The connection that the message came in on
+ * @param  {json} tMsg The message from the publisher which should be forwarded to its subscribers
+ * @return {boolean}      True iff the message comes from a publisher that exists
+ */
+var routeMessage = function(connection, tMsg){
+    var bValidMessage = false;
+    //high level thoughts:
+    //1) add a pointer from the connection to the client, so it is O(1) to find the 
+    //    appropriate client instead of O(n) -- issue, more than one client per connection, 
+    //    but at least we could have a list to make the search shorter, not a full O(n).
+    //    Those clients could be sorted in a priority queue based on how often they send messages.
+    //2) change to [<type>][<pub/sub Name>] to access publishers and subscribers for a client.
+    //    This should help speed up searching since the first level will usually be 3 bins max
+    //    and then the second level has many branches instead of the first level having all
+    //    the branches and the second level having one branch. Keep in mind that we should support
+    //    user-defined types beyond String, Boolean, Range. Is it quicker to rely on the hash-map
+    //    to quickly find elements or should be implement our own binary search? 
+    //    (sounds like we are going too deep) But maybe we could implement a priority queue, publishers
+    //    that publish often are more likely to publish.
+    
+    //console.log("I got sent a message from "+connection);
+
+    //add the remote address for the admins
+    tMsg['message'].remoteAddress = connection.upgradeReq.headers.host;
+
+    //ROUTING
+    var pub;
+    //find the associated client
+    //get the appropriate publisher on that client
+    //for each subscriber to that publisher,
+    //translate the message to the subscriber's name
+    //and send the type & value
+    for(var i = trustedClients.length - 1; i>= 0; i--){
+        var currClient = trustedClients[i];
+        if (currClient.name === tMsg.message.clientName
+            && currClient.remoteAddress === tMsg.message.remoteAddress){
+            pub = currClient.publishers[tMsg.message.name];
+            if (!pub){
+                console.log("an un-registered publisher name: " + tMsg.message.name);
+            } else {
+                pub = pub[tMsg.message.type];
+                if (!pub){
+                    console.log("an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
+                } else {
+                    bValidMessage = true;
+                    for(var j = pub.subscribers.length - 1; j >= 0; j--){
+                        var currSub = pub.subscribers[j];
+                        currSub.client.connection.send(JSON.stringify({message:{
+                            name:currSub.subscriber.name,
+                            type:tMsg.message.type,
+                            value:tMsg.message.value
+                        }}));
+                    }
+                }
+            }
+            break;
+        }
+    }
+    return bValidMessage;
+}
+
+/**
  * A helper function to handle adding and removing routes. This will update the neccessary
  * data structures
  * @param  {json} tMsg The message from an Admin specifying whether to add or remove a route
  * @return {boolean}      True iff the route message was valid and changed the state of the server.
  */
 var handleRouteMessage = function(tMsg){
+    //TODO: check that the message came from an admin?
     //expected message format:
     //{route:{type:<add/remove>,
     //        publisher:{clientName:_____,name:____,type:_____,remoteAddress:_____},
@@ -494,6 +370,177 @@ var handleRouteMessage = function(tMsg){
     }
     return bValidMessage;
 };
+
+/**
+ * A helper function used to parse config messages from Clients.
+ * @param  {ws Connection Obj} connection The connection that the message came in on
+ * @param  {json} tMsg       The config message from the Client
+ * @return {boolean}            True iff the Client you are trying to config does not already exist
+ */
+var handleConfigMessage = function(connection, tMsg){
+    var bValidMessage = false;
+    //TODO: support multiple clients per connection
+    //first check to see if client exists already
+    if (!connection.spacebrew_already_processed){
+        //check to see if the name alredy exists, if so, close this connection.
+        var numTrusted = trustedClients.length;
+        var msgName = tMsg['config']['name'],
+            msgAddress = connection.upgradeReq.headers.host;
+        while (numTrusted--){
+            if (trustedClients[numTrusted]['name'] === msgName &&
+                trustedClients[numTrusted]['remoteAddress'] === msgAddress){
+                console.log("client is already connected -- denying new connection");
+                connection.close();
+                return false;
+            }
+        }
+        //it passes muster, lets add it as a trusted client
+        connection.spacebrew_already_processed = true;
+        //console.log("Logged new connection");
+        var tClient = {
+            "name": msgName,
+            "remoteAddress": msgAddress,
+            "description": "",
+            "connection": connection,
+            "publishers": {},
+            "subscribers": {},
+            "config":""
+        };
+        console.log("Client is new");
+
+        trustedClients.push(tClient);
+        console.log("client added");
+        bValidMessage = true;
+        console.log("Here are the current trustedClients "+trustedClients.length);
+
+        for (var i=0; i<trustedClients.length; i++) {
+            console.log(trustedClients[i]['name']);
+        }
+        //and send the config to the admins
+        sendToAdmins({name:[{name:msgName, remoteAddress:msgAddress}]});
+    }
+
+    // accept each apps config and add it to its respect publisher and subscriber list
+    var trustedClient = undefined;
+    for(var i = 0; i < trustedClients.length; i++){
+        if (trustedClients[i].name === tMsg['config']['name'] &&
+            trustedClients[i].remoteAddress === connection.upgradeReq.headers.host){
+            trustedClient = trustedClients[i];
+            break;
+        }
+    }
+
+    if (trustedClient !== undefined){
+        bValidMessage = true;
+        //add the remote address to the message for the admins
+        tMsg['config'].remoteAddress = trustedClient.remoteAddress;
+        trustedClient.config = tMsg['config'];
+        trustedClient.description = tMsg['config']['description'];
+        var tSubs = [];
+        if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
+            tSubs = tMsg.config.subscribe.messages;
+        } else {
+            tMsg.config['subscribe'] = {};
+            tMsg.config.subscribe['messages'] = [];
+        }
+        var tPubs = [];
+        if (tMsg.config.publish && tMsg.config.publish.messages){
+            tPubs = tMsg.config.publish.messages;
+        } else {
+            tMsg.config['publish'] = {};
+            tMsg.config.publish['messages'] = [];
+        }
+        var items = [[tSubs, trustedClient.subscribers,'publishers'], [tPubs, trustedClient.publishers,'subscribers']];
+        //we are storing in a structure
+        // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
+        //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
+        //so you need to access them by trustedClients[i][<sub_or_pub>][<name>][<type>]
+        for (var j = 0; j<items.length; j++){
+            item = items[j];
+            var hash = {};
+            //add new subscribers/publishers to hash
+            for (var i=0; i<item[0].length; i++) {
+                if (!hash[item[0][i].name]){
+                    hash[item[0][i].name] = {};
+                }
+                hash[item[0][i].name][item[0][i].type] = item[0][i];
+                if (!item[1][item[0][i].name]){
+                    item[1][item[0][i].name] = {};
+                }
+                if (!item[1][item[0][i].name][item[0][i].type]){
+                    item[0][i][item[2]] = [];
+                    item[1][item[0][i].name][item[0][i].type] = item[0][i];
+                }
+            }
+            //remove stale subscribers/publishers from hash
+            for (var key in item[1]){
+                if (hash[key] === undefined){
+                    delete item[1][key];
+                } else {
+                    for (var type in item[1][key]){
+                        if (hash[key][type] === undefined){
+                            delete item[1][key][type];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return bValidMessage;
+}
+
+/**
+ * Handles the initial 'name' message from Clients that is used to register them with 
+ * the Server. Currently deprecated.
+ * @param  {ws Connection Obj} connection The connection that the message came in on
+ * @param  {json} tMsg The name message from the Client
+ * @return {boolean}      True iff there does not exist a Client with that name
+ */
+var handleNameMessage = function(connection, tMsg){
+    return false;
+    //IGNORING FOR NOW, ONLY CONFIG MESSAGES ARE SUPPORTED
+    // //a connection is registering themselves
+    // //console.log(tMsg['name']);
+    // for (var index = 0; index < tMsg['name'].length; index++){
+    //     var tVar = [tMsg['name'][index].name, connection.upgradeReq.headers.host, connection];
+    //     //add the remote address to the message for the admins
+    //     tMsg['name'][index].remoteAddress = connection.upgradeReq.headers.host;
+
+    //     var existingClient = false;
+    //     for(var i=0; i<trustedClients.length; i++) {
+    //         //console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
+    //         //console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
+    //         if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
+    //             existingClient = true;
+    //             console.log("client is already connected -- denying new connection");
+    //             connection.close();
+    //         }
+    //     }
+    //     if (existingClient === false) {
+    //         //console.log("Logged new connection");
+    //         var tClient = {
+    //             "name": tVar[0],
+    //             "remoteAddress": tVar[1],
+    //             "description": "",
+    //             "connection": connection,
+    //             "publishers": {},
+    //             "subscribers": {},
+    //             "config":""
+    //         };
+    //         console.log("Client is new");
+
+    //         trustedClients.push(tClient);
+    //         console.log("client added");
+    //         bValidMessage = true;
+    //     }
+    // }
+
+    // console.log("Here are the current trustedClients "+trustedClients.length);
+
+    // for (var i=0; i<trustedClients.length; i++) {
+    //     console.log(trustedClients[i]['name']);
+    // }
+}
 
 /**
  * Checks to see if the specified publisher and subscriber are already routed together
