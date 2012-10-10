@@ -6,7 +6,7 @@
  */
 var spacePort = 9000;
 if (process.argv[2]) {
-    var tempPort = ParseInt(process.argv[2]);
+    var tempPort = parseInt(process.argv[2]);
     //check that tempPort != NaN
     //and that the port is in the valid port range
     if (tempPort == tempPort &&
