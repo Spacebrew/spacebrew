@@ -334,7 +334,10 @@ wss.on('connection', function(ws) {
                 bValidMessage = handleRouteMessage(tMsg);
             }
             if (bValidMessage){
+                console.log("forwarding to admins");
                 sendToAdmins(tMsg);
+            } else {
+                console.log("message marked as invalid, ignoring");
             }
         }
     });
@@ -455,11 +458,24 @@ var handleRouteMessage = function(tMsg){
         //and notify the calling function that they can forward the message
         //to all the admins
         if (pubEntry && subEntry){
-            bValidMessage = true;
             if (tMsg.route.type == "add"){
+                //If the designated publisher and subscriber are already routed together
+                //then ignore this message
+                if (areRoutedTogether(pubClient, pubEntry, subClient, subEntry)){
+                    return false;
+                }
+                //if not, route them
+                bValidMessage = true;
                 pubEntry.subscribers.push({client:subClient,subscriber:subEntry});
                 subEntry.publishers.push({client:pubClient,publisher:pubEntry});
             } else if (tMsg.route.type == "remove"){
+                //If the designated publisher and subscriber are NOT routed together currently
+                //then ignore this message
+                if (!areRoutedTogether(pubClient, pubEntry, subClient, subEntry)){
+                    return false;
+                }
+                //if they are currently routed, then break the connection
+                bValidMessage = true;
                 var entry;
                 var items = [[subEntry, pubEntry.subscribers, 'subscriber'],[pubEntry, subEntry.publishers, 'publisher']];
                 for (var j = 0; j < items.length; j++){
@@ -477,6 +493,30 @@ var handleRouteMessage = function(tMsg){
         }
     }
     return bValidMessage;
+};
+
+/**
+ * Checks to see if the specified publisher and subscriber are already routed together
+ * @param  {Client Obj} pubClient The Client object from the trustedClients array that contains this publisher
+ * @param  {Pub Obj} pubEntry  The publisher entry that is the specific publisher from pubClient
+ * @param  {Client Obj} subClient The Client object from the trustedClients array that contains this subscriber
+ * @param  {Sub Obj} subEntry  The subscriber entry that is the specific subscriber from subClient
+ * @return {boolean}           True iff the publisher and subscriber are routed together
+ */
+var areRoutedTogether = function(pubClient, pubEntry, subClient, subEntry){
+    var numSubscribers = pubEntry.subscribers.length;
+    while(numSubscribers--){
+        var currSub = pubEntry.subscribers[numSubscribers];//{client:{},subscriber:{}}
+        if (currSub.subscriber.type === subEntry.type &&
+            currSub.subscriber.name === subEntry.name &&
+            currSub.client.name === subClient.name &&
+            currSub.client.remoteAddress === subClient.remoteAddress){
+            //the pub/sub are routed together
+            return true;
+        }
+    }
+    //we did not encounter a matching subscriber that is routed to from the specified publisher
+    return false;
 };
 
 /**
