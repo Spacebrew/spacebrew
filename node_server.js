@@ -15,15 +15,22 @@ if (process.argv[2]) {
     }
 }
 
+/**
+ * startup the websocket server.
+ * The port specifies which port to listen on
+ * The 'host = 0.0.0.0' specifies to listen to ALL incoming traffic, 
+ * not just localhost or a specific IP
+ */
 var WebSocketServer = require('ws').Server
   , wss = new WebSocketServer({port: spacePort,host:'0.0.0.0'});
-var http = require('http');
+//var http = require('http');
 
 /**
  * keeps a list of all the current websocket connections.
  * @type {Array}
  */
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
+//TODO: rename this variable
 
 /**
  * A list of websocket connections that have identified themselves as spacebrew Clients.
@@ -52,6 +59,7 @@ console.log("More info at http://www.spacebrew.cc");
  * @return {Array} An array of messages to catch the new Admin up with the current state
  */
 var buildTrustedClientsForAdmin = function(){
+    //TODO: rename this fuction
     var output = [];
     //re-create the 'name' and 'config' messages
     for(var i = 0, end = trustedClients.length; i < end; i++){
@@ -60,14 +68,17 @@ var buildTrustedClientsForAdmin = function(){
         output.push(currMsg);
         var publishers = [];
         var subscribers = [];
-        var items = [[publishers, currClient.publishers],[subscribers, currClient.subscribers]];
+        var items = [{'first': publishers, 'second': currClient.publishers},
+                     {'first': subscribers, 'second': currClient.subscribers}];
         for(var j = 0; j < items.length; j++){
-            for(var key in items[j][1]){
-                for (var type in items[j][1][key]){
-                    items[j][0].push({name:key, type:type, default:items[j][1][key][type].default});
+            for(var key in items[j]['second']){
+                for (var type in items[j]['second'][key]){
+                    items[j]['first'].push({name:key, type:type, default:items[j]['second'][key][type].default});
                 }
             }
         }
+        //TODO: instead of re-creating message here, 
+        //just create/save it when the config is updated for this Client
         currMsg = {config:{name:currClient.name,
                             remoteAddress:currClient.remoteAddress,
                             description:currClient.description,
@@ -79,6 +90,7 @@ var buildTrustedClientsForAdmin = function(){
     //we only need to build from one side, so we only look at publishers
     for(var i = 0, end = trustedClients.length; i < end; i++){
         var currClient = trustedClients[i];
+        //TODO: 'key' really references the 'names' in the publishers hash
         for (var key in currClient.publishers){
             for (var type in currClient.publishers[key]){
                 var publisherObj = {clientName:currClient.name,
@@ -137,7 +149,7 @@ wss.on('connection', function(ws) {
             } else if (tMsg['config']) {
                 bValidMessage = handleConfigMessage(connection, tMsg);
             } else if (tMsg['message']) {
-                bValidMessage = routeMessage(connection, tMsg);
+                bValidMessage = handleMessageMessage(connection, tMsg);
             } else if (tMsg['admin']) {
                 connection.send(JSON.stringify(buildTrustedClientsForAdmin()));
                 adminConnections.push(connection);
@@ -173,7 +185,6 @@ wss.on('connection', function(ws) {
 
         for(var i = 0; i < trustedClients.length;){
             //console.log(trustedClients);
-            //if (trustedClients[i]['connection'].state === 'closed'){
             if (!trustedClients[i].connection._socket){
                 
                 //for each publisher
@@ -182,12 +193,16 @@ wss.on('connection', function(ws) {
                 //for each subscriber
                 //for each publisher to that subscriber
                 //remove route
-                var items = [[trustedClients[i].publishers, 'subscribers', 'subscriber', 'publisher'],[trustedClients[i].subscribers, 'publishers', 'publisher', 'subscriber']];
+                //TODO: change to using keywords in inner data structure (hash) instead of array
+                var items = [[trustedClients[i].publishers, 'subscribers', 'subscriber', 'publisher'],
+                             [trustedClients[i].subscribers, 'publishers', 'publisher', 'subscriber']];
                 for (var k = 0; k < items.length; k++){
                     for (var key in items[k][0]){
                         for (var type in items[k][0][key]){
                             var currBase = items[k][0][key][type];
-                            while(currBase[items[k][1]].length > 0){
+                            var numItems = currBase[items[k][1]].length;
+                            while(numItems--){
+                                //TODO: Explain why always using the zeroth item works
                                 var currLeaf = currBase[items[k][1]][0];
                                 var messageContent = {type:'remove'};
                                 messageContent[items[k][2]] = {clientName:currLeaf.client.name,
@@ -198,6 +213,7 @@ wss.on('connection', function(ws) {
                                                                 name:currBase.name,
                                                                 type:currBase.type,
                                                                 remoteAddress:trustedClients[i].remoteAddress};
+                                //TODO: EXPLAIN THIS
                                 if (handleRouteMessage({route:messageContent})){
                                     sendToAdmins({route:messageContent});
                                 }
@@ -212,7 +228,7 @@ wss.on('connection', function(ws) {
             }
         }
 
-        //remove admins
+        //remove Admins
         //console.log("There are admins: "+ adminConnections.length);
         for(var i = 0; i < adminConnections.length;){
             if (adminConnections[i]._socket == null){
@@ -229,9 +245,10 @@ wss.on('connection', function(ws) {
                 i++;
             }
         }
-        //tell the admins about removed clients
-        sendToAdmins({remove:removed});
 
+        //tell the Admins about removed Clients
+        //do this after any disconnected admins are removed.
+        sendToAdmins({remove:removed});
     });
 });
 
@@ -241,7 +258,7 @@ wss.on('connection', function(ws) {
  * @param  {json} tMsg The message from the publisher which should be forwarded to its subscribers
  * @return {boolean}      True iff the message comes from a publisher that exists
  */
-var routeMessage = function(connection, tMsg){
+var handleMessageMessage = function(connection, tMsg){
     var bValidMessage = false;
     //high level thoughts:
     //1) add a pointer from the connection to the client, so it is O(1) to find the 
@@ -305,14 +322,14 @@ var routeMessage = function(connection, tMsg){
  * @return {boolean}      True iff the route message was valid and changed the state of the server.
  */
 var handleRouteMessage = function(tMsg){
-    //TODO: check that the message came from an admin?
+    //TODO: check that the message came from an admin connection
     //expected message format:
     //{route:{type:<add/remove>,
     //        publisher:{clientName:_____,name:____,type:_____,remoteAddress:_____},
     //        subscriber:{clientName:____,name:____,type:____,remoteAddress:____}}}
-    //ignore if types do not match
     var bValidMessage = false;
     var pub = tMsg.route.publisher, sub = tMsg.route.subscriber;
+    //ignore if types do not match
     if (pub.type === sub.type){
         var pubEntry, subEntry, pubClient, subClient;
         //find the appropriate entry in trustedClients
@@ -353,7 +370,9 @@ var handleRouteMessage = function(tMsg){
                 //if they are currently routed, then break the connection
                 bValidMessage = true;
                 var entry;
-                var items = [[subEntry, pubEntry.subscribers, 'subscriber'],[pubEntry, subEntry.publishers, 'publisher']];
+                //TODO: change to using keywords in inner data structure (hash) instead of array
+                var items = [[subEntry, pubEntry.subscribers, 'subscriber'],
+                             [pubEntry, subEntry.publishers, 'publisher']];
                 for (var j = 0; j < items.length; j++){
                     var item = items[j];
                     for(var i = item[1].length - 1; i >= 0; i--){
@@ -379,6 +398,7 @@ var handleRouteMessage = function(tMsg){
  */
 var handleConfigMessage = function(connection, tMsg){
     var bValidMessage = false;
+    var trustedClient = undefined;
     //TODO: support multiple clients per connection
     //first check to see if client exists already
     if (!connection.spacebrew_already_processed){
@@ -397,7 +417,7 @@ var handleConfigMessage = function(connection, tMsg){
         //it passes muster, lets add it as a trusted client
         connection.spacebrew_already_processed = true;
         //console.log("Logged new connection");
-        var tClient = {
+        trustedClient = {
             "name": msgName,
             "remoteAddress": msgAddress,
             "description": "",
@@ -408,7 +428,7 @@ var handleConfigMessage = function(connection, tMsg){
         };
         console.log("Client is new");
 
-        trustedClients.push(tClient);
+        trustedClients.push(trustedClient);
         console.log("client added");
         bValidMessage = true;
         console.log("Here are the current trustedClients "+trustedClients.length);
@@ -418,69 +438,73 @@ var handleConfigMessage = function(connection, tMsg){
         }
         //and send the config to the admins
         sendToAdmins({name:[{name:msgName, remoteAddress:msgAddress}]});
-    }
-
-    // accept each apps config and add it to its respect publisher and subscriber list
-    var trustedClient = undefined;
-    for(var i = 0; i < trustedClients.length; i++){
-        if (trustedClients[i].name === tMsg['config']['name'] &&
-            trustedClients[i].remoteAddress === connection.upgradeReq.headers.host){
-            trustedClient = trustedClients[i];
-            break;
-        }
-    }
-
-    if (trustedClient !== undefined){
-        bValidMessage = true;
-        //add the remote address to the message for the admins
-        tMsg['config'].remoteAddress = trustedClient.remoteAddress;
-        trustedClient.config = tMsg['config'];
-        trustedClient.description = tMsg['config']['description'];
-        var tSubs = [];
-        if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
-            tSubs = tMsg.config.subscribe.messages;
-        } else {
-            tMsg.config['subscribe'] = {};
-            tMsg.config.subscribe['messages'] = [];
-        }
-        var tPubs = [];
-        if (tMsg.config.publish && tMsg.config.publish.messages){
-            tPubs = tMsg.config.publish.messages;
-        } else {
-            tMsg.config['publish'] = {};
-            tMsg.config.publish['messages'] = [];
-        }
-        var items = [[tSubs, trustedClient.subscribers,'publishers'], [tPubs, trustedClient.publishers,'subscribers']];
-        //we are storing in a structure
-        // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
-        //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
-        //so you need to access them by trustedClients[i][<sub_or_pub>][<name>][<type>]
-        for (var j = 0; j<items.length; j++){
-            item = items[j];
-            var hash = {};
-            //add new subscribers/publishers to hash
-            for (var i=0; i<item[0].length; i++) {
-                if (!hash[item[0][i].name]){
-                    hash[item[0][i].name] = {};
-                }
-                hash[item[0][i].name][item[0][i].type] = item[0][i];
-                if (!item[1][item[0][i].name]){
-                    item[1][item[0][i].name] = {};
-                }
-                if (!item[1][item[0][i].name][item[0][i].type]){
-                    item[0][i][item[2]] = [];
-                    item[1][item[0][i].name][item[0][i].type] = item[0][i];
-                }
+    } else {
+        // accept each apps config and add it to its respect publisher and subscriber list
+        for(var i = 0; i < trustedClients.length; i++){
+            if (trustedClients[i].name === tMsg['config']['name'] &&
+                trustedClients[i].remoteAddress === connection.upgradeReq.headers.host){
+                trustedClient = trustedClients[i];
+                break;
             }
-            //remove stale subscribers/publishers from hash
-            for (var key in item[1]){
-                if (hash[key] === undefined){
-                    delete item[1][key];
-                } else {
-                    for (var type in item[1][key]){
-                        if (hash[key][type] === undefined){
-                            delete item[1][key][type];
-                        }
+        }
+    }
+
+    if (trustedClient === undefined){
+        return false;
+    }
+
+    bValidMessage = true;
+    //add the remote address to the message for the admins
+    tMsg['config'].remoteAddress = trustedClient.remoteAddress;
+    trustedClient.config = tMsg['config'];
+    trustedClient.description = tMsg['config']['description'];
+    var tSubs = [];
+    if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
+        tSubs = tMsg.config.subscribe.messages;
+    } else {
+        tMsg.config['subscribe'] = {};
+        tMsg.config.subscribe['messages'] = [];
+    }
+    var tPubs = [];
+    if (tMsg.config.publish && tMsg.config.publish.messages){
+        tPubs = tMsg.config.publish.messages;
+    } else {
+        tMsg.config['publish'] = {};
+        tMsg.config.publish['messages'] = [];
+    }
+    //TODO: change to using keywords in inner data structure (hash) instead of array
+    var items = [[tSubs, trustedClient.subscribers,'publishers'], 
+                 [tPubs, trustedClient.publishers,'subscribers']];
+    //we are storing in a structure
+    // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
+    //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
+    //so you need to access them by trustedClients[i][<sub_or_pub>][<name>][<type>]
+    //TODO: describe what is happening with the 'hash' var and the item[1] hash of hashes
+    for (var j = 0; j<items.length; j++){
+        var item = items[j];
+        var hash = {};
+        //add new subscribers/publishers to hash
+        for (var i=0; i<item[0].length; i++) {
+            if (!hash[item[0][i].name]){
+                hash[item[0][i].name] = {};
+            }
+            hash[item[0][i].name][item[0][i].type] = item[0][i];
+            if (!item[1][item[0][i].name]){
+                item[1][item[0][i].name] = {};
+            }
+            if (!item[1][item[0][i].name][item[0][i].type]){
+                item[0][i][item[2]] = [];
+                item[1][item[0][i].name][item[0][i].type] = item[0][i];
+            }
+        }
+        //remove stale subscribers/publishers from hash
+        for (var key in item[1]){
+            if (hash[key] === undefined){
+                delete item[1][key];
+            } else {
+                for (var type in item[1][key]){
+                    if (hash[key][type] === undefined){
+                        delete item[1][key][type];
                     }
                 }
             }
