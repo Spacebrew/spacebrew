@@ -1,19 +1,56 @@
+/**
+ * The port to open for ws connections. defaults to 9000. 
+ * Can be overridden by a first argument when starting up the server.
+ * node node_server.js 9011
+ * @type {Number}
+ */
 var spacePort = 9000;
 if (process.argv[2]) {
-    spacePort = process.argv[2];    
-} 
+    var tempPort = ParseInt(process.argv[2]);
+    //check that tempPort != NaN
+    //and that the port is in the valid port range
+    if (tempPort == tempPort &&
+        tempPort >= 1 && tempPort <= 65535){
+        spacePort = tempPort;
+    }
+}
 
 var WebSocketServer = require('ws').Server
   , wss = new WebSocketServer({port: spacePort,host:'0.0.0.0'});
 var http = require('http');
 
+/**
+ * keeps a list of all the current websocket connections.
+ * @type {Array}
+ */
 var clientconnections = [ ]; // list of currently connected clients (users) sockets
+
+/**
+ * A list of websocket connections that have identified themselves as spacebrew Clients.
+ * A Client identifies themselves by sending a config message as outlined in the examples.
+ * @type {Array}
+ */
 var trustedClients = []; // list of clients that have sent names
+// trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
+//                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
+
+/**
+ * A list of websocket connections that have identified themselves as Admins.
+ * An Admin identifies themselves by sending an admin message as shown in the various Admin implementations.
+ * @type {Array}
+ */
 var adminConnections = [];
 
 console.log("\nRunning Spacebrew on PORT "+spacePort);
 console.log("More info at http://www.spacebrew.cc");
 
+/**
+ * This creates an array of websocket messages to pass in bulk to new Admins
+ * in order to catch the Admin up to speed on the current state of the Server.
+ * TODO: cache this array of messages, or build it incrementally so we don't have to run
+ * this expensive operation every time an Admin connects.
+ * @return {Array} An array of messages to catch the new Admin up with the current state
+ */
 var buildTrustedClientsForAdmin = function(){
     var output = [];
     //re-create the 'name' and 'config' messages
@@ -66,14 +103,23 @@ var buildTrustedClientsForAdmin = function(){
 };
 
 // WebSocket server
+/**
+ * When a new client connects, we will add it to our list of connections
+ * and setup the appropriate callbacks
+ * @param  {obj} ws The ws object that contains all the connection info and provides callback hooks
+ */
 wss.on('connection', function(ws) {
     //console.log("Listening of socket connections");
 
     var connection = ws;
     clientconnections.push(ws);
 
-    // This is the most important callback for us, we'll handle
-    // all messages from users here.
+    /**
+     * We will handle all messages from connections here. This includes
+     * admin, config, message, and routing messages for setting up, managing, and communicating
+     * via spacebrew. This is the backbone of spacebrew.
+     * @param  {obj} message The incoming message from an admin or client
+     */
     ws.on('message', function(message) {
         console.log(message);
         var bValidMessage = false;
@@ -293,6 +339,15 @@ wss.on('connection', function(ws) {
         }
     });
 
+    /**
+     * When a websocket connection is closed, we want to cleanup the Client
+     * (including all publishers and subscribers) associated with that connection,
+     * as well as any routes that Client was involved in. Finally we will remove the
+     * Client or Admin from their respective connection list and remove the connection
+     * from clientconnections. While a Client is being cleaned up, all route remove messages are sent
+     * to the Admins and finally a Client remove message is sent to the Admins.
+     * @param  {obj} ws The object containing information about the connection that is being closed
+     */
     ws.on('close', function(ws) {
         // close user connection
         console.log("close");
@@ -365,6 +420,12 @@ wss.on('connection', function(ws) {
     });
 });
 
+/**
+ * A helper function to handle adding and removing routes. This will update the neccessary
+ * data structures
+ * @param  {json} tMsg The message from an Admin specifying whether to add or remove a route
+ * @return {boolean}      True iff the route message was valid and changed the state of the server.
+ */
 var handleRouteMessage = function(tMsg){
     //expected message format:
     //{route:{type:<add/remove>,
@@ -416,10 +477,15 @@ var handleRouteMessage = function(tMsg){
         }
     }
     return bValidMessage;
-}
+};
 
+/**
+ * A helper function to send the specified message to all registered Admins.
+ * @param  {json} json The message to forward to all Admins
+ */
 var sendToAdmins = function(json){
+    var toSend = JSON.stringify(json);
     for(var i = adminConnections.length - 1; i >= 0; i--){
-        adminConnections[i].send(JSON.stringify(json));
+        adminConnections[i].send(toSend);
     }
-}
+};
