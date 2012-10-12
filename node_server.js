@@ -181,6 +181,8 @@ wss.on('connection', function(ws) {
                     for (var itemName in item['first']){
                         for (var itemType in item['first'][itemName]){
                             var currBase = item['first'][itemName][itemType];
+                            //TODO: change this to return list of messages instead of sending messages itself
+                            //and add note about why (hint: persistent admin)
                             removeRoutesInvolving(currBase, trustedClients[i]);
                             //var numItems = currBase[item['second']].length;
                             // while(numItems--){
