@@ -22,7 +22,10 @@ if (process.argv[2]) {
  * not just localhost or a specific IP
  */
 var WebSocketServer = require('ws').Server
-  , wss = new WebSocketServer({port: spacePort,host:'0.0.0.0'});
+  , wss = new WebSocketServer({
+        port: spacePort,
+        host:'0.0.0.0',
+        verifyClient:function(info){console.log("info: "+info.origin);return true;}});
 //var http = require('http');
 
 /**
@@ -271,7 +274,7 @@ var handleMessageMessage = function(connection, tMsg){
     //    that publish often are more likely to publish.
 
     //add the remote address for the admins
-    tMsg['message'].remoteAddress = connection.upgradeReq.headers.host;
+    tMsg['message'].remoteAddress = connection._socket._handle.getpeername().address;//connection.upgradeReq.headers.host;
 
     var pub = currClient.publishers[tMsg.message.name];
     if (!pub){
@@ -403,7 +406,7 @@ var handleConfigMessage = function(connection, tMsg){
     var bValidMessage = false;
     var trustedClient = undefined;
     var msgName = tMsg['config']['name'],
-        msgAddress = connection.upgradeReq.headers.host;
+        msgAddress = connection._socket._handle.getpeername().address;//connection.upgradeReq.headers.host;
     //check if this connection already has this client defined
     if (connection.spacebrew_client_list &&
         connection.spacebrew_client_list[msgName]){
