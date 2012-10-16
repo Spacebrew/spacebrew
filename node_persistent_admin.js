@@ -63,7 +63,6 @@
 
 //fs used for file read/write
 var fs = require("fs");
-//TODO #22: migrate to ws module
 //websocket used for conection to spacebrew
 var WebSocketClient = require('ws');
 //stdin used for user input
@@ -148,48 +147,25 @@ var runCommand = function(command){
             l("  "+(n++)+": "+r.publisher.clientName+","+r.publisher.name+" -> "+r.subscriber.clientName+","+r.subscriber.name);
         }
     } else if (command.indexOf("add") == 0){
-        //TODO: make sure we don't add duplicates
-        //add the specified persistent route
-        //input is either an index pair, or a specified client,pub/sub pairs
-        command = command.substr("add ".length);
-        parts = command.split(',').map(clean);
-        if (parts.length == 2){
-            //TODO: remove this
-            //we are dealing with indices
-            l("please explicitly specify publisher and subscriber client and name");
-        } else if (parts.length == 4){
-            persistentRoutes.push({
-                                    publisher:{
-                                        clientName:parts[0], 
-                                        name:parts[1], 
-                                        clientRE:new RegExp("^"+parts[0]+"$"),
-                                        nameRE:new RegExp("^"+parts[1]+"$")},
-                                    subscriber:{
-                                        clientName:parts[2],
-                                        name:parts[3],
-                                        clientRE:new RegExp("^"+parts[2]+"$"),
-                                        nameRE:new RegExp("^"+parts[3]+"$")}});
-            //and now lets make sure we are all connected!
-            //TODO: just ensure this added route is connected
-            ensureConnected();
-            l("added persistent route");
-        } else {
-            l("invalid arguments, must be in the form of \"add <publisher client>,<publisher name>,<subscriber client>,<subscriber name>\"");
-        }
-        //THOUGHTS: have 4-part 'add' command only add explicit routes (full names)
-        //add a 6-part (5-part) 'add' command that would support reg-ex for names but require explicit 'type'
+        addManagedRoute(command);
     } else if (command.indexOf("remove") == 0){
-        //TODO: add support for 'remove *'
-        //removes the specified persistent route
-        var index = parseInt(command.substr("remove ".length));
-        if (index != index){
-            //NaN
-            l("invalid arguments, must be in the form of \"remove <index>\" where <index> matches the appropriate index as listed via the \"ls\" command");
-        } else if (index < 0 || index >= persistentRoutes.length){
-            l("index out of range");
-        } else{
-            var removed = persistentRoutes.splice(index, 1);
-            l("removed route");
+        var arg = clean(command.substr("remove ".length));
+        if (arg == "*"){
+            //TODO: send a 'remove' command for all routes that match these persistent routes
+            persistentRoutes = [];
+            l("removed all managed routes");
+        } else {
+            //removes the specified persistent route
+            var index = parseInt(arg);
+            if (index != index){
+                //NaN
+                l("invalid arguments, must be in the form of \"remove <index>\" where <index> matches the appropriate index as listed via the \"ls\" command");
+            } else if (index < 0 || index >= persistentRoutes.length){
+                l("index out of range");
+            } else{
+                var removed = persistentRoutes.splice(index, 1);
+                l("removed route");
+            }
         }
     } else if (command == "save"){
         fs.writeFile('./persistent_config.json', JSON.stringify(persistentRoutes), function(err){
@@ -212,6 +188,78 @@ var runCommand = function(command){
     } else {
         l("unrecognized command, use \"help\" to see valid commands");
     }
+};
+
+var addManagedRoute = function(command){
+    //add the specified persistent route
+    //input is either an index pair, or a specified client,pub/sub pairs
+    command = command.substr("add ".length);
+    parts = command.split(',').map(clean);
+    if (parts.length == 4){
+        //go through all persistent routes and see if this one exists already
+        for (var i = persistentRoutes.length - 1; i >= 0; i--) {
+            var currRoute = persistentRoutes[i];
+            if (currRoute.publisher.clientName === parts[0] &&
+                currRoute.publisher.name === parts[1] &&
+                currRoute.subscriber.clientName == parts[2] &&
+                currRoute.subscriber.name === parts[3]){
+                //this route already exists, abort
+                return;
+            }
+        };
+        //add the route to the list
+        var newRoute = {
+                        publisher:{
+                            clientName:parts[0], 
+                            name:parts[1], 
+                            clientRE:new RegExp("^"+parts[0]+"$"),
+                            nameRE:new RegExp("^"+parts[1]+"$")},
+                        subscriber:{
+                            clientName:parts[2],
+                            name:parts[3],
+                            clientRE:new RegExp("^"+parts[2]+"$"),
+                            nameRE:new RegExp("^"+parts[3]+"$")}};
+        persistentRoutes.push(newRoute);
+        //and now lets make sure we are all connected!
+        
+        //for each client
+        for (var i = clients.length - 1; i >= 0; i--) {
+            var currPubClient = clients[i];
+            //if the client is matched by the pub side of this managed route
+            if (newRoute.publisher.clientRE.test(currPubClient.name)){
+                //for each publisher in that client
+                for (var j = currPubClient.publish.messages.length - 1; j >= 0; j--) {
+                    var currPub = currPubClient.publish.messages[j]
+                    //if the publisher is matched by this managed route
+                    if (newRoute.publisher.nameRE.test(currPub.name)){
+                        //for each client
+                        for (var k = clients.length - 1; k >= 0; k--) {
+                            var currSubClient = clients[k];
+                            //if the client is matched by the sub side of this managed route
+                            if (newRoute.subscriber.clientRE.test(currSubClient.name)){
+                                //for each sub in that client
+                                for (var m = currSubClient.subscribe.messages.length - 1; m >= 0; m--) {
+                                    var currSub = currSubClient.subscribe.messages[m];
+                                    //if the subscriber is matched by this managed route
+                                    if (newRoute.subscriber.nameRE.test(currSub.name)){
+                                        //tell the Server to add the route!
+                                        addRoute(currPubClient, currPub, currSubClient, currSub);
+                                    }
+                                };
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        
+        //user feedback
+        l("added persistent route");
+    } else {
+        l("invalid arguments, must be in the form of \"add <publisher client>,<publisher name>,<subscriber client>,<subscriber name>\"");
+    }
+    //THOUGHTS: have 4-part 'add' command only add explicit routes (full names)
+    //add a 6-part (5-part) 'add' command that would support reg-ex for names but require explicit 'type'
 };
 
 /**
@@ -242,11 +290,14 @@ var printHelpText = function(){
     l("    lists all clients, their publishers and subscribers, and the configured persistent routes");
     l("  add <publisher>,<subscriber>");
     l("    adds the route from the specified <publisher> to <subscriber> to the list of maintained routes.");
-    l("    you can either reference publishers and subscribers by <client_name>,<publisher/subscriber_name>");
-    l("    or by index as listed in the 'ls' command [not yet implemented]");
+    l("    you must reference publishers and subscribers by <client_name>,<publisher/subscriber_name>");
+    l("    the parts are used as regular expressions to match groups of items together")
     l("    examples:");
     l("      add button,click,signage,power");
-    l("      add 1,5 [not yet implemented]");
+    l("      add button,click,.*,trigger");
+    l("        (routes the button click publisher to all subscribers named trigger)");
+    l("      add .*,.*,.*,.*");
+    l("        (routes everything to everything. all routes will respect type matching)")
     l("  remove <index>");
     l("    removes the specified persistent route from being persistent");
     l("    will also break the route if it is currently connected [not yet implemented]");
