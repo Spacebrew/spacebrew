@@ -66,7 +66,12 @@ setupPlumbing = function() {
 		setAutomaticRepaint:true
 	});
 	myPlumb.connectionParams = {container:$("#connectionBin")};
-	//probably a horrible idea, but it keeps everything aligned
-	//might want to increase the interval timeout, but then it just looks choppy
-	setInterval(jsPlumb.repaintEverything, 10);
+	triggerPaint();
+};
+
+//probably a horrible idea, but it keeps everything aligned
+//might want to increase the interval timeout, but then it just looks choppy
+triggerPaint = function(){
+	jsPlumb.repaintEverything();
+	window.webkitRequestAnimationFrame(triggerPaint);
 };
