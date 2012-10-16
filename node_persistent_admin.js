@@ -65,7 +65,7 @@
 var fs = require("fs");
 //TODO #22: migrate to ws module
 //websocket used for conection to spacebrew
-var WebSocketClient = require('websocket').client;
+var WebSocketClient = require('ws');
 //stdin used for user input
 var stdin = process.openStdin();
 /**
@@ -107,7 +107,6 @@ var subClientsPR = [];//{name:_____, items:[]}
 
 var clients = [];
 //var routes = [];//not used right now, the idea was to track acutal routes to compare against persistent routes, but we may not need to do that.
-var connection;
 var persistentRoutes = [];
 
 /**
@@ -264,6 +263,18 @@ var loadConfig = function(expectFile){
         var config = fs.readFileSync("./persistent_config.json");
         try{
             persistentRoutes = JSON.parse(config);
+            //for each persistent route, re-define the RexEx
+            //we need to do this because, when we stringify/parse the RegEx, 
+            //it becomes an Object, not a RegEx
+            for (var i = persistentRoutes.length - 1; i >= 0; i--) {
+                var curr = persistentRoutes[i];
+                var items = [curr.publisher, curr.subscriber];
+                for (var j = items.length - 1; j >= 0; j--) {
+                    var item = items[j];
+                    item.clientRE = new RegExp("^"+item.clientName+"$");
+                    item.nameRE = new RegExp("^"+item.name+"$");
+                };
+            };
             return true;
         }catch(err){
             l("there was an error while parsing the config file");
@@ -305,7 +316,7 @@ var ensureConnected = function(){
                                 currRoute.subscriber.nameRE.test(clients[m].subscribe.messages[n].name)){
                                 //if the pub/sub pair match the persistent route
                                 //send route message
-                                connection.send(JSON.stringify({
+                                wsClient.send(JSON.stringify({
                                     route:{type:'add',
                                         publisher:{clientName:clients[i].name,
                                                     name:clients[i].publish.messages[j].name,
@@ -325,27 +336,14 @@ var ensureConnected = function(){
     }
 };
 
-// create the wsclient and register as an admin
-wsClient = new WebSocketClient();
-wsClient.on("connect", function(conn){
-    connection = conn;
-    console.log("connected");
-    connection.on("message",receivedMessage);
-    var adminMsg = { "admin": [
-        {"admin": true}
-    ]};
-    connection.send(JSON.stringify(adminMsg));
-});
-wsClient.connect("ws://localhost:9000");
-
 /**
  * Called when we receive a message from the Server.
  * @param  {websocket message} data The websocket message from the Server
  */
-var receivedMessage = function(data){
-    //console.log(data);
-    if (data.utf8Data){
-        var json = JSON.parse(data.utf8Data);
+var receivedMessage = function(data, flags){
+    console.log(data);
+    if (data){
+        var json = JSON.parse(data);
         //TODO: check if json is an array, otherwise use it as solo message
         //when we hit a malformed message, output a warning
         if (!handleMessage(json)){
@@ -394,7 +392,7 @@ var handleRouteRemoveMessage = function(msg){
             currRoute.subscriber.nameRE.test(msg.route.subscriber.name)){
             l("reversing route remove message");
             msg.route.type = 'add';
-            connection.send(JSON.stringify(msg));
+            wsClient.send(JSON.stringify(msg));
             return;
         }
     };
@@ -519,7 +517,7 @@ var addRoute = function(pubClient, pub, subClient, sub){
     if (pub.type != sub.type){
         return;
     }
-    connection.send(JSON.stringify({
+    wsClient.send(JSON.stringify({
         route:{type:'add',
             publisher:{clientName:pubClient.name,
                         name:pub.name,
@@ -531,3 +529,14 @@ var addRoute = function(pubClient, pub, subClient, sub){
                         remoteAddress:subClient.remoteAddress}}
     }));
 };
+
+// create the wsclient and register as an admin
+wsClient = new WebSocketClient("ws://localhost:9000");
+wsClient.on("open", function(conn){
+    console.log("connected");
+    var adminMsg = { "admin": [
+        {"admin": true}
+    ]};
+    wsClient.send(JSON.stringify(adminMsg));
+});
+wsClient.on("message", receivedMessage);
