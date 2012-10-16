@@ -170,6 +170,7 @@ var runCommand = function(command){
                                         clientRE:new RegExp("^"+parts[2]+"$"),
                                         nameRE:new RegExp("^"+parts[3]+"$")}});
             //and now lets make sure we are all connected!
+            //TODO: just ensure this added route is connected
             ensureConnected();
             l("added persistent route");
         } else {
