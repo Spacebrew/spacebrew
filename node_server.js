@@ -24,9 +24,7 @@ if (process.argv[2]) {
 var WebSocketServer = require('ws').Server
   , wss = new WebSocketServer({
         port: spacePort,
-        host:'0.0.0.0',
-        verifyClient:function(info){console.log("info: "+info.origin);return true;}});
-//var http = require('http');
+        host:'0.0.0.0'});
 
 /**
  * keeps a list of all the current websocket connections.
