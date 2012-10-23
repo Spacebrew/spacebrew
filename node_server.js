@@ -102,7 +102,7 @@ var buildUpdateMessagesForAdmin = function(){
  * @param  {obj} ws The ws object that contains all the connection info and provides callback hooks
  */
 wss.on('connection', function(ws) {
-    //console.log("Listening of socket connections");
+    console.log("someone connected");
 
     var connection = ws;
     allconnections.push(ws);
@@ -125,25 +125,30 @@ wss.on('connection', function(ws) {
                 return;
             }
 
-            if (tMsg['name']) {
-                bValidMessage = handleNameMessage(connection, tMsg);
-            } else if (tMsg['config']) {
-                bValidMessage = handleConfigMessage(connection, tMsg);
-            } else if (tMsg['message']) {
-                bValidMessage = handleMessageMessage(connection, tMsg);
-            } else if (tMsg['admin']) {
-                connection.spacebrew_is_admin = true;
-                connection.send(JSON.stringify(buildUpdateMessagesForAdmin()));
-                adminConnections.push(connection);
-                bValidMessage = true;
-            } else if (tMsg['route']){
-                bValidMessage = handleRouteMessage(connection, tMsg);
-            }
-            if (bValidMessage){
-                console.log("forwarding to admins");
-                sendToAdmins(tMsg);
-            } else {
-                console.log("message marked as invalid, ignoring");
+            try{
+                if (tMsg['name']) {
+                    bValidMessage = handleNameMessage(connection, tMsg);
+                } else if (tMsg['config']) {
+                    bValidMessage = handleConfigMessage(connection, tMsg);
+                } else if (tMsg['message']) {
+                    bValidMessage = handleMessageMessage(connection, tMsg);
+                } else if (tMsg['admin']) {
+                    connection.spacebrew_is_admin = true;
+                    connection.send(JSON.stringify(buildUpdateMessagesForAdmin()));
+                    adminConnections.push(connection);
+                    bValidMessage = true;
+                } else if (tMsg['route']){
+                    bValidMessage = handleRouteMessage(connection, tMsg);
+                }
+                if (bValidMessage){
+                    console.log("forwarding to admins");
+                    sendToAdmins(tMsg);
+                } else {
+                    console.log("message marked as invalid, ignoring");
+                }
+            } catch (err){
+                console.log("ERROR on line <" + err.lineNumber + "> while processing message");
+                console.log(err.stack);
             }
         }
     });
@@ -332,6 +337,9 @@ var handleRouteMessage = function(connection, tMsg){
             if (trustedClients[i].name === pub.clientName 
                 && trustedClients[i].remoteAddress === pub.remoteAddress){
                 pubClient = trustedClients[i];
+                //TODO: check that the Client has the specified publisher, in order to head off any errors at the pass.
+                // This will allow us to send back some helpful error message to the Admin in case we implement such functionality.
+                // (same for subscriber)
                 pubEntry = pubClient.publishers[pub.name][pub.type];
             }
             if (trustedClients[i].name === sub.clientName
