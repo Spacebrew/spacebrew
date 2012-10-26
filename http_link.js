@@ -1,14 +1,29 @@
 var http = require('http');
 var sys = require('sys');
 var url = require('url');
-var wsc = require('websocket').client;
+
+try {
+
+    var WebSocket = require('websocket');
+    var wsc = WebSocket.client;
+
+    var Jog = require('jog')
+    var log = new Jog(new Jog.FileStore('brew-logs/http_link.log'))
+    
+} catch ( err ) {
+    sys.puts("ERROR: Require exception [" + err + "], did you install dependencies?");
+    process.exit(1);
+}
 
 var port = 9092;
 var spacebrewHost = 'localhost';
 var spacebrewPort = 9000;
 var clients = {};
 var TIMEOUT = 12*60*60; // 12 hour timeout
-var DEBUG = true
+var TIMEOUT_TEST_INVERVAL = 60; // check every minute
+
+var tailLog = true; // should we tail the log into console or not?  Note at beginning log is dumped to console.
+
 
 /*
  
@@ -64,10 +79,10 @@ function configureClient(name, value) {
                 };
     
     jsonName = JSON.stringify(nameObj);
-    sys.puts("jsonName: " + jsonName);
+    log.debug("structure", {jsonName: jsonName, client: name} );
 
     jsonConfig = JSON.stringify(configObj);
-    sys.puts("jsonConfig: " + jsonConfig);
+    log.debug("structure", {jsonConfig: jsonConfig, client: name} );
     
     client = new wsc();
     
@@ -76,7 +91,8 @@ function configureClient(name, value) {
         this.name = name;
         this.initialValue = value;
         this.lastUpdate = getSecondsEpoch()
-        sys.puts("Websocket connected\n");
+        
+        log.debug("event", {msg: "Websocket connected.", client: name} );
         
         this.connection.send(jsonName);
         this.connection.send(jsonConfig);
@@ -85,20 +101,22 @@ function configureClient(name, value) {
         
         processMessage(this.name, this.initValue);
         
-        // untested
+        // untested.  in or out of connection?
         this.connection.on("message", function(message) {
-            sys.puts("Message: " + this.name + " : received message : " + message + "\n");
+            log.debug("message", {func: "connection.on", message: message, client: this.name} );
         });
     });
     
     // untested
     client.on("message", function(message) {
-        sys.puts("Message: " + this.name + " : received message : " + message + "\n");
+        log.debug("message", {func: "client.on", message: message, client: this.name} );
     });        
         
     var url = "ws://" + spacebrewHost + ":" + String(spacebrewPort);
-    sys.puts("url: " + url);
+    log.debug("url", {func: "configureClient", url : url} );
     client.connect(url);
+    
+    log.info("msg", {msg: 'Configured client.', name: this.name, value: value, timeout: TIMEOUT} );
 }
 
 function processMessage(name, value) {
@@ -109,7 +127,7 @@ function processMessage(name, value) {
     }
     
     if(targetClient == false) {
-        sys.puts("ERROR: Can't find client for " + name + "\n");
+        sys.warn("ERROR: Can't find client for " + name + "\n");
         return;
     }
     
@@ -125,44 +143,40 @@ function processMessage(name, value) {
     jsonMsg = JSON.stringify(msgObj)
     //sys.puts(sys.inspect(targetClient));
     targetClient.connection.send(jsonMsg);
+    
+    log.debug("msg", {msg: 'Processed value.', client: this.name, value: value} );
 }
 
 var checkTimeouts = function()
 {
-    //sys.puts("clients are: " + dir(clients))
+    log.debug("msg", {msg: "Checking Timeouts.", clients: dir(clients)} );
     
     for (var name in clients) {
         var client = clients[name]
-        //sys.puts("client is : " + dir(client.connection))
         if( client.lastUpdate + TIMEOUT < getSecondsEpoch() ) {
             
             client.connection.close()
             delete clients[name]
             client = undefined
-            //sys.puts("timedout: " + name)
+            log.info("timeout", {msg: 'client timeout. ', client: name} );
         }
         
         // TODO check to see if the socket is dead
         
     }
-    
-    //sys.puts("clients are: " + dir(clients))
 }
 
-// check timeout every 5 seconds
-setInterval(checkTimeouts, 5 * 1);
+setInterval(checkTimeouts, TIMEOUT_TEST_INVERVAL * 1000);
 
 http.createServer(function (req, res) {
     
-    if(DEBUG) {
-        sys.puts("request: " + req.url);
-    }
+    log.debug("msg", {msg: "Serving Request.", request: req.url} );
     
     var name = undefined;
     var value = undefined;
     
     if(req.method == "POST") {
-        sys.puts("POST type not supported");
+        log.warn("unsupported", {msg: "POST type not supported", request: req.url} );
         res.end("501");
         return;
     
@@ -174,14 +188,14 @@ http.createServer(function (req, res) {
         
     } else {
         
-        sys.puts("UNKNOWN request method of " + req.method);
+        log.error("unexpected", {msg : "UNKNOWN request method.", request: req.url, method: request.method} );
         res.end("501");
         return;
     
     }
     
     if( name == undefined || value == undefined ) {
-        sys.puts("name and value not defined.");
+        log.debug("msg", {msg: "name and value not defined.", request: req.url} );
         res.end("500");
         return;
     }
@@ -194,10 +208,10 @@ http.createServer(function (req, res) {
     
     // TODO check to see if both params are passed and valid
     if( !clients.hasOwnProperty(name) ) {
-        sys.puts("Client not found, configuring.");
+        log.debug( "msg", {msg: "Client not found, configuring.", client: name} );
         configureClient(name, value);
     } else {
-        sys.puts("Processing message from: " + name);
+        log.debug( "msg", {msg: "Processing message. ", client: name} );
         processMessage(name, value);
     }
     
@@ -206,3 +220,10 @@ http.createServer(function (req, res) {
     
 }).listen(port);
 
+log.info( "msg", {msg: "HTTP_LINK has started."} );
+
+log.stream({ end: false, interval: 500 })
+  .on('data', function(line) {
+    console.log(line);
+    }
+);

@@ -3,13 +3,22 @@ spacebrew
 
 A dynamically re-routable software toolkit for choreographing interactive spaces.
 
-###Getting Started
+### Getting Started
 * Clone the repo
 * Install Node (installer at <a href="http://nodejs.org/">http://nodejs.org</a>)
+* Install npm
+* Install Dependencies (below)
 * run the server by using 'node node_server.js' from the command line 
 * Open the spacebrew_button example in a browser and append ?name=button to the end of the url and &server=locationOfServer i.e. - file:///spacebrew/examples/javascript_examples/spacebrew_button/index.html?name=button
 * Open the admin in another browser window
 * Start routing, have fun
+
+### Dependencies
+Unless current packages we are dependent upon break functionality, we will not include them in the release.  Please use npm to install the following
+
+npm install websocket
+npm install ws
+npm install jog
 
 #### LICENSE
 =========

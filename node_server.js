@@ -23,6 +23,7 @@ var buildTrustedClientsForAdmin = function(){
         output.push(currMsg);
         var publishers = [];
         var subscribers = [];
+        // LV TODO make a tuple
         var items = [[publishers, currClient.publishers],[subscribers, currClient.subscribers]];
         for(var j = 0; j < items.length; j++){
             for(var key in items[j][1]){
