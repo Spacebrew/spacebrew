@@ -60,12 +60,10 @@ console.log("More info at http://www.spacebrew.cc");
  */
 var buildUpdateMessagesForAdmin = function(){
     var output = [];
-    //re-create the 'name' and 'config' messages
+    //re-create the 'config' messages
     for(var i = 0, end = trustedClients.length; i < end; i++){
         var currClient = trustedClients[i];
-        var currMsg = {name:[{name:currClient.name, remoteAddress:currClient.remoteAddress}]};
-        output.push(currMsg);
-        currMsg = {config:currClient.config};
+        var currMsg = {config:currClient.config};
         output.push(currMsg);
     }
     //now re-create the 'route' messages
@@ -126,9 +124,7 @@ wss.on('connection', function(ws) {
             }
 
             try{
-                if (tMsg['name']) {
-                    bValidMessage = handleNameMessage(connection, tMsg);
-                } else if (tMsg['config']) {
+                if (tMsg['config']) {
                     bValidMessage = handleConfigMessage(connection, tMsg);
                 } else if (tMsg['message']) {
                     bValidMessage = handleMessageMessage(connection, tMsg);
@@ -454,8 +450,6 @@ var handleConfigMessage = function(connection, tMsg){
         console.log("client added");
         bValidMessage = true;
         printAllTrustedClients();
-        //and send the name to the admins
-        sendToAdmins({name:[{name:msgName, remoteAddress:msgAddress}]});
     }
 
     //now that we have the base data structure, we can update it to match the new
@@ -585,59 +579,6 @@ var removeRoutesInvolving = function(item, client){
         sendToAdmins(toSend);
     }
 };
-
-/**
- * Handles the initial 'name' message from Clients that is used to register them with 
- * the Server. Currently deprecated.
- * @param  {ws Connection Obj} connection The connection that the message came in on
- * @param  {json} tMsg The name message from the Client
- * @return {boolean}      True iff there does not exist a Client with that name
- */
-var handleNameMessage = function(connection, tMsg){
-    return false;
-    //IGNORING FOR NOW, ONLY CONFIG MESSAGES ARE SUPPORTED
-    // //a connection is registering themselves
-    // //console.log(tMsg['name']);
-    // for (var index = 0; index < tMsg['name'].length; index++){
-    //     var tVar = [tMsg['name'][index].name, connection.upgradeReq.headers.host, connection];
-    //     //add the remote address to the message for the admins
-    //     tMsg['name'][index].remoteAddress = connection.upgradeReq.headers.host;
-
-    //     var existingClient = false;
-    //     for(var i=0; i<trustedClients.length; i++) {
-    //         //console.log("NAMES: "+ trustedClients[i]['name'] +" : "+ tVar[0]);
-    //         //console.log("ADDRESS: "+ trustedClients[i]['remoteAddress'] +" : "+ tVar[1]);
-    //         if (trustedClients[i]['name'] === tVar[0] && trustedClients[i]['remoteAddress'] === tVar[1]) {
-    //             existingClient = true;
-    //             console.log("client is already connected -- denying new connection");
-    //             connection.close();
-    //         }
-    //     }
-    //     if (existingClient === false) {
-    //         //console.log("Logged new connection");
-    //         var tClient = {
-    //             "name": tVar[0],
-    //             "remoteAddress": tVar[1],
-    //             "description": "",
-    //             "connection": connection,
-    //             "publishers": {},
-    //             "subscribers": {},
-    //             "config":""
-    //         };
-    //         console.log("Client is new");
-
-    //         trustedClients.push(tClient);
-    //         console.log("client added");
-    //         bValidMessage = true;
-    //     }
-    // }
-
-    // console.log("Here are the current trustedClients "+trustedClients.length);
-
-    // for (var i=0; i<trustedClients.length; i++) {
-    //     console.log(trustedClients[i]['name']);
-    // }
-}
 
 /**
  * Checks to see if the specified publisher and subscriber are already routed together

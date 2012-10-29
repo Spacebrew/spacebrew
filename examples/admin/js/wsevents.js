@@ -36,9 +36,7 @@ var clients = [];
 var routes = [];
 
 var handleMsg = function(json){
-	if (json.name){
-		handleNameMsg(json);
-	} else if (json.config){
+	if (json.config){
 		handleConfigMsg(json);
 	} else if (json.message){
 		handleMessageMsg(json);
@@ -89,16 +87,6 @@ var getCommItemSelector = function(a_bPublisher, a_sClientName, a_sRemoteAddress
 									remoteAddress: a_sRemoteAddress,
 									name: a_sName,
 									type: a_sType});
-};
-
-var handleNameMsg = function(msg){
-	for(var i = 0; i < msg.name.length; i++){
-		var currClient = {name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress}
-		clients.push(currClient);
-		var clientMarkup = $(clientTemplate(currClient));
-		clientMarkup.find(".infobutton").click(clickInfo);
-		$("#client_list").append(clientMarkup);
-	};
 };
 
 var routeTemplate;
@@ -156,9 +144,18 @@ var handleConfigMsg = function(msg){
 				$("#"+idPart+" span").html(msg.config.description);
 				client.find(".clientnickname, .clientname").attr("title",msg.config.description);
 			}
-			break;
+			return;
 		}
 	}
+
+	//if we did not find a matching client, then add this one
+	var newClient = {name:msg.config.name, remoteAddress:msg.config.remoteAddress};
+	var clientMarkup = $(clientTemplate(newClient));
+	clientMarkup.find(".infobutton").click(clickInfo);
+	$("#client_list").append(clientMarkup);
+	clients.push(newClient);
+	//and then updated it with the additional info.
+	handleConfigMsg(msg);
 };
 
 var removeClient = function(client){

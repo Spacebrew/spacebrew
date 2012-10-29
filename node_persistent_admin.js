@@ -412,7 +412,7 @@ var receivedMessage = function(data, flags){
  * @return {boolean}      True iff the message was a recognized type
  */
 var handleMessage = function(json){
-    if (json.name || json.message || json.admin){
+    if (json.message || json.admin){
         //do nothing
     } else if (json.config){
         handleConfigMessage(json);
