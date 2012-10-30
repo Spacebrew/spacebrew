@@ -15,6 +15,9 @@ node_modules
 npm-debug.log
 .DS_Store
 
+#Xcode
+DerivedData
+*.build
 *.app
 *.xcworkspace
 *.xcuserdatad
