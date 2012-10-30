@@ -273,7 +273,7 @@ var handleMessageMessage = function(connection, tMsg){
     //    that publish often are more likely to publish.
 
     //add the remote address for the admins
-    tMsg['message'].remoteAddress = connection._socket._handle.getpeername().address;//connection.upgradeReq.headers.host;
+    tMsg['message'].remoteAddress = getClientAddress(connection);
 
     var pub = currClient.publishers[tMsg.message.name];
     if (!pub){
@@ -396,7 +396,15 @@ var printAllTrustedClients = function(){
     for (var i=0; i<trustedClients.length; i++) {
         console.log(trustedClients[i]['name']);
     }
-}
+};
+
+var getClientAddress = function(connection){
+    try{
+        return connection._socket._handle.getpeername().address;//connection.upgradeReq.headers.host;
+    } catch (e){}
+    console.log("unable to access remote address");
+    return "unknown";
+};
 
 /**
  * A helper function used to parse config messages from Clients.
@@ -407,8 +415,8 @@ var printAllTrustedClients = function(){
 var handleConfigMessage = function(connection, tMsg){
     var bValidMessage = false;
     var trustedClient = undefined;
-    var msgName = tMsg['config']['name'],
-        msgAddress = connection._socket._handle.getpeername().address;//connection.upgradeReq.headers.host;
+    var msgName = tMsg['config']['name'];
+    var msgAddress = getClientAddress(connection);
     //check if this connection already has this client defined
     if (connection.spacebrew_client_list &&
         connection.spacebrew_client_list[msgName]){
