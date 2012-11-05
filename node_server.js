@@ -474,6 +474,7 @@ var handleConfigMessage = function(connection, tMsg){
         //corrupt the original config message
         for (var i = tMsg.config.subscribe.messages.length - 1; i >= 0; i--) {
             var currSub = tMsg.config.subscribe.messages[i];
+            currSub.type = currSub.type.toLowerCase();
             tSubs.push({name:currSub.name, type:currSub.type, default:currSub.default});
         };
     } else {
@@ -487,6 +488,7 @@ var handleConfigMessage = function(connection, tMsg){
         //corrupt the original config message
         for (var i = tMsg.config.publish.messages.length - 1; i >= 0; i--) {
             var currPub = tMsg.config.publish.messages[i];
+            currPub.type = currPub.type.toLowerCase();
             tPubs.push({name:currPub.name, type:currPub.type, default:currPub.default});
         };
     } else {

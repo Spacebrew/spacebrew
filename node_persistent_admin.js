@@ -393,7 +393,7 @@ var ensureConnected = function(){
  * @param  {websocket message} data The websocket message from the Server
  */
 var receivedMessage = function(data, flags){
-    console.log(data);
+    // console.log(data);
     if (data){
         var json = JSON.parse(data);
         //TODO: check if json is an array, otherwise use it as solo message
