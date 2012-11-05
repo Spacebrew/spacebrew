@@ -53,8 +53,6 @@ function getSecondsEpoch(){
 
 function configureClient(name, value) {
     
-    nameObj = {"name" : [ { "name" : name } ] };
-    
     // TODO add dynamic config not just "value"
     configObj = {"config" : { "name" : name,
                             "description" : "Pass through http client for electric imp",
@@ -62,9 +60,6 @@ function configureClient(name, value) {
                             "subscribe" : { "messages" : [] }
                             }
                 };
-    
-    jsonName = JSON.stringify(nameObj);
-    sys.puts("jsonName: " + jsonName);
 
     jsonConfig = JSON.stringify(configObj);
     sys.puts("jsonConfig: " + jsonConfig);
@@ -78,7 +73,6 @@ function configureClient(name, value) {
         this.lastUpdate = getSecondsEpoch()
         sys.puts("Websocket connected\n");
         
-        this.connection.send(jsonName);
         this.connection.send(jsonConfig);
         
         clients[this.name] = this;

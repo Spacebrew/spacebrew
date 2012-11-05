@@ -41,9 +41,7 @@ setupWS = function(){
 var myWS = {};
 
 myWS.handleMsg = function(json){
-    if (json.name){
-        this.handleNameMsg(json);
-    } else if (json.config){
+    if (json.config){
         this.handleConfigMsg(json);
     } else if (json.message){
         this.handleMessageMsg(json);
@@ -70,17 +68,13 @@ myWS.handleMessageMsg = function(msg){
     setTimeout(function(){endpoint.setPaintStyle(endpointList[from.type].source.paintStyle);},200);
 };
 
-myWS.handleNameMsg = function(msg){
-    for(var i = 0; i < msg.name.length; i++){
-        clients.push({name:msg.name[i].name, remoteAddress:msg.name[i].remoteAddress});
-        var newDiv = $("<div>").addClass("window").prop("id",msg.name[i].name.Safetify()+sep+msg.name[i].remoteAddress.Safetify());
-        newDiv.append($("<div>").css("white-space","nowrap").text(msg.name[i].name));
-        jsPlumb.draggable(newDiv);
-        $("#bucket").append(newDiv);
-    };
-};
-
 myWS.handleConfigMsg = function(msg){
+    clients.push({name:msg.config.name, remoteAddress:msg.config.remoteAddress});
+    var newDiv = $("<div>").addClass("window").prop("id",msg.config.name.Safetify()+sep+msg.config.remoteAddress.Safetify());
+    newDiv.append($("<div>").css("white-space","nowrap").text(msg.config.name));
+    jsPlumb.draggable(newDiv);
+    $("#bucket").append(newDiv);
+
     var endpointList = [];
     if (msg.config.publish && msg.config.publish.messages){
         for (var i = 0; i < msg.config.publish.messages.length; i++){
