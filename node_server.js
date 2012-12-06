@@ -112,7 +112,7 @@ wss.on('connection', function(ws) {
      * @param  {obj} message The incoming message from an admin or client
      */
     ws.on('message', function(message) {
-        console.log("<"+message+">");
+        //console.log("<"+message+">");
         var bValidMessage = false;
         if (message) {
             // process WebSocket message
@@ -137,7 +137,7 @@ wss.on('connection', function(ws) {
                     bValidMessage = handleRouteMessage(connection, tMsg);
                 }
                 if (bValidMessage){
-                    console.log("forwarding to admins");
+                    //console.log("forwarding to admins");
                     sendToAdmins(tMsg);
                 } else {
                     console.log("message marked as invalid, ignoring");
@@ -169,46 +169,7 @@ wss.on('connection', function(ws) {
         for(var i = 0; i < trustedClients.length;){
             //console.log(trustedClients);
             if (!trustedClients[i].connection._socket){
-                
-                //for each publisher
-                //for each subscriber to that publisher
-                //remove route
-                //for each subscriber
-                //for each publisher to that subscriber
-                //remove route
-                var items = [{'first':trustedClients[i].publishers, 'second':'subscribers', 'third':'subscriber', 'fourth':'publisher'},
-                             {'first':trustedClients[i].subscribers, 'second':'publishers', 'third':'publisher', 'fourth':'subscriber'}];
-                for (var k = 0; k < items.length; k++){
-                    var item = items[k];
-                    for (var itemName in item['first']){
-                        for (var itemType in item['first'][itemName]){
-                            var currBase = item['first'][itemName][itemType];
-                            //TODO: change this to return list of messages instead of sending messages itself
-                            //and add note about why (hint: persistent admin)
-                            removeRoutesInvolving(currBase, trustedClients[i]);
-                            //var numItems = currBase[item['second']].length;
-                            // while(numItems--){
-                            //     var currLeaf = currBase[item['second']][numItems];
-                            //     var messageContent = {type:'remove'};
-                            //     messageContent[item['third']] = {clientName:currLeaf.client.name,
-                            //                                     name:currLeaf[item['third']].name,
-                            //                                     type:currLeaf[item['third']].type,
-                            //                                     remoteAddress:currLeaf.client.remoteAddress};
-                            //     messageContent[item['fourth']] = {clientName:trustedClients[i].name,
-                            //                                     name:currBase.name,
-                            //                                     type:currBase.type,
-                            //                                     remoteAddress:trustedClients[i].remoteAddress};
-                            //     //Here I use the standard 'route removing' function to actually 
-                            //     //clean up all the data structures related to this route.
-                            //     if (handleRouteMessage(undefined, {route:messageContent})){
-                            //         //TODO: add the route remove message to an array,
-                            //         //and send that array in bulk to all the admins at the end
-                            //         sendToAdmins({route:messageContent});
-                            //     }
-                            // }
-                        }
-                    }
-                }
+                removeRoutesInvolvingClient(trustedClients[i]);
                 removed.push({name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress});
                 trustedClients.splice(i, 1);
             } else {
@@ -239,10 +200,15 @@ wss.on('connection', function(ws) {
         sendToAdmins({remove:removed});
     });
 
+    ws.on("pong", function(e){
+        connection.spacebrew_pong_validated = true;
+    });
+
     ws.on("error", function(e) {
         console.log("ERROR!");
         console.log(e);
         try{
+            console.log(arguments);
             console.log(JSON.stringify(e));
         } catch (ne){
             console.log(keys(e));
@@ -440,9 +406,23 @@ var handleConfigMessage = function(connection, tMsg){
             if (trustedClients[i]['name'] === msgName &&
                 trustedClients[i]['remoteAddress'] === msgAddress){
                 //name, remote address pair is already taken.
-                //ignore this config
-                console.log("client is already connected -- denying new connection");
-                return false;
+                //check to see if the existing connection has been verified
+                if (trustedClients[i].connection.spacebrew_pong_validated){
+                    //ignore this config
+                    console.log("client is already connected -- denying new connection");
+                    return false;
+                } else {
+                    console.log("client is already registered -- replacing with new connection");
+                    //we will replace the existing client with the new one on this new connection
+                    //TODO: either remove all routes involving this client we removed, or migrate all connections to the new client
+                    //starting with removing all routes since the client might have the same name, but a different config
+                    removeRoutesInvolvingClient(trustedClients[i]);
+                    //remove it from the admin, so nothing funny happens when the new one gets added
+                    sendToAdmins({remove:{name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress}});
+
+                    //remove the old client from the list
+                    trustedClients.splice(i, 1);
+                }
             }
         };
     }
@@ -601,6 +581,52 @@ var removeRoutesInvolving = function(item, client){
 };
 
 /**
+ * This will remove all the routes involving the specified client
+ * @param  {Client Obj} client The client to remove all routes to/from
+ */
+var removeRoutesInvolvingClient = function(client){
+    //for each publisher
+    //for each subscriber to that publisher
+    //remove route
+    //for each subscriber
+    //for each publisher to that subscriber
+    //remove route
+    var items = [{'first':client.publishers, 'second':'subscribers', 'third':'subscriber', 'fourth':'publisher'},
+                 {'first':client.subscribers, 'second':'publishers', 'third':'publisher', 'fourth':'subscriber'}];
+    for (var k = 0; k < items.length; k++){
+        var item = items[k];
+        for (var itemName in item['first']){
+            for (var itemType in item['first'][itemName]){
+                var currBase = item['first'][itemName][itemType];
+                //TODO: change this to return list of messages instead of sending messages itself
+                //and add note about why (hint: persistent admin)
+                removeRoutesInvolving(currBase, client);
+                //var numItems = currBase[item['second']].length;
+                // while(numItems--){
+                //     var currLeaf = currBase[item['second']][numItems];
+                //     var messageContent = {type:'remove'};
+                //     messageContent[item['third']] = {clientName:currLeaf.client.name,
+                //                                     name:currLeaf[item['third']].name,
+                //                                     type:currLeaf[item['third']].type,
+                //                                     remoteAddress:currLeaf.client.remoteAddress};
+                //     messageContent[item['fourth']] = {clientName:trustedClients[i].name,
+                //                                     name:currBase.name,
+                //                                     type:currBase.type,
+                //                                     remoteAddress:trustedClients[i].remoteAddress};
+                //     //Here I use the standard 'route removing' function to actually 
+                //     //clean up all the data structures related to this route.
+                //     if (handleRouteMessage(undefined, {route:messageContent})){
+                //         //TODO: add the route remove message to an array,
+                //         //and send that array in bulk to all the admins at the end
+                //         sendToAdmins({route:messageContent});
+                //     }
+                // }
+            }
+        }
+    }
+}
+
+/**
  * Checks to see if the specified publisher and subscriber are already routed together
  * @param  {Client Obj} pubClient The Client object from the trustedClients array that contains this publisher
  * @param  {Pub Obj} pubEntry  The publisher entry that is the specific publisher from pubClient
@@ -634,3 +660,19 @@ var sendToAdmins = function(json){
         adminConnections[i].send(toSend);
     }
 };
+
+/**
+ * Periodically send ping messages to all clients, when they return the ping, we can mark them as active.
+ */
+var pingAllClients = function(){
+    for (var i = trustedClients.length - 1; i >= 0; i--) {
+        try{
+            trustedClients[i].connection.spacebrew_pong_validated = false;
+            trustedClients[i].connection.ping();
+        } catch(err){
+            console.log("CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
+        }
+    };
+}
+
+setInterval(pingAllClients, 1000);//ping everyone every second to verify connections
