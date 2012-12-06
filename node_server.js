@@ -112,7 +112,7 @@ wss.on('connection', function(ws) {
      * @param  {obj} message The incoming message from an admin or client
      */
     ws.on('message', function(message) {
-        console.log(message);
+        console.log("<"+message+">");
         var bValidMessage = false;
         if (message) {
             // process WebSocket message
@@ -237,6 +237,16 @@ wss.on('connection', function(ws) {
         //tell the Admins about removed Clients
         //do this after any disconnected admins are removed.
         sendToAdmins({remove:removed});
+    });
+
+    ws.on("error", function(e) {
+        console.log("ERROR!");
+        console.log(e);
+        try{
+            console.log(JSON.stringify(e));
+        } catch (ne){
+            console.log(keys(e));
+        }
     });
 });
 
