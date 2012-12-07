@@ -119,7 +119,7 @@ wss.on('connection', function(ws) {
             try{
                 var tMsg = JSON.parse(message);
             }catch(err){
-                console.log("invalid message");
+                console.log("error while parsing message as JSON");
                 return;
             }
 
@@ -135,6 +135,8 @@ wss.on('connection', function(ws) {
                     bValidMessage = true;
                 } else if (tMsg['route']){
                     bValidMessage = handleRouteMessage(connection, tMsg);
+                } else {
+                    console.log("unrecognized message type. Use one of config, message, admin, or route");
                 }
                 if (bValidMessage){
                     //console.log("forwarding to admins");
@@ -159,45 +161,7 @@ wss.on('connection', function(ws) {
      * @param  {obj} ws The object containing information about the connection that is being closed
      */
     ws.on('close', function(ws) {
-        // close user connection
-        console.log("close");
-        //console.log(ws);
-        var removed = [];
-        //remove clients
-        //console.log("There are this many clients: "+trustedClients.length);
-
-        for(var i = 0; i < trustedClients.length;){
-            //console.log(trustedClients);
-            if (!trustedClients[i].connection._socket){
-                removeRoutesInvolvingClient(trustedClients[i]);
-                removed.push({name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress});
-                trustedClients.splice(i, 1);
-            } else {
-                i++;
-            }
-        }
-
-        //remove Admins
-        //console.log("There are admins: "+ adminConnections.length);
-        for(var i = 0; i < adminConnections.length;){
-            if (adminConnections[i]._socket == null){
-                adminConnections.splice(i, 1);
-            } else {
-                i++;
-            }
-        }
-        //remove connections
-        for(var i = 0; i<allconnections.length;){
-            if (allconnections[i]._socket == null){
-                allconnections.splice(i, 1);
-            } else {
-                i++;
-            }
-        }
-
-        //tell the Admins about removed Clients
-        //do this after any disconnected admins are removed.
-        sendToAdmins({remove:removed});
+        cleanupClosedConnections();
     });
 
     ws.on("pong", function(e){
@@ -661,14 +625,69 @@ var sendToAdmins = function(json){
     }
 };
 
+var cleanupClosedConnections = function(){
+    // close user connection
+    console.log("close");
+    //console.log(ws);
+    var removed = [];
+    //remove clients
+    //console.log("There are this many clients: "+trustedClients.length);
+
+    for(var i = 0; i < trustedClients.length;){
+        //console.log(trustedClients);
+        if (!trustedClients[i].connection._socket){
+            removeRoutesInvolvingClient(trustedClients[i]);
+            removed.push({name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress});
+            trustedClients.splice(i, 1);
+        } else {
+            i++;
+        }
+    }
+
+    //remove Admins
+    //console.log("There are admins: "+ adminConnections.length);
+    for(var i = 0; i < adminConnections.length;){
+        if (adminConnections[i]._socket == null){
+            adminConnections.splice(i, 1);
+        } else {
+            i++;
+        }
+    }
+    //remove connections
+    for(var i = 0; i<allconnections.length;){
+        if (allconnections[i]._socket == null){
+            allconnections.splice(i, 1);
+        } else {
+            i++;
+        }
+    }
+
+    //tell the Admins about removed Clients
+    //do this after any disconnected admins are removed.
+    sendToAdmins({remove:removed});
+};
+
 /**
  * Periodically send ping messages to all clients, when they return the ping, we can mark them as active.
  */
 var pingAllClients = function(){
     for (var i = trustedClients.length - 1; i >= 0; i--) {
+        var currConn = trustedClients[i].connection;
         try{
-            trustedClients[i].connection.spacebrew_pong_validated = false;
-            trustedClients[i].connection.ping();
+            if (currConn.spacebrew_pong_validated === undefined
+                || currConn.spacebrew_pong_validated === true){
+                currConn.spacebrew_pong_validated = false;
+                currConn.spacebrew_first_pong_sent = Date.now();
+                //console.log("setting validated = false");
+            } else if (currConn.spacebrew_pong_validated === false
+                        && (currConn.spacebrew_first_pong_sent + 10000) < Date.now()){
+                //10-second timeout
+                currConn.close();
+                //cleanupClosedConnections();
+                //console.log("closed connection");
+                continue;
+            }
+            currConn.ping();
         } catch(err){
             console.log("CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
         }
