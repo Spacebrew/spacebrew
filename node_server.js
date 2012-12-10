@@ -1,19 +1,79 @@
+var processArguments = function(){
+    var argv = process.argv;
+    for(var i = 2; i < argv.length; i++){
+        switch(argv[i]){
+            case "-p":
+            case "--port":
+                setDefaultPort(argv[++i]);
+                break;
+            case "-h":
+            case "--help":
+                printHelp();
+                break;
+            case "-c":
+            case "--close":
+                forceClose = true;
+                break;
+            case "-t":
+            case "--timeout":
+                forceClose = true;
+                setCloseTimeout(argv[++i]);
+                break;
+            case "--ping":
+                doPing = true;
+                break;
+            case "--noping":
+                doPing = false;
+                break;
+            case "--pinginterval":
+                doPing = true;
+                setPingIntervalTime(argv[++i]);
+                break;
+        }
+    }
+};
+
+var defaultPort = 9000;
 /**
- * The port to open for ws connections. defaults to 9000. 
- * Can be overridden by a first argument when starting up the server.
- * node node_server.js 9011
+ * Set the port to open for ws connections. defaults to 9000. 
+ * Can be overridden using the flag -p or --port when starting up the server.
+ * node node_server.js -p 9011
  * @type {Number}
  */
-var spacePort = 9000;
-if (process.argv[2]) {
-    var tempPort = parseInt(process.argv[2]);
+var setDefaultPort = function(newPort){
+    var tempPort = parseInt(newPort);
     //check that tempPort != NaN
     //and that the port is in the valid port range
     if (tempPort == tempPort &&
         tempPort >= 1 && tempPort <= 65535){
-        spacePort = tempPort;
+        defaultPort = tempPort;
     }
-}
+};
+
+var closeTimeout = 10000;//default to 10 seconds
+var setCloseTimeout = function(newTimeout){
+    var tempTimeout = parseInt(newTimeout);
+    if (tempTimeout == tempTimeout && tempTimeout > 0){
+        closeTimeout = tempTimeout;
+    }
+};
+
+var pingIntervalTime = 1000;//every second
+var setPingIntervalTime = function(newInterval){
+    var tempInterval = parseInt(newInterval);
+    if (tempInterval == tempInterval && tempInterval > 0){
+        pingIntervalTime = tempInterval;
+    }
+};
+
+var printHelp = function(){
+    console.log();
+};
+
+var forceClose = false;
+var doPing = true;
+
+processArguments();
 
 /**
  * startup the websocket server.
@@ -23,7 +83,7 @@ if (process.argv[2]) {
  */
 var WebSocketServer = require('ws').Server
   , wss = new WebSocketServer({
-        port: spacePort,
+        port: defaultPort,
         host:'0.0.0.0'});
 
 /**
@@ -48,7 +108,7 @@ var trustedClients = []; // list of clients that have sent names
  */
 var adminConnections = [];
 
-console.log("\nRunning Spacebrew on PORT "+spacePort);
+console.log("\nRunning Spacebrew on PORT "+defaultPort);
 console.log("More info at http://www.spacebrew.cc");
 
 /**
@@ -679,8 +739,9 @@ var pingAllClients = function(){
                 currConn.spacebrew_pong_validated = false;
                 currConn.spacebrew_first_pong_sent = Date.now();
                 //console.log("setting validated = false");
-            } else if (currConn.spacebrew_pong_validated === false
-                        && (currConn.spacebrew_first_pong_sent + 10000) < Date.now()){
+            } else if (forceClose 
+                        && currConn.spacebrew_pong_validated === false
+                        && (currConn.spacebrew_first_pong_sent + closeTimeout) < Date.now()){
                 //10-second timeout
                 currConn.close();
                 //cleanupClosedConnections();
@@ -694,4 +755,6 @@ var pingAllClients = function(){
     };
 }
 
-setInterval(pingAllClients, 1000);//ping everyone every second to verify connections
+if (doPing){
+    setInterval(pingAllClients, pingIntervalTime);
+}
