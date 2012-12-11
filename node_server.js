@@ -29,6 +29,13 @@ var processArguments = function(){
                 doPing = true;
                 setPingIntervalTime(argv[++i]);
                 break;
+            case "-l":
+            case "--log":
+                console.log('TODO: implement log flag');
+                break;
+            case "--loglevel":
+                console.log("TODO: implement loglevel flag");
+                break;
         }
     }
 };
@@ -67,7 +74,19 @@ var setPingIntervalTime = function(newInterval){
 };
 
 var printHelp = function(){
-    console.log();
+    console.log("command line parameters:");
+    console.log("\t--port (-p): set the port of the spacebrew server (default 9000)");
+    console.log("\t--help (-h): print this help text");
+    console.log("\t--close (-c): force close clients that don't respond to pings");
+    console.log("\t--timeout (-t): minimum number of ms to wait for response pong before force closing (implies --close, default 10000 [10 seconds])");
+    console.log("\t--ping: enable pinging of clients to track who is potentially disconnected (default)");
+    console.log("\t--noping: opposite of --ping");
+    console.log("\t--pinginterval: the number of ms between pings (implies --ping, default 1000 [1 second])");
+    console.log("\t--log (-l): not yet implemented");
+    console.log("\t--loglevel: not yet implemented");
+    console.log("examples:");
+    console.log("\tnode node_server.js -p 9011 -t 1000 --pinginterval 1000");
+    console.log("\tnode node_server.js --noping");
 };
 
 var forceClose = false;
@@ -108,7 +127,7 @@ var trustedClients = []; // list of clients that have sent names
  */
 var adminConnections = [];
 
-console.log("\nRunning Spacebrew on PORT "+defaultPort);
+console.log("\nRunning Spacebrew, start with argument '--help' to see available configuration arguments.");
 console.log("More info at http://www.spacebrew.cc");
 
 /**
