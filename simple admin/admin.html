@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Spacebrew Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-fixed-bottom">
+          <div class="brand"><img src="img/spacebrew-logo-2.png"></img></div>
+          <div><span class='prefix'>/</span>About</div>
+          <div><span class='prefix'>/</span>Contact</div>
+          <div class="sig">Developed by <img src="img/lab-logo.png"></img></div>
+    </div>
+
+    <div class="container">
+      <div class='headerrow'>
+        <div class='clientcol header' id='clientdataheader'>
+          <span class='prefix'>/</span>Clients
+        </div>
+        <div class='pubcol header' id='pubdataheader'>
+          <span class='prefix'>/</span>Publishers
+        </div>
+        <div class='subcol header' id='subdataheader'>
+          <div class="pubsubsep"></div>
+          <span class='prefix'>/</span>Subscribers
+        </div>
+      </div>
+        <div style="overflow:scroll;height:100%;">
+          <div style="overflow:auto;" id='client_list'>
+            <div id='connectionBin'>
+            </div>
+            <div id='endpointBin'>
+            </div>
+          </div>
+          <div style="height:110px;" id='scroll_padding'></div>
+        </div>
+
+    </div> <!-- /container -->
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+
+        <!-- basic libraries -->
+    <script type="text/x-handlebars-template" id="client_handlebar">
+<div class='clientrow' id="{{Safetify name}}_{{Safetify remoteAddress}}">
+  <div class="clientanchor"></div>
+  <div class="clientcol clientdata">
+    <div class="clientnickname" title="(no description)">
+      <span>{{name}}</span>
+    </div>
+    <div class="clientname" title="(no description)">
+      <span>{{name}} @ {{remoteAddress}}</span><span class="infobutton" id="button_info_{{Safetify name}}_{{Safetify remoteAddress}}">?</span>
+    </div>
+    <div class="clientinfo" id="info_{{Safetify name}}_{{Safetify remoteAddress}}">
+      <span>
+      </span>
+    </div>
+  </div>
+</div>
+    </script>
+    <script type="text/x-handlebars-template" id="pubsub_handlebar">
+    <div class="pubcol pubdata clientdata">
+      {{#each config.publish.messages}}
+      <div class="itemwrapper publisher">
+      <div class="item publisher {{type}}" id="pub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        <div class="deletebutton">X</div>
+        <div class="itemanchor">{{type}}</div>
+        {{name}}
+      </div>
+      </div>
+      {{/each}}
+    </div>
+    <div class="subcol subdata clientdata">
+      {{#each config.subscribe.messages}}
+      <div class="itemwrapper subscriber">
+      <div class="item subscriber {{type}}" id="sub_{{Safetify ../name}}_{{Safetify ../remoteAddress}}_{{Safetify name}}_{{Safetify type}}" valign="middle">
+        <div class="deletebutton">X</div>
+        <div class="itemanchor">{{type}}</div>
+        {{name}}
+      </div>
+      </div>
+      {{/each}}
+    </div>
+    </script>
+    <script type="text/x-handlebars-template" id="route_handlebar">
+{{#each_with_index routes}}
+<div class="row {{even}}">
+  <div class='span5'>{{publisher.clientName}} @ {{publisher.remoteAddress}}: {{publisher.name}}, {{publisher.type}}</div>
+  <div class="span1">---TO---></div>
+  <div class='span5'>{{subscriber.clientName}} @ {{subscriber.remoteAddress}}: {{subscriber.name}}, {{subscriber.type}}</div>
+  <div class="span1"><button id="btnRouteRemove{{index}}" onclick="dorouteremove({{index}})" class="btn btn-inverse btn-mini">remove</button></div>
+</div>
+{{/each_with_index}}
+    </script>
+    <script type="text/x-handlebars-template" id="active_css_handlebar">
+{{#if pub}}
+.item.publisher:not(#{{id}}){
+  background-color:rgb(193,193,193);
+}
+.item.subscriber:not([class*='{{type}}']){
+  background-color:rgb(193,193,193);
+}
+.item.subscriber.{{type}}{
+  background-color:rgb(177,255,216);
+}
+{{else}}
+.item.subscriber:not(#{{id}}){
+  background-color:rgb(193,193,193);
+}
+.item.publisher:not([class*='{{type}}']){
+  background-color:rgb(193,193,193);
+}
+.item.publisher.{{type}}{
+  background-color:rgb(176,237,255);
+}
+{{/if}}
+.item.publisher.{{id}}{
+  background-color:rgb(168,182,255);
+}
+.item.subscriber.{{id}}{
+  background-color:rgb(129,212,170);
+}
+{{#if clicked}}
+
+{{#if pub}}
+.item.publisher:not(#{{id}}),
+.item.subscriber:not([class*='{{type}}']){
+{{else}}
+.item.subscriber:not(#{{id}}),
+.item.publisher:not([class*='{{type}}']){
+{{/if}}
+  opacity:.5;
+}
+
+.item.subscriber.{{id}} .deletebutton,
+.item.publisher.{{id}} .deletebutton{
+  display:block;
+}
+
+.clientrow:not(.selected){
+  background-image:url();
+}
+.item.subscriber#{{id}}{
+  outline:10px solid rgb(129,212,170);
+  -webkit-transition:all 0s ease-in-out;
+}
+.item.publisher#{{id}}{
+  outline:10px solid rgb(111,193,222);
+  -webkit-transition:all 0s ease-in-out;
+}
+.item.subscriber#{{id}}[class*='pub_']{
+  outline:10px solid rgb(71,158,116);
+}
+.item.publisher#{{id}}[class*='sub_']{
+  outline:10px solid rgb(116,131,222);
+}
+{{/if}}
+    </script>
+    <script data-main="js/load.js" src="js/require-2.0.4.js"></script>
+    <style id='selected' type='text/css'></style>
+  </body>
+</html>
+
