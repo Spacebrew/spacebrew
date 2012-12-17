@@ -1,3 +1,5 @@
+var agent = require('webkit-devtools-agent');
+
 /**
  * The port to open for ws connections. defaults to 9000. 
  * Can be overridden by a first argument when starting up the server.
