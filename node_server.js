@@ -696,4 +696,4 @@ var pingAllClients = function(){
     };
 }
 
-setInterval(pingAllClients, 1000);//ping everyone every second to verify connections
+//setInterval(pingAllClients, 1000);//ping everyone every second to verify connections
