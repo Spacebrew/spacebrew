@@ -324,3 +324,7 @@ body{
 	background-color:yellow;
 	margin-right:10px;
 }
+
+.item.active{
+	outline:2px solid #E0FF00;
+}

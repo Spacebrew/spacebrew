@@ -62,6 +62,11 @@ var handleMessageMsg = function(msg){
 	// var selector2 = "input[name=pub][value='{name}_{addr}_{pubName}_{pubType}']:radio".replace("{name}",.Safetify()).replace("{addr}", msg.message.remoteAddress.Safetify()).replace("{pubName}",msg.message.name.Safetify()).replace("{pubType}",msg.message.type.Safetify());
 	// $(selector2).parent().addClass('active');
 	var itemSelector = getCommItemSelector(true, msg.message.clientName, msg.message.remoteAddress, msg.message.name, msg.message.type);
+	$("#"+itemSelector).addClass("active");
+	setTimeout(function(){
+		$("#"+itemSelector).removeClass("active");
+	}, 200);
+	/*
 	var fromEndpoint = myPlumb.endpoints[itemSelector];
 	if (fromEndpoint){
 		var getImage = function(active){
@@ -69,11 +74,11 @@ var handleMessageMsg = function(msg){
 				? "open" 
 				: "closed")+(active ? "-active-i" : "") + ".png";
 		};
-		fromEndpoint.setImage(getImage(true));//.setPaintStyle(myPlumb.endpointActiveStyle);
+		//fromEndpoint.setImage(getImage(true));//.setPaintStyle(myPlumb.endpointActiveStyle);
 		setTimeout(function(){
-			fromEndpoint.setImage(getImage(false));/*setPaintStyle(myPlumb.endpointPaintStyle);*/
+			//fromEndpoint.setImage(getImage(false));/*setPaintStyle(myPlumb.endpointPaintStyle);*//*
 		},200);
-	}
+	}*/
 };
 
 var commSelectorTemplate = Handlebars.compile("{{pub}}_{{Safetify clientName}}_{{Safetify remoteAddress}}_{{Safetify name}}_{{Safetify type}}");
@@ -187,8 +192,8 @@ var addConnection = function(msg){
 	var targetid = getCommItemSelector(false, item.clientName, item.remoteAddress, item.name, item.type);
 	var source = myPlumb.endpoints[sourceid];
 	var target = myPlumb.endpoints[targetid];
-	source.setImage("img/node-closed.png");
-	target.setImage("img/node-closed.png");
+	//source.setImage("img/node-closed.png");
+	//target.setImage("img/node-closed.png");
 	if (!myPlumb.connections[sourceid]){
 		myPlumb.connections[sourceid] = {};
 	}
@@ -218,12 +223,13 @@ var handleUnselecting = function(pubId, subId){
 	var publisher = $("#"+pubId);
 	subscriber.removeClass(pubId);
 	publisher.removeClass(subId);
+	/*
 	if (subscriber.attr('class').indexOf('pub_') < 0){
 		myPlumb.endpoints[subId].setImage("img/node-open.png");
 	}
 	if (publisher.attr('class').indexOf('sub_') < 0){
 		myPlumb.endpoints[pubId].setImage("img/node-open.png");
-	}
+	}*/
 };
 
 var removeConnection = function(msg){
