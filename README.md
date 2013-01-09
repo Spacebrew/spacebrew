@@ -1,7 +1,7 @@
 spacebrew
 =========
 
-A dynamically re-routable software toolkit for choreographing interactive spaces.
+A dynamically re-routable software toolkit for choreographing interactive spaces. Visit http://www.spacebrew.cc to see projects that people are working on or dive in at http://docs.spacebrew.cc 
 
 ###Getting Started
 * Clone the repo
