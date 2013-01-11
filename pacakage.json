@@ -1,0 +1,24 @@
+{
+  "name": "spacebrew",
+  "version": "0.0.0",
+  "description": "A dynamically re-routable software toolkit for choreographing interactive spaces.",
+  "main": "node_server.js",
+  "scripts": {
+    "start": "node node_server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/labatrockwell/spacebrew.git"
+  },
+  "keywords": [
+    "spaces",
+    "arduino",
+    "serial",
+    "websockets"
+  ],
+  "author": "LAB at Rockwell Group",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "~0.4.25"
+  }
+}
