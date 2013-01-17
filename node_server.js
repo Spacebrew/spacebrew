@@ -767,13 +767,13 @@ var pingAllClients = function(){
                 //console.log("closed connection");
                 continue;
             }
-            currConn.ping();
+            currConn.ping("ping");
         } catch(err){
             console.log("CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
         }
     };
-}
+};
 
 if (doPing){
     setInterval(pingAllClients, pingIntervalTime);
-}
+};
