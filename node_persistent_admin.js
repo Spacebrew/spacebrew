@@ -1,3 +1,90 @@
+var processArguments = function(){
+    var argv = process.argv;
+    for(var i = 2; i < argv.length; i++){
+        switch(argv[i]){
+            case "--host":
+                setDefaultHost(argv[++i]);
+                break;
+            case "-p":
+            case "--port":
+                setDefaultPort(argv[++i]);
+                break;
+            case "-s":
+            case "--serverport":
+                setDefaultServerPort(argv[++i]);
+                break;
+            case "-h":
+            case "--help":
+                printHelp();
+                break;
+            case "-l":
+            case "--log":
+                console.log('TODO: implement log flag');
+                break;
+            case "--loglevel":
+                console.log("TODO: implement loglevel flag");
+                break;
+        }
+    }
+};
+
+var defaultPort = 9000;
+/**
+ * Set the port of the spacebrew server. defaults to 9000. 
+ * Can be overridden using the flag -p or --port when starting up the persistent router.
+ * node node_persistent_admin.js -p 9011
+ * @type {Number}
+ */
+var setDefaultPort = function(newPort){
+    var tempPort = parseInt(newPort);
+    //check that tempPort != NaN
+    //and that the port is in the valid port range
+    if (tempPort == tempPort &&
+        tempPort >= 1 && tempPort <= 65535){
+        defaultPort = tempPort;
+    }
+};
+
+var defaultServerPort = 9001;
+/**
+ * Set the port to open for ws connections. defaults to 9001. 
+ * Can be overridden using the flag -s or --serverport when starting up the persistent router.
+ * node node_persistent_admin.js -s 9011
+ * @type {Number}
+ */
+var setDefaultServerPort = function(newPort){
+    var tempPort = parseInt(newPort);
+    //check that tempPort != NaN
+    //and that the port is in the valid port range
+    if (tempPort == tempPort &&
+        tempPort >= 1 && tempPort <= 65535){
+        defaultServerPort = tempPort;
+    }
+};
+
+var defaultHost = "localhost";
+var setDefaultHost = function(newHost){
+    defaultHost = newHost;
+}
+
+var printHelp = function(){
+    console.log("command line parameters:");
+    console.log("\t--port (-p): set the port of the spacebrew server (default 9000)");
+    console.log("\t--serverport (-s): set the port that this will listen on for remote control (default 9001)");
+    console.log("\t--host: the hostname of the spacebrew server (default localhost)");
+    console.log("\t--help (-h): print this help text");
+    console.log("\t--log (-l): not yet implemented");
+    console.log("\t--loglevel: not yet implemented");
+    console.log("examples:");
+    console.log("\tnode node_persistent_admin.js -p 9011 -s 9094");
+    console.log("\tnode node_persistent_admin.js -h my-sweet-computer");
+};
+
+var forceClose = false;
+var doPing = true;
+
+processArguments();
+
 //###########################################
 //########  IGNORE EVERYTHING!!!!  ##########
 //######### UNTIL FURTHER NOTICE  ###########
@@ -67,22 +154,7 @@ var fs = require("fs");
 var WebSocketClient = require('ws');
 //stdin used for user input
 var stdin = process.openStdin();
-/**
- * The port to open for ws connections. defaults to 9001. 
- * Can be overridden by a first argument when starting up the admin.
- * node node_persistent_admin.js 9011
- * @type {Number}
- */
-var commandPort = 9001;
-if (process.argv[2]) {
-    var tempPort = parseInt(process.argv[2]);
-    //check that tempPort != NaN
-    //and that the port is in the valid port range
-    if (tempPort == tempPort &&
-        tempPort >= 1 && tempPort <= 65535){
-        commandPort = tempPort;
-    }
-}
+
 /**
  * startup a websocket server to handle commands over websocket.
  * The port specifies which port to listen on
@@ -90,7 +162,7 @@ if (process.argv[2]) {
  * not just localhost or a specific IP
  */
 var WebSocketServer = require('ws').Server
-  , wss = new WebSocketServer({port: commandPort,host:'0.0.0.0'});
+  , wss = new WebSocketServer({port: defaultServerPort,host:'0.0.0.0'});
 
 //print out info:
 var l = console.log;
@@ -582,13 +654,30 @@ var addRoute = function(pubClient, pub, subClient, sub){
     }));
 };
 
-// create the wsclient and register as an admin
-wsClient = new WebSocketClient("ws://localhost:9000");
-wsClient.on("open", function(conn){
-    console.log("connected");
-    var adminMsg = { "admin": [
-        {"admin": true}
-    ]};
-    wsClient.send(JSON.stringify(adminMsg));
-});
-wsClient.on("message", receivedMessage);
+var setupWSClient = function(){ 
+    // create the wsclient and register as an admin
+    wsClient = new WebSocketClient("ws://"+defaultHost+":"+defaultPort);
+    wsClient.on("open", function(conn){
+        console.log("connected");
+        var adminMsg = { "admin": [
+            {"admin": true}
+        ]};
+        wsClient.send(JSON.stringify(adminMsg));
+    });
+    wsClient.on("message", receivedMessage);
+    wsClient.on("error", function(){console.log("ERROR"); console.log(arguments);});
+    wsClient.on("close", function(){console.log("CLOSE"); console.log(arguments);});
+}
+
+//set up timer to attempt connection if it doesn't happen
+setupWSClient();
+
+/**
+ * Ready States [copied from WebSocket.js]
+ */
+
+var CONNECTING = 0;
+var OPEN = 1;
+var CLOSING = 2;
+var CLOSED = 3;
+setInterval(function(){if (wsClient.readyState !== OPEN){wsClient.terminate(); setupWSClient()}}, 10000);

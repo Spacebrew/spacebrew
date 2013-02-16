@@ -11,6 +11,13 @@ exports.createServer = function( opts ){
     opts = opts || {};
     opts.port = opts.port || 9000;
     opts.host = opts.host || '0.0.0.0';
+    opts.ping = opts.ping || true;
+    opts.forceClose = opts.forceClose || false;
+    opts.closeTimeout = opts.pingTimeout || 10000;
+    opts.pingInterval = opts.pingInterval || 1000;
+    opts.log = opts.log || false;
+    //opts.logLevel = opts.logLevel || "warn";
+
 
     /**
      * startup the websocket server.
@@ -680,21 +687,24 @@ exports.createServer = function( opts ){
                     currConn.spacebrew_pong_validated = false;
                     currConn.spacebrew_first_pong_sent = Date.now();
                     //console.log("setting validated = false");
-                } else if (currConn.spacebrew_pong_validated === false
-                            && (currConn.spacebrew_first_pong_sent + 10000) < Date.now()){
+                } else if (opts.forceClose
+                            && currConn.spacebrew_pong_validated === false
+                            && (currConn.spacebrew_first_pong_sent + opts.closeTimeout) < Date.now()){
                     //10-second timeout
                     currConn.close();
                     //cleanupClosedConnections();
                     //console.log("closed connection");
                     continue;
                 }
-                currConn.ping();
+                currConn.ping("ping");
             } catch(err){
                 console.log("CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
             }
         };
     }
 
-    setInterval(pingAllClients, 1000);//ping everyone every second to verify connections
+    if (opts.ping){
+        setInterval(pingAllClients, opts.pingInterval);//ping everyone every second to verify connections
+    }
     return expose;
 };
