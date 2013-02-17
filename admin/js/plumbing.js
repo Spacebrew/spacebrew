@@ -73,5 +73,9 @@ setupPlumbing = function() {
 //might want to increase the interval timeout, but then it just looks choppy
 triggerPaint = function(){
 	jsPlumb.repaintEverything();
-	window.webkitRequestAnimationFrame(triggerPaint);
+	window.requestAnimationFrame(triggerPaint);
 };
+
+window.requestAnimationFrame = (window.requestAnimationFrame 
+                                || window.webkitRequestAnimationFrame 
+                                || window.mozRequestAnimationFrame);

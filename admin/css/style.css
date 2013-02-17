@@ -1,6 +1,6 @@
 @font-face{
 	font-family: Din;
-	font-weight: lighter;
+	font-weight: 100;/*lighter;*/
 	src: url("../fonts/DIN/DINNeuzeitGroteskStd-Light.otf") format("opentype");
 }
 @font-face{
@@ -19,7 +19,7 @@
 }
 @font-face{
 	font-family: DinPro;
-	font-weight: bolder;
+	font-weight: 400;/*bolder;*/
 	src: url("../fonts/DIN/DINPro-Black.otf") format("opentype");
 }
 @font-face{
@@ -30,7 +30,7 @@
 body{
 	height:100%;
 	background-color:#fff;
-	//background-image:url("../img/design/Spacebrew_0000_Default A notop.png");
+	/*background-image:url("../img/design/Spacebrew_0000_Default A notop.png");*/
 }
 .container{
 	height:100%;
@@ -134,7 +134,7 @@ body{
 	color:white;
 	font-size:7.5pt;
 	text-align:center;
-	letter-spacing:1px;DinPro;
+	letter-spacing:1px;
 	background-color:black;
 }
 .subscriber .itemanchor{
@@ -161,12 +161,12 @@ body{
 .item{
 	line-height:25px;
 	height:25px;
-	//margin:4px;
+	/*margin:4px;*/
 	min-width:282px;
 	font-family:DinPro;
 	font-weight:500;
 	font-size:10pt;
-	//-webkit-transition:all .4s ease-in-out;
+	/*-webkit-transition:all .4s ease-in-out;*/
 	pointer-events:none;
 }
 .itemwrapper{
@@ -229,7 +229,7 @@ body{
 .clientinfo{
 	font-family:DinPro;
 	font-size:9pt;
-	//margin-top:-3px;
+	/*margin-top:-3px;*/
 }
 .clientnickname span,
 .clientname span,
