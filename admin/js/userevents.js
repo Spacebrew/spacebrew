@@ -7,12 +7,12 @@ var setupUserEvents = function(){
 };
 
 var clickInfo = function(event){
-	console.log("clicked!");
+	if (debug) console.log("clicked!");
 	$("#"+event.target.id.substr("button_".length)).toggleClass('show');
 };
 
 // var clickDelete = function(event){
-// 	console.log("clicked!");
+// 	if (debug) console.log("clicked!");
 // };
 
 var clickBody = function(event){
@@ -62,7 +62,7 @@ var overItem = function(event){
 			pub:pub,
 			clientid:pieces[1]+'_'+pieces[2]
 		};
-		console.log(pieces[1]+'_'+pieces[2]);
+		if (debug) console.log(pieces[1]+'_'+pieces[2]);
 		$("style#selected").text(cssSelectedTemplate(context));
 	}
 };
@@ -101,7 +101,7 @@ var firstClick = function(item, type, pub){
 		pub:pub
 	};
 	var cssFile = cssTypeTemplate(context);
-	console.log('turning on ' + cssFile);
+	if (debug) console.log('turning on ' + cssFile);
 	$("style#selected").text(cssSelectedTemplate(context));// attr('href',cssFile);
 	if (pub){
 		currState = PUB_SELECTED;
@@ -111,7 +111,7 @@ var firstClick = function(item, type, pub){
 };
 
 var turnOffSelected = function(){
-	console.log('turning off');
+	if (debug) console.log('turning off');
 	$("style#selected").text('');
 	$(".item.selected").removeClass('selected');
 	$(".clientrow.selected").removeClass('selected');

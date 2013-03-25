@@ -629,7 +629,15 @@ exports.createServer = function( opts ){
     var sendToAdmins = function(json){
         var toSend = JSON.stringify(json);
         for(var i = adminConnections.length - 1; i >= 0; i--){
-            adminConnections[i].send(toSend);
+        	// check if connection is still open before attempting to send messages
+        	if (adminConnections[i].readyState == 1) {
+	        	try {
+		            adminConnections[i].send(toSend);    		
+	        	} catch (e) {
+	        		console.log("ERROR: WebSocket library error sending message to admin at index " + i);
+	        		console.log("\eerror message: ", e);
+	        	}        		
+        	}
         }
     };
 

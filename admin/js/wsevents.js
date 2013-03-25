@@ -1,5 +1,6 @@
 var name = gup('name') || window.location.href; 
 var server = gup('server') || 'localhost';
+var debug = gup('debug') || false;
 
 var ws;
 var setupWebsocket = function(){
@@ -12,9 +13,9 @@ var setupWebsocket = function(){
 		ws.send(JSON.stringify(adminMsg));
 	};
 	ws.onmessage = function(e) {
-		//console.log("Got WebSockets message: " + e.data);
-		console.log("Got WebSockets message:");
-		console.log(e);
+		//if (debug) console.log("Got WebSockets message: " + e.data);
+		if (debug) console.log("Got WebSockets message:");
+		if (debug) console.log(e);
 		//try {
 			var json = JSON.parse(e.data);
 			if (!handleMsg(json)){
@@ -23,7 +24,7 @@ var setupWebsocket = function(){
 				}
 			}
 		// } catch (err) {
-		//     console.log('This doesn\'t look like a valid JSON: ', e.data);
+		//     if (debug) console.log('This doesn\'t look like a valid JSON: ', e.data);
 		//     return;
 		// }
 	};

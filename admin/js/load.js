@@ -11,6 +11,7 @@ function loadCSS(url){
 
 loadCSS("css/reset.css");
 loadCSS("css/style.css");
+
 require(["handlebars-1.0.0.beta.6",
 		"jsplumb/jsPlumb-util-1.3.13-RC1",
 		"jsplumb/jsPlumb-dom-adapter-1.3.13-RC1",
