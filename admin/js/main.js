@@ -1,10 +1,10 @@
-//$(document).ready( function() {
 $(window).bind('load', function(){
     $(document).ready(function(){
         jsPlumb.ready(function(){
             setupPlumbing();
             setupWebsocket();
             setupUserEvents();
+            setupLinks();
         });
     });
 });
@@ -13,6 +13,21 @@ var NONE_SELECTED = {},
     PUB_SELECTED = {},
     SUB_SELECTED = {};
 var currState = NONE_SELECTED;
+
+var setupLinks = function() {
+	$(".about-link").on("click", function(event) {
+        window.open("http://docs.spacebrew.cc");
+        return false;		
+	})
+	$(".contact-link").on("click", function(event) {
+        window.open("http://docs.spacebrew.cc/contact/");
+        return false;		
+	})
+	$(".lab-link").on("click", function(event) {
+        window.open("http://www.rockwellgroup.com/lab");
+        return false;		
+	})
+}
 
 var dorouteradio = function(e){
     if (e){e.preventDefault();};

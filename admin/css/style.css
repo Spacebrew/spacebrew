@@ -324,3 +324,7 @@ body{
 	background-color:yellow;
 	margin-right:10px;
 }
+
+div.links{
+   cursor: hand; cursor: pointer; 
+}
