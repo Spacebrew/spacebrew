@@ -56,7 +56,7 @@ var changeRoute = function(changeType, fromId, toId){
                                 type:selectedSub[type],
                                 remoteAddress:selectedSub[remoteAddress]}}
         };
-        console.log(m);
+        if (debug) console.log(m);
         ws.send(JSON.stringify(m));
     }
 }
