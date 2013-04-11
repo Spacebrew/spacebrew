@@ -102,6 +102,7 @@ exports.createServer = function( opts ){
     };
 
     // WebSocket server
+
     /**
      * When a new client connects, we will add it to our list of connections
      * and setup the appropriate callbacks
@@ -138,6 +139,13 @@ exports.createServer = function( opts ){
                         bValidMessage = handleMessageMessage(connection, tMsg);
                     } else if (tMsg['admin']) {
                         connection.spacebrew_is_admin = true;
+
+                        ////////////////////////////////////////////////////////
+                        // ---- NEW FUNCTIONALITY FOR ADMINS TO NOT GET MESSAGES
+                        connection.no_msgs = tMsg.no_msgs ? true : false;
+                        console.log ("registering admin ", tMsg);
+                        ////////////////////////////////////////////////////////
+
                         connection.send(JSON.stringify(buildUpdateMessagesForAdmin()));
                         adminConnections.push(connection);
                         bValidMessage = true;
@@ -146,12 +154,14 @@ exports.createServer = function( opts ){
                     } else {
                         console.log("unrecognized message type. Use one of config, message, admin, or route");
                     }
+
                     if (bValidMessage){
                         //console.log("forwarding to admins");
                         sendToAdmins(tMsg);
                     } else {
-                        console.log("message marked as invalid, ignoring");
+                        console.log("message marked as invalid, ignoring ");
                     }
+
                 } catch (err){
                     console.log("ERROR on line <" + err.lineNumber + "> while processing message");
                     console.log(err.stack);
@@ -525,6 +535,14 @@ exports.createServer = function( opts ){
         for (var i = currBase[otherTypePlural].length - 1; i >= 0; i--) {
             var currLeaf = currBase[otherTypePlural][i];
             var messageContent = {type:'remove'};
+
+            ///////////////////////////////////////////////////////////////////////////////////
+            // PERSISTENT ADMIN CHANGE ////////////////////////////////////////////////////////
+            messageContent['client_disconnect'] = true; 	// identifies messages as a cleanup message
+            										// message ignored by persistent admin
+            // PERSISTENT ADMIN CHANGE ////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////////////
+
             messageContent[otherType] = {clientName:currLeaf.client.name,
                                             name:currLeaf[otherType].name,
                                             type:currLeaf[otherType].type,
@@ -632,7 +650,17 @@ exports.createServer = function( opts ){
         	// check if connection is still open before attempting to send messages
         	if (adminConnections[i].readyState == 1) {
 	        	try {
-		            adminConnections[i].send(toSend);    		
+
+                    ////////////////////////////////////////////////////////
+                    // ---- NEW FUNCTIONALITY FOR ADMINS TO NOT GET MESSAGES
+	        		// if admin does not want to receive messages and this is a message, then skip
+	        		if( adminConnections[i].no_msgs && json['message'] ) continue;
+	        		// otherwise send message to admin
+		            else adminConnections[i].send(toSend);    		
+		            ///////////////////////////////////////////////////////
+
+		            // OLD APPROACH
+		            // adminConnections[i].send(toSend);    		
 	        	} catch (e) {
 	        		console.log("ERROR: WebSocket library error sending message to admin at index " + i);
 	        		console.log("\eerror message: ", e);
