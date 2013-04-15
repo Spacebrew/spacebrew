@@ -9,12 +9,23 @@
  * 
  */
 
+
+
+// Import Modules and Configure Input and Output streams
 var fs = require("fs")					// fs used for file read/write
 	, WebSocketClient = require('ws') 	// websocket used for conection to spacebrew
 	, stdin = process.openStdin()		// stdin used for user input
 	, l = console.log 					// set 'l' as shorthand for log
 	;
 
+// Ready States for Spacebrew Connection - consistent with WebSocket.js
+var CONNECTING = 0	
+	, OPEN = 1
+	, CLOSING = 2
+	, CLOSED = 3
+	;
+
+// Application State Variables
 var defaultPort = 9000
 	, defaultHost = "localhost"
 	, clients = []
@@ -22,9 +33,12 @@ var defaultPort = 9000
 	, reconnect = undefined
 	;
 
+// Start-up And Run Live Persistent Router
 printStartupMsg();
 processArguments();
 captureInput();
+loadConfig(false); 		//auto-load config on startup
+setupWSClient();
 
 
 function printStartupMsg() {
@@ -39,6 +53,7 @@ function printStartupMsg() {
 	l("");	
 }
 
+
 function processArguments (){
     var argv = process.argv;
     for(var i = 2; i < argv.length; i++){
@@ -52,7 +67,7 @@ function processArguments (){
                 break;
             case "-h":
             case "--help":
-                printHelp();
+                printCommandLineHelp();
                 break;
             case "-l":
             case "--log":
@@ -102,7 +117,7 @@ function setSpacebrewHost (newHost){
 }
 
 
-function printHelp (){
+function printCommandLineHelp (){
     console.log("command line parameters:");
     console.log("\t--port (-p): set the port of the spacebrew server (default 9000)");
     console.log("\t--host: the hostname of the spacebrew server (default localhost)");
@@ -202,7 +217,7 @@ var printHelpText = function(){
     l("    quits this persistent route admin (same as [ctrl]+c)");
 };
 
-var loadConfig = function(expectFile){
+function loadConfig (expectFile){
 	var config;
 
 	// open the config file
@@ -223,8 +238,6 @@ var loadConfig = function(expectFile){
 	return true;
 };
 
-//auto-load config on startup
-loadConfig(false);
 
 /**
  * Walks all the clients and all the persistent routes, and sends a route Add message for each
@@ -496,7 +509,7 @@ var addRoute = function(pubClient, pub, subClient, sub){
     }));
 };
 
-var setupWSClient = function(){ 
+function setupWSClient(){ 
     // create the wsclient and register as an admin
     wsClient = new WebSocketClient("ws://"+defaultHost+":"+defaultPort);
     wsClient.on("open", function(conn){
@@ -511,26 +524,25 @@ var setupWSClient = function(){
         wsClient.send(JSON.stringify(adminMsg));
     });
     wsClient.on("message", receivedMessage);
-    wsClient.on("error", function(){console.log("ERROR"); console.log(arguments);});
+    wsClient.on("error", function(){
+    	console.log("Spacebrew Connection Error"); 
+    	console.log(arguments);
+		maintainConnection();
+    });
     wsClient.on("close", function(){
-    	console.log("CLOSE"); console.log(arguments);
-    	if (!reconnect) {
-	    	reconnect = setInterval(function() {
-	    		setupWSClient();	
-	    	}, 5000);    		
-    	}
+		console.log("Spacebrew Connection Closed"); 
+		console.log(arguments);
+		maintainConnection();
     });
 }
 
-//set up timer to attempt connection if it doesn't happen
-setupWSClient();
-
-/**
- * Ready States [copied from WebSocket.js]
- */
-
-var CONNECTING = 0;
-var OPEN = 1;
-var CLOSING = 2;
-var CLOSED = 3;
-setInterval(function(){if (wsClient.readyState !== OPEN){wsClient.terminate(); setupWSClient()}}, 10000);
+function maintainConnection() {
+	if (!reconnect) {
+		reconnect = setInterval(function() {
+			if (wsClient.readyState !== OPEN) {
+				wsClient.terminate();
+	    		setupWSClient();	
+			}
+		}, 5000);    		
+	}
+}

@@ -740,7 +740,7 @@ exports.createServer = function( opts ){
     }
 
     if (opts.ping){
-        setInterval(pingAllClients, opts.pingInterval);//ping everyone every second to verify connections
+        setInterval(pingAllClients, opts.pingInterval); //ping everyone every second to verify connections
     }
     return expose;
 };

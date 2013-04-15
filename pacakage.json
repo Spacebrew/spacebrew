@@ -1,6 +1,6 @@
 {
   "name": "spacebrew",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "description": "A dynamically re-routable software toolkit for choreographing interactive spaces.",
   "main": "node_server.js",
   "scripts": {
