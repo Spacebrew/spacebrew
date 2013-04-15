@@ -46,7 +46,10 @@ exports.createServer = function( opts ){
 		wsc.on("open", function(conn){
 			console.log("[ws.open] connected to spacebrew \n");
 			var adminMsg = { "admin": [ 
-					{"admin": true} 
+					{ 
+						"admin": true
+						, "no_msgs" : true
+					} 
 				]};
 
 			if (reconnect) {
@@ -342,6 +345,38 @@ exports.createServer = function( opts ){
 	    return A.name === B.name && A.remoteAddress === B.remoteAddress; 
 	};
 
+	var saveRoutes = function() {
+		fs.writeFile('./data/live_persist_config.json', JSON.stringify(routes), function(err){
+			if (err){
+				l("[saveRoutes] error saving route model to live_persist_config.json", err);
+			} else {
+				l("[saveRoutes] route model was saved to live_persist_config.json");
+			}
+		});
+	}
+
+	var loadRoutes = function( filename ){
+		var raw_data
+			, filename = filename || "live_persist_config.json"
+			;
+
+		// open the raw_data file
+	    try{
+	        raw_data = fs.readFileSync("./data/" + filename);
+	    } catch(err){
+			l("[loadRoutes] error while reading file " + filename, err);
+	    }
+
+	    // parse the file contents
+	    try{
+	        routes = JSON.parse(raw_data);
+	    }catch(err){
+	        l("[loadRoutes] error while parsing raw_data file\n", err);
+	    }
+
+		return true;
+	};
+
 	var reestablishConnection = function() {
 		if (!reconnect) {
 			reconnect = setInterval(function() {
@@ -353,6 +388,7 @@ exports.createServer = function( opts ){
 		}
 	}
 
+	if (opts.load || opts.load_file) loadRoutes(opts.load_file);
 	setupWSClient();
 }
 
@@ -370,7 +406,6 @@ var main = function() {
 		processArguments();
 		captureInput();
 		persist_server = exports.createServer({"host": host, "port": port })
-		// loadConfig(false); 	
 	}
 
 	var printStartupMsg = function() {
@@ -462,9 +497,9 @@ var main = function() {
 	 * @param  {string} str The string input by stupid user
 	 * @return {string}     The string without leading or trailing whitespace
 	 */
-	var clean = function (str){
-	    return str.replace(/(^\s*|\s*$)/g,'');
-	};
+	// var clean = function (str){
+	//     return str.replace(/(^\s*|\s*$)/g,'');
+	// };
 
 	/**
 	 * The function that takes a string input command, and does with it as appropriate.
