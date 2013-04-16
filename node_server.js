@@ -1,4 +1,5 @@
 var  spacebrew = require('./index');
+var  persister = require('./spacebrew_live_persist');
 
 var processArguments = function(){
     var argv = process.argv;
@@ -31,6 +32,12 @@ var processArguments = function(){
                 doPing = true;
                 setPingIntervalTime(argv[++i]);
                 break;
+            case "--persist":
+                persist = true;
+                break;
+            case "--nopersist":
+                persist = false;
+                break;
             case "-l":
             case "--log":
                 console.log('TODO: implement log flag');
@@ -43,6 +50,9 @@ var processArguments = function(){
 };
 
 var defaultPort = 9000;
+var forceClose = false;
+var doPing = true;
+var persist = true;
 
 /**
  * Set the port to open for ws connections. defaults to 9000. 
@@ -84,6 +94,8 @@ var printHelp = function(){
     console.log("\t--timeout (-t): minimum number of ms to wait for response pong before force closing (implies --close, default 10000 [10 seconds])");
     console.log("\t--ping: enable pinging of clients to track who is potentially disconnected (default)");
     console.log("\t--noping: opposite of --ping");
+    console.log("\t--persist: enables the live route persister, which saves route configurations");
+    console.log("\t--noping: opposite of --persist");
     console.log("\t--pinginterval: the number of ms between pings (implies --ping, default 1000 [1 second])");
     console.log("\t--log (-l): not yet implemented");
     console.log("\t--loglevel: not yet implemented");
@@ -92,12 +104,11 @@ var printHelp = function(){
     console.log("\tnode node_server.js --noping");
 };
 
-var forceClose = false;
-var doPing = true;
-
 processArguments();
 
 spacebrew.createServer({ port: defaultPort, forceClose: forceClose, ping:doPing, pingInterval: pingIntervalTime, closeTimeout: closeTimeout });
+
+if (persist) { persister.persistRoutes({ host: "localhost" }); }
 
 console.log("\nRunning Spacebrew, start with argument '--help' to see available configuration arguments.");
 console.log("More info at http://www.spacebrew.cc");

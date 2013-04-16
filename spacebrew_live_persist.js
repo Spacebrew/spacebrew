@@ -1,5 +1,5 @@
 /**
- * Make All Routes Persistent App
+ * Spacebrew Live Persist
  * ------------------------------
  * 
  * This app persists all routes added to a standard spacebrew server
@@ -23,16 +23,17 @@ var CONNECTING = 0
 	, CLOSED = 3
 	;
 
-exports.createServer = function( opts ){
+exports.persistRoutes = function( opts ){
 
 	// Import Modules and Configure Input and Output streams
-	var stdin = process.openStdin()		// stdin used for user input
-		, l = console.log 				// set 'l' as shorthand for log
-		, reconnect = undefined			// holds timer that maintains server connection
+	var reconnect = undefined			// holds timer that maintains server connection
 		;
 
 	var port = opts.port || 9000
 		, host = opts.host || "localhost"
+		, autosave = opts.autosave || true
+		, load = opts.load || true
+		, load_file = opts.load_file || "live_persist_config.json"
 		;
 
 	var clients = []
@@ -40,36 +41,47 @@ exports.createServer = function( opts ){
 		;
 
 	var setupWSClient = function(){ 
-		// create the wsclient and register as an admin
+
+		// create the wsclient to connect to spacebrew
 		wsc = new WebSocketClient("ws://" + host + ":" + port);
 
+		// configure the spacebrew admin client once connection stablished
 		wsc.on("open", function(conn){
 			console.log("[ws.open] connected to spacebrew \n");
+
+			// send the admin configuration message to spacebrew server
 			var adminMsg = { "admin": [ 
 					{ 
 						"admin": true
 						, "no_msgs" : true
 					} 
 				]};
+			wsc.send(JSON.stringify(adminMsg));
 
+
+			// if the reconnect timer is activated then stop it
 			if (reconnect) {
 				reconnect = clearInterval(reconnect);
 				reconnect = undefined;
 			}
 
-			wsc.send(JSON.stringify(adminMsg));
+			// load the routes that were saved
+			if (load) loadRoutes(load_file);
 		});
 
+		// handle messages
 		wsc.on("message", receivedMessage);
 
+		// handle websocket error events
 		wsc.on("error", function(){
-			console.log("Spacebrew Connection Error"); 
+			console.log("[ws.onerror] spacebrew Connection Error"); 
 			console.log(arguments);
-			reestablishConnection();
+			if (wsc.readyState != OPEN) reestablishConnection();
 		});
 
+		// handle websocket close events
 		wsc.on("close", function(){
-			console.log("Spacebrew Connection Closed"); 
+			console.log("[on.close] spacebrew Connection Closed"); 
 			console.log(arguments);
 			reestablishConnection();
 		});
@@ -230,8 +242,9 @@ exports.createServer = function( opts ){
 			}
 		};
 
-		console.log("[handleRouteRemoveMessage] post - routes.length ", routes.length);
+	    saveRoutes();
 
+		console.log("[handleRouteRemoveMessage] post - routes.length ", routes.length);
 	};
 
 	/**
@@ -262,10 +275,11 @@ exports.createServer = function( opts ){
 						publisher: msg.route.publisher,
 						subscriber: msg.route.subscriber
 					};
+		routes.push(newRoute);
+
+	    saveRoutes();
 
 		console.log("[handleRouteAddMessage] new route ", newRoute);
-
-		routes.push(newRoute);
 	}
 
 	/**
@@ -335,16 +349,6 @@ exports.createServer = function( opts ){
 	    }));
 	};
 
-	/**
-	 * Utility function for helping determine if two config objects refer to the same Client
-	 * @param  {Client config} A 
-	 * @param  {Client config} B 
-	 * @return {boolean}   true iff the names and remote addresses match
-	 */
-	var areClientsEqual = function(A, B){
-	    return A.name === B.name && A.remoteAddress === B.remoteAddress; 
-	};
-
 	var saveRoutes = function() {
 		fs.writeFile('./data/live_persist_config.json', JSON.stringify(routes), function(err){
 			if (err){
@@ -370,6 +374,7 @@ exports.createServer = function( opts ){
 	    // parse the file contents
 	    try{
 	        routes = JSON.parse(raw_data);
+	        ensureConnected();
 	    }catch(err){
 	        l("[loadRoutes] error while parsing raw_data file\n", err);
 	    }
@@ -388,7 +393,16 @@ exports.createServer = function( opts ){
 		}
 	}
 
-	if (opts.load || opts.load_file) loadRoutes(opts.load_file);
+	/**
+	 * Utility function for helping determine if two config objects refer to the same Client
+	 * @param  {Client config} A 
+	 * @param  {Client config} B 
+	 * @return {boolean}   true iff the names and remote addresses match
+	 */
+	var areClientsEqual = function(A, B){
+	    return A.name === B.name && A.remoteAddress === B.remoteAddress; 
+	};
+
 	setupWSClient();
 }
 
@@ -405,7 +419,7 @@ var main = function() {
 		printStartupMsg();
 		processArguments();
 		captureInput();
-		persist_server = exports.createServer({"host": host, "port": port })
+		persist_server = exports.persistRoutes({"host": host, "port": port })
 	}
 
 	var printStartupMsg = function() {
@@ -497,9 +511,9 @@ var main = function() {
 	 * @param  {string} str The string input by stupid user
 	 * @return {string}     The string without leading or trailing whitespace
 	 */
-	// var clean = function (str){
-	//     return str.replace(/(^\s*|\s*$)/g,'');
-	// };
+	var clean = function (str){
+	    return str.replace(/(^\s*|\s*$)/g,'');
+	};
 
 	/**
 	 * The function that takes a string input command, and does with it as appropriate.
@@ -507,98 +521,14 @@ var main = function() {
 	 * 		
 	 * @param  {string} command the command to run
 	 */
-	// var runCommand = function(command){
-	//     //strip leading and trailing spaces
-	//     command = clean(command.toString());
+	var runCommand = function(command){
+	    //strip leading and trailing spaces
+	    command = clean(command.toString());
 
-	//     if (command == "ls"){
-	//         //list all publishers, then all subscribers, then all persistent routes
-	//         var n = 0;
-	//         l("publishers:");
-	//         for(var i = 0; i < clients.length; i++){
-	//             for (var j = 0; j < clients[i].publish.messages.length; j++){
-	//                 l("  "+(n++)+": "+clients[i].name+", "+clients[i].publish.messages[j].name);
-	//             }
-	//         }
-	//         l("subscribers:");
-	//         for(var i = 0; i < clients.length; i++){
-	//             for (var j = 0; j < clients[i].subscribe.messages.length; j++){
-	//                 l("  "+(n++)+": "+clients[i].name+", "+clients[i].subscribe.messages[j].name);
-	//             }
-	//         }
-	//         n = 0;
-	//         l("routes:");
-	//         for (var i = 0; i < routes.length; i++){
-	//             var r = routes[i];
-	//             l("  "+(n++)+": "+r.publisher.clientName+","+r.publisher.name+" -> "+r.subscriber.clientName+","+r.subscriber.name);
-	//         }
-	//     } 
-
-	//     else if (command == "save"){
-	//         fs.writeFile('./persistent_config.json', JSON.stringify(routes), function(err){
-	//             if (err){
-	//                 l("there was an error while writing the config file");
-	//                 l(err);
-	//             } else {
-	//                 l("config saved to persistent_config.json");
-	//             }
-	//         });
-	//     } 
-
-	//     else if (command == "load"){
-	//         if (loadConfig(true)){
-	//             l("successfully loaded");
-	//             ensureConnected();
-	//         }
-	//     } 
-
-	//     else if (command == "help"){
-	//         printHelpText();
-	//     } 
-
-	//     else if (command == 'exit'){
-	//         process.exit();
-	//     } 
-
-	//     else {
-	//         l("unrecognized command, use \"help\" to see valid commands");
-	//     }
-	// };
-
-	// var printHelpText = function(){
-	//     l("This is a CLI admin for maintaining persistent routes in a spacebrew network.");
-	//     l("commands:");
-	//     l("  ls");
-	//     l("    lists all clients, their publishers and subscribers, and the configured persistent routes");
-	//     l("  save");
-	//     l("    saves the current persistent route list to disk");
-	//     l("  load");
-	//     l("    overwrites the current persistent route list with the one on disk");
-	//     l("    when the server starts up, it will automatically load an existing list from disk");
-	//     l("  exit");
-	//     l("    quits this persistent route admin (same as [ctrl]+c)");
-	// };
-
-	// var loadConfig = function(expectFile){
-	// 	var config;
-
-	// 	// open the config file
-	//     try{
-	//         config = fs.readFileSync("./persistent_config.json");
-	//     } catch(err){
-	//         if (expectFile) l("there was an error while reading the config file\n", err);
-	//     }
-
-	//     // parse the file contents
-	//     try{
-	//         routes = JSON.parse(config);
-	//     }catch(err){
-	//         l("there was an error while parsing the config file\n", err);
-	// 	    return false;
-	//     }
-
-	// 	return true;
-	// };
+		if (command == 'exit'){
+	        process.exit();
+	    } 
+	}
 
 	startUp();
 }
