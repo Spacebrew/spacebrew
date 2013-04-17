@@ -1,5 +1,6 @@
 var name = gup('name') || window.location.href; 
 var server = gup('server') || 'localhost';
+var port = gup('port') || '9000';
 var debug = gup('debug') || false;
 
 var ws;
@@ -7,7 +8,7 @@ var ws;
 var reconnect_timer = undefined;
 
 var setupWebsocket = function(){
-	ws = new WebSocket("ws://"+server+":9000");
+	ws = new WebSocket("ws://"+server+":" + Number(port));
 
 	ws.onopen = function() {
 		console.log("WebSockets connection opened");
