@@ -34,6 +34,7 @@ exports.persistRoutes = function( opts ){
 		, autosave = opts.autosave || true
 		, load = opts.load || true
 		, load_file = opts.load_file || "live_persist_config.json"
+		, debug = opts.debug || opts.log || false
 		;
 
 	var clients = []
@@ -152,8 +153,8 @@ exports.persistRoutes = function( opts ){
 	 * Called when we receive a message from the Server.
 	 * @param  {websocket message} data The websocket message from the Server
 	 */
-	var receivedMessage = function(data, flags){
-	    console.log("[receivedMessage] received new message from spacebrew server ", data);
+	var receivedMessage = function(data){
+	    if (debug) console.log("[receivedMessage] received new message from spacebrew server ", data);
 
 	    if (data){
 	        var json = JSON.parse(data)
@@ -167,7 +168,7 @@ exports.persistRoutes = function( opts ){
 	        } 
 
 	        else if (status < 0) {
-	        	console.log("message is not valid");
+	        	if (debug) console.log("[receivedMessage] message is not valid ", data);
 	        }
 	    }
 	};
@@ -183,12 +184,12 @@ exports.persistRoutes = function( opts ){
 	    } 
 
 	    else if (json.config){
-			console.log("[handleMessage] add client request received ", json);
+			if (debug) console.log("[handleMessage] add client request received ", json);
 	        handleConfigMessage(json);
 	    } 
 
 	    else if (json.route){
-			console.log("[handleMessage] route request received ", json);
+			if (debug) console.log("[handleMessage] route request received ", json);
 	        if (json.route.type === 'remove'){
 	            handleRouteRemoveMessage(json);
 	        }
@@ -224,8 +225,7 @@ exports.persistRoutes = function( opts ){
 		// delete from the persistent route list.
 		if ( msg.route.client_disconnect ) return;
 
-		console.log("[handleRouteRemoveMessage] request received ", msg);
-		console.log("[handleRouteRemoveMessage] pre - routes.length ", routes.length);
+		if (debug) console.log("[handleRouteRemoveMessage] request received ", msg);
 
 		for (var i = routes.length - 1; i >= 0; i--) {
 			var currRoute = routes[i];
@@ -238,13 +238,11 @@ exports.persistRoutes = function( opts ){
 
 				// remove this route
 				routes.splice(i,1);
-				console.log("[handleRouteRemoveMessage] removed route at index ", i);
+				if (debug) console.log("[handleRouteRemoveMessage] removed route at index ", i);
 			}
 		};
 
 	    saveRoutes();
-
-		console.log("[handleRouteRemoveMessage] post - routes.length ", routes.length);
 	};
 
 	/**
@@ -253,7 +251,7 @@ exports.persistRoutes = function( opts ){
 	 */
 	var handleRouteAddMessage = function(msg){
 
-		console.log("[handleRouteAddMessage] request received ", msg);
+		if (debug) console.log("[handleRouteAddMessage] request received ", msg);
 
 		//go through all persistent routes and see if this one exists already
 		for (var i = routes.length - 1; i >= 0; i--) {
@@ -279,7 +277,7 @@ exports.persistRoutes = function( opts ){
 
 	    saveRoutes();
 
-		console.log("[handleRouteAddMessage] new route ", newRoute);
+		if (debug) console.log("[handleRouteAddMessage] new route ", newRoute);
 	}
 
 	/**
@@ -292,7 +290,7 @@ exports.persistRoutes = function( opts ){
 	        for (var i = clients.length - 1; i >= 0; i--){
 	            if (areClientsEqual(clients[i], msg.remove[j])){
 	                clients.splice(i, 1);
-	                console.log("################### removed a client");
+	                if (debug) console.log("[handleClientRemoveMessage] removed a client");
 	                break;
 	            }
 	        }
@@ -311,14 +309,14 @@ exports.persistRoutes = function( opts ){
 	    for (var i = clients.length-1; i >= 0; i--){
 	        if (areClientsEqual(clients[i], msg.config)){
 	            //we are updating an existing client
-	            console.log("################### updating a client");
+	            if (debug) console.log("[handleConfigMessage] updating a client");
 	            clients[i] = msg.config;
 	            existing = true;
 	        }
 	    }
 	    // otherwise add client to array
 	    if (!existing){
-	        console.log("################ adding a new client");
+	        if (debug) console.log("[handleConfigMessage] adding a new client");
 	        clients.push(msg.config);
 	    }
 
@@ -352,9 +350,9 @@ exports.persistRoutes = function( opts ){
 	var saveRoutes = function() {
 		fs.writeFile('./data/live_persist_config.json', JSON.stringify(routes), function(err){
 			if (err){
-				l("[saveRoutes] error saving route model to live_persist_config.json", err);
+				if (debug) console.log("[saveRoutes] error saving route model to live_persist_config.json", err);
 			} else {
-				l("[saveRoutes] route model was saved to live_persist_config.json");
+				if (debug) console.log("[saveRoutes] route model was saved to live_persist_config.json");
 			}
 		});
 	}
@@ -368,7 +366,7 @@ exports.persistRoutes = function( opts ){
 	    try{
 	        raw_data = fs.readFileSync("./data/" + filename);
 	    } catch(err){
-			l("[loadRoutes] error while reading file " + filename, err);
+			if (debug) console.log("[loadRoutes] error while reading file " + filename, err);
 	    }
 
 	    // parse the file contents
@@ -376,7 +374,7 @@ exports.persistRoutes = function( opts ){
 	        routes = JSON.parse(raw_data);
 	        ensureConnected();
 	    }catch(err){
-	        l("[loadRoutes] error while parsing raw_data file\n", err);
+	        if (debug) console.log("[loadRoutes] error while parsing raw_data file\n", err);
 	    }
 
 		return true;
@@ -386,6 +384,7 @@ exports.persistRoutes = function( opts ){
 		if (!reconnect) {
 			reconnect = setInterval(function() {
 				if (wsc.readyState !== OPEN) {
+					if (debug) console.log("[reestablishConnection] attempting to reconnect");
 					wsc.terminate();
 		    		setupWSClient();	
 				}
@@ -426,9 +425,6 @@ var main = function() {
 		l("");
 		l("This is a tool for persisting all routes created in the standard spacebrew admin.");
 		l("Connecting to spacebrew server at " + host + ":" + port + ".");
-		l("");
-		l("Here are some useful commands:");
-		l("  ls, add, remove, save, load, help, exit");
 		l("");
 		l("===========================================");
 		l("");	
@@ -486,13 +482,13 @@ var main = function() {
 
 
 	var printCommandLineHelp = function (){
-		console.log("command line parameters:");
-		console.log("\t--port (-p): set the port of the spacebrew server (default 9000)");
-		console.log("\t--host: the hostname of the spacebrew server (default localhost)");
-		console.log("\t--help (-h): print this help text");
-		console.log("examples:");
-		console.log("\tnode spacebrew_live_persist.js -p 9011");
-		console.log("\tnode spacebrew_live_persist.js -h my-sweet-computer");
+		l("command line parameters:");
+		l("\t--port (-p): set the port of the spacebrew server (default 9000)");
+		l("\t--host: the hostname of the spacebrew server (default localhost)");
+		l("\t--help (-h): print this help text");
+		l("examples:");
+		l("\tnode spacebrew_live_persist.js -p 9011");
+		l("\tnode spacebrew_live_persist.js -h my-sweet-computer");
 	};
 
 	/**
@@ -533,5 +529,7 @@ var main = function() {
 	startUp();
 }
 
-main();
-
+// is this is the main module then launch app as min
+if (!module.parent) {
+	main();
+} 

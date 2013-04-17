@@ -1,5 +1,5 @@
-var  spacebrew = require('./index');
-var  persister = require('./spacebrew_live_persist');
+var spacebrew = require('./spacebrew');
+var persister = require('./spacebrew_live_persist');
 
 var processArguments = function(){
     var argv = process.argv;
@@ -40,11 +40,11 @@ var processArguments = function(){
                 break;
             case "-l":
             case "--log":
-                console.log('TODO: implement log flag');
-                break;
+            	setLogLevel( INFO );
+            	break;
             case "--loglevel":
-                console.log("TODO: implement loglevel flag");
-                break;
+            	setLogLevel( argv[i++] );
+            	break;
         }
     }
 };
@@ -86,6 +86,36 @@ var setPingIntervalTime = function(newInterval){
     }
 };
 
+// log level numbers for app logging
+var INFO = 0
+	, DEBUG = 1
+	, WARN = 2
+	, ERROR = 3
+	, CRITICAL = 4
+
+var logLevel = CRITICAL;
+var setLogLevel = function( newLevel ) {
+	var newLevel = newLevel || "info";
+	switch( newLevel ){
+		case "info":
+			logLevel = INFO;
+			break;
+		case "debug":
+			logLevel = DEBUG;
+			break;
+		case "warn":
+			logLevel = WARN;
+			break;
+		case "error":
+			logLevel = ERROR;
+			break;
+		case "critical":
+			logLevel = CRITICAL;
+			break;
+	}
+	console.log("log level set to ", logLevel);
+}
+
 var printHelp = function(){
     console.log("command line parameters:");
     console.log("\t--port (-p): set the port of the spacebrew server (default 9000)");
@@ -97,8 +127,8 @@ var printHelp = function(){
     console.log("\t--persist: enables the live route persister, which saves route configurations");
     console.log("\t--noping: opposite of --persist");
     console.log("\t--pinginterval: the number of ms between pings (implies --ping, default 1000 [1 second])");
-    console.log("\t--log (-l): not yet implemented");
-    console.log("\t--loglevel: not yet implemented");
+    console.log("\t--log (-l): sets logging to debug level");
+    console.log("\t--loglevel: set logging to info, debug, warn, error or critical - not fully supported yet");
     console.log("examples:");
     console.log("\tnode node_server.js -p 9011 -t 1000 --pinginterval 1000");
     console.log("\tnode node_server.js --noping");
@@ -106,7 +136,7 @@ var printHelp = function(){
 
 processArguments();
 
-spacebrew.createServer({ port: defaultPort, forceClose: forceClose, ping:doPing, pingInterval: pingIntervalTime, closeTimeout: closeTimeout });
+spacebrew.createServer({ port: defaultPort, forceClose: forceClose, ping:doPing, pingInterval: pingIntervalTime, closeTimeout: closeTimeout, logLevel: logLevel });
 
 if (persist) { persister.persistRoutes({ host: "localhost" }); }
 
