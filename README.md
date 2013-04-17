@@ -29,9 +29,8 @@ The first of these two files runs node using the forever-monitor node utility. T
 * Open the admin [http://spacebrew.github.io/spacebrew/admin/admin.html?server=localhost](spacebrew_button example) in another browser window - again, make sure that the `sever=` in the query string points to the appropriate host.  
 * Start connecting apps and routing data.   
   
-Server Options
----------------  
-
+Spacebrew Server Options
+------------------------ 
 Here is an overview of the command line options that the spacebrew server accepts:
 ```
 --port (-p): set the port of the spacebrew server (default 9000)
@@ -52,6 +51,16 @@ Here are a few examples of how to launch the app using command line options:
 	node node_forever_server.js -p 9011 -t 1000 --pinginterval 1000
 	node node_server.js --nopersist --loglevel warn
 ```
+
+Other Services
+-------------- 
+
+### HTTP Link
+Description to come
+
+### Command Line Persistent Admin
+Description to come
+
 
 #### LICENSE
 =============
