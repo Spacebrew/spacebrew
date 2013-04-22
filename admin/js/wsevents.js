@@ -1,17 +1,33 @@
 var name = gup('name') || window.location.href; 
 var server = gup('server') || 'localhost';
+var port = gup('port') || '9000';
 var debug = gup('debug') || false;
 
 var ws;
+
+var reconnect_timer = undefined;
+
 var setupWebsocket = function(){
-	ws = new WebSocket("ws://"+server+":9000");
+	ws = new WebSocket("ws://"+server+":" + Number(port));
+
 	ws.onopen = function() {
 		console.log("WebSockets connection opened");
 		var adminMsg = { "admin": [
 			{"admin": true}
 		]};
 		ws.send(JSON.stringify(adminMsg));
+
+		///////////////////////////////////////////
+		// ADMIN RECONNECT FUNCTIONALITY
+		if (reconnect_timer) {
+			console.log("[ws.onopen] reconnected successfully - clearing timer");
+			reconnect_timer = clearTimeout(reconnect_timer);
+			reconnect_timer = undefined;
+		}
+		///////////////////////////////////////////
+
 	};
+
 	ws.onmessage = function(e) {
 		//if (debug) console.log("Got WebSockets message: " + e.data);
 		if (debug) console.log("Got WebSockets message:");
@@ -28,8 +44,20 @@ var setupWebsocket = function(){
 		//     return;
 		// }
 	};
+
 	ws.onclose = function() {
-		console.log("WebSockets connection closed");
+		console.log("[ws.onclose] WebSockets connection closed");
+
+		///////////////////////////////////////////
+		// ADMIN RECONNECT FUNCTIONALITY
+		if (!reconnect_timer) {
+			reconnect_timer = setInterval(function() {
+				console.log("[reconnect_timer] attempting to reconnect to spacebrew");
+				removeAllClients();
+				setupWebsocket();
+			}, 5000);			
+		}
+		///////////////////////////////////////////
 	};
 };
 
@@ -280,3 +308,14 @@ var handleRemoveMsg = function(msg){
 		}
 	}
 };
+
+///////////////////////////////////////////
+// ADMIN RECONNECT FUNCTIONALITY
+var removeAllClients = function(){
+	for(var j = clients.length - 1; j >= 0; j--){
+		removeClient(clients[j]);
+	}
+	clients = [];
+	routes = [];
+};
+/////////////////////////////////////////////////
