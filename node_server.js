@@ -138,7 +138,7 @@ processArguments();
 
 spacebrew.createServer({ port: defaultPort, forceClose: forceClose, ping:doPing, pingInterval: pingIntervalTime, closeTimeout: closeTimeout, logLevel: logLevel });
 
-if (persist) { persister.persistRoutes({ host: "localhost" }); }
+if (persist) { persister.persistRoutes({ host: "localhost", port: defaultPort }); }
 
 console.log("\nRunning Spacebrew, start with argument '--help' to see available configuration arguments.");
 console.log("More info at http://www.spacebrew.cc");
