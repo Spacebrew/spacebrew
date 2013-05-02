@@ -1,9 +1,9 @@
-var spacebrew = require('./spacebrew');
-var persister = require('./spacebrew_live_persist');
+var spacebrew = require('./spacebrew')
+	, persister = require('./spacebrew_live_persist');
 
 var processArguments = function(){
     var argv = process.argv;
-    for(var i = 2; i < argv.length; i++){
+    for(var i = 0; i < argv.length; i++){
         switch(argv[i]){
             case "-p":
             case "--port":

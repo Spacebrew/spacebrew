@@ -348,7 +348,7 @@ exports.persistRoutes = function( opts ){
 	};
 
 	var saveRoutes = function() {
-		fs.writeFile('./data/live_persist_config.json', JSON.stringify(routes), function(err){
+		fs.writeFile('./data/routes/live/live_persist_config.json', JSON.stringify(routes), function(err){
 			if (err){
 				if (debug) console.log("[saveRoutes] error saving route model to live_persist_config.json", err);
 			} else {
@@ -364,7 +364,7 @@ exports.persistRoutes = function( opts ){
 
 		// open the raw_data file
 	    try{
-	        raw_data = fs.readFileSync("./data/" + filename);
+	        raw_data = fs.readFileSync("./data/routes/live/" + filename);
 	    } catch(err){
 			if (debug) console.log("[loadRoutes] error while reading file " + filename, err);
 	    }
