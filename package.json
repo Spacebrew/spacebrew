@@ -19,7 +19,7 @@
   "author": "LAB at Rockwell Group",
   "license": "MIT",
   "dependencies": {
-    "ws": "~0.4.25"
+    "ws": "~0.4.25",
     "forever-monitor": "1.1.0"
   }
 }
