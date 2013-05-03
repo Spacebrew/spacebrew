@@ -22,3 +22,4 @@ DerivedData
 *.xcworkspace
 *.xcuserdatad
 persistent_config.json
+data/*
