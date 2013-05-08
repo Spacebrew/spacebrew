@@ -222,6 +222,13 @@ exports.createServer = function( opts ){
      * @return {boolean}      True iff the message comes from a publisher that exists
      */
     var handleMessageMessage = function(connection, tMsg){
+    	var pubClient = undefined
+    		, bValidMessage = false
+    		, pub = undefined
+    		, sub = undefined
+    		, toSend = {}
+    		;
+
         // make sure that this connection is associated to at least one client
         if (!connection.spacebrew_client_list){
             if (opts.logLevel <= DEBUG) console.log("[handleMessageMessage] this connection has no registered clients");
@@ -230,8 +237,7 @@ exports.createServer = function( opts ){
 
         // check whether the client that sent the message is associated to the connection where the 
         //  	message was received
-        var currClient = connection.spacebrew_client_list[tMsg.message.clientName];
-        if (!currClient){
+        if (!(pubClient = connection.spacebrew_client_list[tMsg.message.clientName])){
             if (opts.logLevel <= DEBUG) console.log( "[handleMessageMessage] the client: " + tMsg.message.clientName + 
             						" does not belong to this connection");
             return false;
@@ -247,52 +253,59 @@ exports.createServer = function( opts ){
         //    (sounds like we are going too deep) But maybe we could implement a priority queue, publishers
         //    that publish often are more likely to publish.
 
-        var bValidMessage = false;
-
         //add the remote address to the message 
         tMsg['message'].remoteAddress = getClientAddress(connection);
 
-        // if current client does not have the appropriate publisher then abort
-        var pub = currClient.publishers[tMsg.message.name];
-        if (!pub){
+        // if publishing client does have the appropriate publisher then continue processing the message
+        if (pub = pubClient.publishers[tMsg.message.name]) {
+
+            // if publisher is of the appropriate type then send message to all subscribers
+            if (pub = pub[tMsg.message.type]) {
+                bValidMessage = true;
+
+                for(var j = pub.subscribers.length - 1; j >= 0; j--){
+                    sub = pub.subscribers[j];
+
+                    // try to send the message but catch error so the server won't crash due to issues
+                    try{
+                    	toSend['message'] = {
+                            	'name': sub.subscriber.name,
+                            	'type': tMsg.message.type,
+                            	'value': tMsg.message.value
+                        }
+
+                        /////////////////////////////////////////
+                        //// UPDATE HERE FOR SNOOP FUNCTIONALITY
+                    	if (sub.client.options.snoop) {
+							toSend['message']['publisherAddress'] = tMsg['message'].remoteAddress;
+							toSend['message']['publisherName'] = tMsg['message'].clientName;
+                    	}
+                        /////////////////////////////////////
+                        /////////////////////////////////////
+
+                        sub.client.connection.send(JSON.stringify(toSend));
+
+                    } catch(err){
+                        if (opts.logLevel <= DEBUG) console.log("[handleMessageMessage] ERROR sending message to client " + 
+                        						sub.client.name + ", on subscriber " +
+                        						sub.subscriber.name + " error message " + err );
+                    }
+                }
+            }
+
+        	// if publisher's type does not match then abort
+        	else {
+                if (opts.logLevel <= DEBUG) console.log("[handleMessageMessage] an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
+                return false;
+            } 
+        }
+
+        // if publishing client does not have the appropriate publisher then abort
+	    else {
             if (opts.logLevel <= DEBUG) console.log("[handleMessageMessage] an un-registered publisher name: " + tMsg.message.name);
             return false;
         } 
 
-        // if current client does have the appropriate publisher then continue processing the message
-        else {
-
-        	// if the message type does not match then abort
-            pub = pub[tMsg.message.type];
-            if (!pub){
-                if (opts.logLevel <= DEBUG) console.log("[handleMessageMessage] an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
-                return false;
-            } 
-
-            // now process the message
-            else {
-                bValidMessage = true;
-                for(var j = pub.subscribers.length - 1; j >= 0; j--){
-                    var currSub = pub.subscribers[j];
-
-                    // try to send the message but catch error so the server won't crash due to issues
-                    try{
-                    	var toSend = {
-                    		'message': {
-                            	'name': currSub.subscriber.name,
-                            	'type': tMsg.message.type,
-                            	'value': tMsg.message.value
-                        	}
-                        }
-                        currSub.client.connection.send(JSON.stringify(toSend));
-                    } catch(err){
-                        if (opts.logLevel <= DEBUG) console.log("[handleMessageMessage] ERROR sending message to client " + 
-                        						currSub.client.name + ", on subscriber " +
-                        						currSub.subscriber.name + " error message " + err );
-                    }
-                }
-            }
-        }
         return bValidMessage;
     };
 
@@ -404,18 +417,22 @@ exports.createServer = function( opts ){
      * @return {boolean}            True iff the Client you are trying to config does not already exist
      */
     var handleConfigMessage = function(connection, tMsg){
-        var bValidMessage = false;
-        var trustedClient = undefined;
-        var msgName = tMsg['config']['name'];
-        var msgAddress = getClientAddress(connection);
+        var bValidMessage = false
+        	, trustedClient = undefined
+        	, msgName = tMsg['config']['name']
+        	, msgAddress = getClientAddress(connection)
+        	;
+
         //check if this connection already has this client defined
-        if (connection.spacebrew_client_list &&
-            connection.spacebrew_client_list[msgName]){
-            //the client matches one already defined for this connection,
-            //so lets update the config
+        if (connection.spacebrew_client_list && 
+        	connection.spacebrew_client_list[msgName]){
+
+            //the client matches one already defined for this connection, so lets update the config
             if (opts.logLevel <= DEBUG) console.log("[handleConfigMessage] client is sending a config update");
             trustedClient = connection.spacebrew_client_list[msgName];
-        } else {
+        } 
+
+        else {
             //check that the name, remote address pair is not already taken
             for (var i = trustedClients.length - 1; i >= 0; i--) {
                 if (trustedClients[i]['name'] === msgName &&
@@ -447,6 +464,9 @@ exports.createServer = function( opts ){
             if (!connection.spacebrew_client_list){
                 connection.spacebrew_client_list = {};
             }
+
+            /////////////////////////////////////////
+            //// UPDATE HERE FOR SNOOP FUNCTIONALITY
             trustedClient = {
                 "name": msgName,
                 "remoteAddress": msgAddress,
@@ -454,8 +474,13 @@ exports.createServer = function( opts ){
                 "connection": connection,
                 "publishers": {},
                 "subscribers": {},
-                "config":""
+                "options": {
+                	"snoop": false
+                },
+                "config": {}
             };
+            ////////////////////////////////////////
+
             if (opts.logLevel <= DEBUG) console.log("[handleConfigMessage] Client is new");
 
             trustedClients.push(trustedClient);
@@ -468,15 +493,16 @@ exports.createServer = function( opts ){
         //now that we have the base data structure, we can update it to match the new
         //config message, Regardless of whether or not this is a pre-existing client.
         bValidMessage = true;
+
         //add the remote address to the message for the admins
         tMsg['config'].remoteAddress = trustedClient.remoteAddress;
         trustedClient.config = tMsg['config'];
         trustedClient.description = tMsg['config']['description'];
+        // trustedClient.options = tMsg['config']['options'];
+
         var tSubs = [];
         if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
-            //tSubs = tMsg.config.subscribe.messages;
-            //we will copy over the data from the config so that we don't 
-            //corrupt the original config message
+            // copy data from config so that we don't corrupt original config message
             for (var i = tMsg.config.subscribe.messages.length - 1; i >= 0; i--) {
                 var currSub = tMsg.config.subscribe.messages[i];
                 currSub.type = currSub.type.toLowerCase();
@@ -486,11 +512,10 @@ exports.createServer = function( opts ){
             tMsg.config['subscribe'] = {};
             tMsg.config.subscribe['messages'] = [];
         }
+
         var tPubs = [];
         if (tMsg.config.publish && tMsg.config.publish.messages){
-            //tPubs = tMsg.config.publish.messages;
-            //we will copy over the data from the config so that we don't 
-            //corrupt the original config message
+            // copy data from config so that we don't corrupt original config message
             for (var i = tMsg.config.publish.messages.length - 1; i >= 0; i--) {
                 var currPub = tMsg.config.publish.messages[i];
                 currPub.type = currPub.type.toLowerCase();
@@ -500,6 +525,20 @@ exports.createServer = function( opts ){
             tMsg.config['publish'] = {};
             tMsg.config.publish['messages'] = [];
         }
+
+        /////////////////////////////////////////
+        //// UPDATE HERE FOR SNOOP FUNCTIONALITY
+        var tOpts = [];
+        if (tMsg.config.options){
+        	// update only the options that are provided and supported
+            for (var option in trustedClient.options) {
+            	if (tMsg.config.options[option]) {
+            		trustedClient.options[option] = tMsg.config.options[option];
+            	}
+            };
+        } 
+        /////////////////////////////////////////
+
         //we are storing in a structure
         // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
         //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
