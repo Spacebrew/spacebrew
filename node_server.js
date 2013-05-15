@@ -1,5 +1,7 @@
 var spacebrew = require('./spacebrew')
-	, persister = require('./spacebrew_live_persist');
+	, persister = require('./spacebrew_live_persist')
+	, logger = require('./logger')
+	;
 
 var processArguments = function(){
     var argv = process.argv;
@@ -40,7 +42,7 @@ var processArguments = function(){
                 break;
             case "-l":
             case "--log":
-            	setLogLevel( INFO );
+            	logger.debugLevel = "info";
             	break;
             case "--loglevel":
             	setLogLevel( argv[i++] );
@@ -86,34 +88,10 @@ var setPingIntervalTime = function(newInterval){
     }
 };
 
-// log level numbers for app logging
-var INFO = 0
-	, DEBUG = 1
-	, WARN = 2
-	, ERROR = 3
-	, CRITICAL = 4
-
-var logLevel = CRITICAL;
+var logLevel = "debug";
 var setLogLevel = function( newLevel ) {
-	var newLevel = newLevel || "info";
-	switch( newLevel ){
-		case "info":
-			logLevel = INFO;
-			break;
-		case "debug":
-			logLevel = DEBUG;
-			break;
-		case "warn":
-			logLevel = WARN;
-			break;
-		case "error":
-			logLevel = ERROR;
-			break;
-		case "critical":
-			logLevel = CRITICAL;
-			break;
-	}
-	console.log("log level set to ", logLevel);
+	logger.debugLevel = newLevel;
+	console.log("[setLogLevel] log level set to ", logLevel);
 }
 
 var printHelp = function(){

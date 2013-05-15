@@ -31,7 +31,7 @@ var processArguments = function(){
  */
 var server = new (forever.Monitor)('node_server.js', {
 	'silent': false
-	, 'options': argv.splice(2, argv.length)
+	, 'options': argv
 	, 'uid': 'spacebrew'
 	, 'pid': './data/'
 	, 'logFile': './data/log/spacebrew_forever_' + date + '.log'
@@ -56,7 +56,6 @@ server.on('restart', function () {
 	date = Date.parse(new Date);
 	console.log('[Restart] the spacebrew server has been restarted ' + restarts + ' time');
 });
-
 
 processArguments();
 server.start();
