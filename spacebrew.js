@@ -268,12 +268,6 @@ exports.createServer = function( opts ){
                             	'value': tMsg.message.value
                         }
 
-                        // if client registered as 'snoop' then send publisher name and ip address
-                    	if (sub.client.options.snoop) {
-							toSend['message']['publisherAddress'] = tMsg['message'].remoteAddress;
-							toSend['message']['publisherName'] = tMsg['message'].clientName;
-                    	}
-
                         sub.client.connection.send(JSON.stringify(toSend));
                         logger.log("debug", "[handleMessageMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
 
@@ -387,10 +381,10 @@ exports.createServer = function( opts ){
      * logs all the currently trusted clients by name for debugging purposes
      */
     var printAllTrustedClients = function(){
-        logger.log("info", "[printAllTrustedClients] total number of trustedClients " + trustedClients.length);
+        logger.log("info", "[printAllTrustedClients] total number of trustedClients: " + trustedClients.length);
 
         for (var i=0; i<trustedClients.length; i++) {
-            logger.log("info", "\t " + trustedClients[i]['name']);
+            logger.log("info", "\t client name: " + trustedClients[i]['name'] + ", ip address: " + trustedClients[i]['remoteAddress']);
         }
     };
 
@@ -415,33 +409,40 @@ exports.createServer = function( opts ){
         	, msgAddress = getClientAddress(connection)
         	;
 
-        //check if this connection already has this client defined
+        // check if websocket client already has registered client app with same name
         if (connection.spacebrew_client_list && 
         	connection.spacebrew_client_list[msgName]){
 
-            //the client matches one already defined for this connection, so lets update the config
-            logger.log("info", "[handleConfigMessage] client is sending a config update");
+            // if so, then set trustedClient to existing client
             trustedClient = connection.spacebrew_client_list[msgName];
+            logger.log("info", "[handleConfigMessage] client already exists and will be updated ");
         } 
 
+        // otherwise, check that the name and remote address pair is not already taken
         else {
-            //check that the name, remote address pair is not already taken
+
             for (var i = trustedClients.length - 1; i >= 0; i--) {
+
+            	// if client exists with name and remote address pair
                 if (trustedClients[i]['name'] === msgName &&
                     trustedClients[i]['remoteAddress'] === msgAddress){
-                    //name, remote address pair is already taken.
-                    //check to see if the existing connection has been verified
+
+                    // ignore config message if client connection has been verified
                     if (trustedClients[i].connection.spacebrew_pong_validated){
-                        //ignore this config
-                        logger.log("info", "[handleConfigMessage] client is already connected -- denying new connection");
+                        logger.log("info", "[handleConfigMessage] verified client exists with same name and address -- denying new connection");
+
+                        // stop processing config message
                         return false;
-                    } else {
-                        logger.log("info", "[handleConfigMessage] client is already registered -- replacing with new connection");
-                        //we will replace the existing client with the new one on this new connection
-                        //TODO: either remove all routes involving this client we removed, or migrate all connections to the new client
-                        //starting with removing all routes since the client might have the same name, but a different config
+                    } 
+
+                    // otherwise, remove old unverified client to make space for new client
+                    else {
+                        logger.log("info", "[handleConfigMessage] unverified client exists with same name and address -- removing unverified client");
+
+                        // remove all routes associated to old client
                         removeRoutesInvolvingClient(trustedClients[i]);
-                        //remove it from the admin, so nothing funny happens when the new one gets added
+
+                        // remove old client from all admins
                         sendToAdmins({remove:{name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress}});
 
                         //remove the old client from the list
@@ -451,14 +452,14 @@ exports.createServer = function( opts ){
             };
         }
 
+        // if client doesn't already exist then initialize it
         if (!trustedClient){
-            //the name is available, and this is a new client
+
+            // if connection does not have a client list, then create it.
             if (!connection.spacebrew_client_list){
                 connection.spacebrew_client_list = {};
             }
 
-            /////////////////////////////////////////
-            //// UPDATE HERE FOR SNOOP FUNCTIONALITY
             trustedClient = {
                 "name": msgName,
                 "remoteAddress": msgAddress,
@@ -466,32 +467,33 @@ exports.createServer = function( opts ){
                 "connection": connection,
                 "publishers": {},
                 "subscribers": {},
-                "options": {
-                	"snoop": false
-                },
+                "options": {},
                 "config": {}
             };
-            ////////////////////////////////////////
 
-            logger.log("info", "[handleConfigMessage] Client is new");
-
+            // add client to trustedClients array
             trustedClients.push(trustedClient);
+
+            // add client to websocket client list
             connection.spacebrew_client_list[msgName] = trustedClient;
-            logger.log("info", "[handleConfigMessage] client added");
-            bValidMessage = true;
+
+            // print a list of all trusted clients (info logging level only)
             printAllTrustedClients();
         }
 
-        //now that we have the base data structure, we can update it to match the new
-        //config message, Regardless of whether or not this is a pre-existing client.
+        // Now that we have the base data structure, we can update it to match the new
+        // config message, regardless of whether or not this is a pre-existing client.
+
         bValidMessage = true;
 
-        //add the remote address to the message for the admins
+        // add remote address to the message which will be forwarded to admins
         tMsg['config'].remoteAddress = trustedClient.remoteAddress;
+
+        // configure the trustedClient object with config message and description
         trustedClient.config = tMsg['config'];
         trustedClient.description = tMsg['config']['description'];
-        // trustedClient.options = tMsg['config']['options'];
 
+        // process subscribers
         var tSubs = [];
         if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
             // copy data from config so that we don't corrupt original config message
@@ -505,6 +507,7 @@ exports.createServer = function( opts ){
             tMsg.config.subscribe['messages'] = [];
         }
 
+        // process publishers
         var tPubs = [];
         if (tMsg.config.publish && tMsg.config.publish.messages){
             // copy data from config so that we don't corrupt original config message
@@ -518,19 +521,17 @@ exports.createServer = function( opts ){
             tMsg.config.publish['messages'] = [];
         }
 
-        /////////////////////////////////////////
-        //// UPDATE HERE FOR SNOOP FUNCTIONALITY
-        var tOpts = [];
+        // process client options
         if (tMsg.config.options){
-        	// update only the options that are provided and supported
+        	// update supported options only (present in trustedClient object)
             for (var option in trustedClient.options) {
             	if (tMsg.config.options[option]) {
             		trustedClient.options[option] = tMsg.config.options[option];
             	}
             };
         } 
-        /////////////////////////////////////////
 
+        /////////////////////////////////////////
         //we are storing in a structure
         // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
         //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
@@ -541,6 +542,7 @@ exports.createServer = function( opts ){
         //we can check against the 'hash' variable and remove any now undefined publishers and subscribers.
         var items = [{'first':tSubs, 'second':trustedClient.subscribers, 'third':'publishers', 'fourth':'subscriber', 'fifth':'publisher'}, 
                      {'first':tPubs, 'second':trustedClient.publishers, 'third':'subscribers', 'fourth':'publisher', 'fifth':'subscriber'}];
+
         for (var j = 0; j<items.length; j++){
             var item = items[j];
             var hash = {};
@@ -558,6 +560,7 @@ exports.createServer = function( opts ){
                     item['second'][item['first'][i].name][item['first'][i].type] = item['first'][i];
                 }
             }
+
             //remove stale subscribers/publishers from our data structures
             //TODO:break any routes associated with now undefined publishers and subscribers
             for (var itemName in item['second']){
@@ -578,6 +581,7 @@ exports.createServer = function( opts ){
                 }
             }
         }
+
         return bValidMessage;
     };
 
