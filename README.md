@@ -11,7 +11,7 @@ Getting Started
 ---------------  
   
 ### 1. Install Dependencies  
-* Download and install ![http://nodejs.org](Node.js)  
+* Download and install [Node.js](http://nodejs.org)  
 * Clone the repo from github  
 * Install the dependencies using node packaged modules   
 ** `ws` websockets module  
@@ -25,8 +25,8 @@ Getting Started
 The first of these two files runs node using the forever-monitor node utility. This utility relaunches the spacebrew server if it crashes and it saves logs of the standard output from the spacebrew server to log files, in the data/logs directory.
 
 ### 3. Connect Client Apps  
-* Open the [http://spacebrew.github.io/spacebrew.js/spacebrew_button/index.html?server=localhost&name=button2](spacebrew_button example) - make sure that the `sever=` in the query string points to the appropriate host. Customize the `name=` element in the query string to change your apps name.  
-* Open the admin [http://spacebrew.github.io/spacebrew/admin/admin.html?server=localhost](spacebrew_button example) in another browser window - again, make sure that the `sever=` in the query string points to the appropriate host.  
+* Open the [spacebrew_button example](http://spacebrew.github.io/spacebrew.js/spacebrew_button/index.html?server=localhost&name=button2) - make sure that the `sever=` in the query string points to the appropriate host. Customize the `name=` element in the query string to change your apps name.  
+* Open the admin [spacebrew_button example](http://spacebrew.github.io/spacebrew/admin/admin.html?server=localhost) in another browser window - again, make sure that the `sever=` in the query string points to the appropriate host.  
 * Start connecting apps and routing data.   
   
 Spacebrew Server Options
