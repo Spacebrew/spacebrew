@@ -1,14 +1,27 @@
+/**
+ * Spacebrew Server Module
+ * -----------------------
+ * 
+ * This module holds the core functionality of the Spacebrew server. To run this module as 
+ * standalone app you should use the node_server.js or node_server_forever.js script.
+ *
+ * @author: 	Quin Kennedy, Julio Terra, and other contributors
+ * @filename: 	node_server.js
+ * @date: 		May 31, 2013
+ * @updated with version: 	0.3.0 
+ *
+ */
+
 //dependencies
 var path = require('path')
 	, ws = require('ws')
     , logger = require('./logger')
+    , spacebrew = exports
     ;
  
-//expose the path to admin so it can be served
-exports.adminPath = path.join(__dirname, 'admin');
-
 //create a new WebsocketServer
-exports.createServer = function( opts ){
+spacebrew.createServer = function( opts ){
+
     var expose = {};
     opts = opts || {};
     opts.port = opts.port || 9000;
@@ -17,9 +30,9 @@ exports.createServer = function( opts ){
     opts.forceClose = opts.forceClose || false;
     opts.closeTimeout = opts.pingTimeout || 10000;
     opts.pingInterval = opts.pingInterval || 1000;
-    opts.log = opts.log || false;
-    opts.logLevel = opts.logLevel || INFO;
+    logger.debugLevel = opts.logLevel || "warn";
 
+    logger.log("info", "[createServer] log level set to " + logger.debugLevel);
 
     /**
      * startup the websocket server.
@@ -33,6 +46,7 @@ exports.createServer = function( opts ){
         });
 
     expose.wss = wss;
+
     //read-only access to properties
     expose.get = function( key ){
         return opts[key];
@@ -131,7 +145,7 @@ exports.createServer = function( opts ){
                 try {
                     var tMsg = JSON.parse(message);
                 } catch(err) {
-                    logger.log("info", "[wss.onmessage] error while parsing message as JSON");
+                    logger.log("debug", "[wss.onmessage] error while parsing message as JSON");
                     return;
                 }
 
@@ -199,12 +213,12 @@ exports.createServer = function( opts ){
         });
 
         ws.on("error", function(e) {
-            console.log("[wss.onerror] ERROR with websocket server ", e);
+            logger.log("error", "[wss.onerror] ERROR with websocket server " + e);
             try{
-                console.log(arguments);
-                console.log(JSON.stringify(e));
+                logger.log("error", arguments);
+                logger.log("error", JSON.stringify(e));
             } catch (ne){
-                console.log(keys(e));
+                logger.log("error", keys(e));
             }
         });
     });
@@ -269,10 +283,10 @@ exports.createServer = function( opts ){
                         }
 
                         sub.client.connection.send(JSON.stringify(toSend));
-                        logger.log("debug", "[handleMessageMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
+                        logger.log("info", "[handleMessageMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
 
                     } catch(err){
-                        logger.log("info", "[handleMessageMessage] ERROR sending message to client " + 
+                        logger.log("debug", "[handleMessageMessage] ERROR sending message to client " + 
                         						sub.client.name + ", on subscriber " +
                         						sub.subscriber.name + " error message " + err );
                     }
@@ -725,8 +739,8 @@ exports.createServer = function( opts ){
 		            // OLD APPROACH
 		            // adminConnections[i].send(toSend);    		
 	        	} catch (e) {
-	        		logger.log("info", "[sendToAdmins] ERROR: WebSocket library error sending message to admin at index " + i);
-	        		logger.log("info", e);
+	        		logger.log("debug", "[sendToAdmins] ERROR: WebSocket library error sending message to admin at index " + i);
+	        		logger.log("debug", e);
 	        	}        		
         	}
         }
@@ -782,19 +796,19 @@ exports.createServer = function( opts ){
                     || currConn.spacebrew_pong_validated === true){
                     currConn.spacebrew_pong_validated = false;
                     currConn.spacebrew_first_pong_sent = Date.now();
-                    //logger.log("info", "setting validated = false");
+                    logger.log("info", "[pingAllClients] setting validated = false");
                 } else if (opts.forceClose
                             && currConn.spacebrew_pong_validated === false
                             && (currConn.spacebrew_first_pong_sent + opts.closeTimeout) < Date.now()){
                     //10-second timeout
                     currConn.close();
                     //cleanupClosedConnections();
-                    //logger.log("info", "closed connection");
+                    logger.log("info", "[pingAllClients] closed connection");
                     continue;
                 }
                 currConn.ping("ping");
             } catch(err){
-                logger.log("info", "[pingAllClients] CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
+                logger.log("warn", "[pingAllClients] CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
             }
         };
     }
@@ -805,7 +819,3 @@ exports.createServer = function( opts ){
     return expose;
 
 };
-
-process.on('uncaughtException', function (err) {
-	console.log('error: ', err);
-});

@@ -1,8 +1,27 @@
+/**
+ * Spacebrew Server with Forever
+ * ------------------------------
+ * 
+ * This script runs the Spacebrew server, and optionally the spacebrew live
+ * persistent router, in forever mode. This means that the server is automatically
+ * relaunched if it crashes. All standard node_server.js options are supported. 
+ * To find out about the comand line flags just run the script with the '-h' or 
+ * '--help' flag. 
+ *
+ * @author: 	Quin Kennedy, Julio Terra, and other contributors
+ * @filename: 	node_server.js
+ * @date: 		May 31, 2013
+ * @updated with version: 	0.3.0 
+ *
+ */
+
+
 var	forever = require('forever-monitor')
 	, fs = require('fs')
 	, argv = process.argv.splice(2, process.argv.length)
 	, restarts = 0
 	, date = Date.parse(new Date)
+	, help = false
 	;
 
 /**
@@ -20,6 +39,10 @@ var processArguments = function(){
             	catch (e) {
             		console.log("[processArguments] not able to delete /data/routes/live/live_persist_config.json")
             	}
+            	break;
+            case "-h":
+            case "--help":
+            	help = true;
             	break;
         }
 	}	
@@ -54,7 +77,16 @@ server.on('exit', function () {
 server.on('restart', function () {
 	restarts += 1;
 	date = Date.parse(new Date);
-	console.log('[Restart] the spacebrew server has been restarted ' + restarts + ' time');
+
+	// if script was run with help flag then stop after first restart
+	if (help) {
+		process.exit();
+	}
+
+	// otherwise, print restart count message
+	else {
+		console.log('[Restart] the spacebrew server has been restarted ' + restarts + ' time');
+	}
 });
 
 processArguments();

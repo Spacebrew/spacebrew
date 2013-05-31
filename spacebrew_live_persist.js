@@ -1,29 +1,42 @@
 /**
- * Spacebrew Live Persist
- * ------------------------------
+ * Spacebrew Live Persist Module
+ * -----------------------------
  * 
- * This app persists all routes added to a standard spacebrew server
+ * This module persists all routes added via a standard spacebrew admin. To
+ * run this module a standalone app you should use the node_persisten_live.js
+ * script.
  *
  *
+ * @author: 	Julio Terra
+ * @filename: 	spacebrew_live_persist.js
+ * @date: 		May 31, 2013
+ * @updated with version: 	0.3.0 
  *
- * 
  */
 
-// Import Modules 
 var fs = require("fs")					// fs used for file read/write
 	, WebSocketClient = require('ws') 	// websocket used for conection to spacebrew
-	, stdin = process.openStdin()		// stdin used for user input
-	, l = console.log 				// set 'l' as shorthand for log
+	, logger = require('./logger')		// logger used to log messages
+	, livePersister = exports			// set livePersister to be a node module
+	, WS_OPEN = 1 						// websockets library open state constant 
 	;
 
-// Ready States for Spacebrew Connection - consistent with WebSocket.js
-var CONNECTING = 0	
-	, OPEN = 1
-	, CLOSING = 2
-	, CLOSED = 3
-	;
-
-exports.persistRoutes = function( opts ){
+/**
+ * Live Persister module that makes sure that all routes connected via an standard
+ * 		Admin remain connected if an app disconnects and then reconnects, or 
+ * 		if the server fails. 
+ * 		
+ * @param  {Object} opts 	Object that holds the following optional settings for 
+ *                          the livePersister:
+ *                          * port: port number of the Spacebrew server
+ *                          * host: host of the spacebrew server
+ *                          * autosave: saves routes to file
+ *                          * load: loads routes from file on startup
+ *                          * loadFile: speficies name of file to load
+ *                          * logLevel: sets the log level for the app
+ *                          
+ */
+livePersister.persistRoutes = function( opts ){
 
 	// Import Modules and Configure Input and Output streams
 	var reconnect = undefined			// holds timer that maintains server connection
@@ -33,13 +46,14 @@ exports.persistRoutes = function( opts ){
 		, host = opts.host || "localhost"
 		, autosave = opts.autosave || true
 		, load = opts.load || true
-		, load_file = opts.load_file || "live_persist_config.json"
-		, debug = opts.debug || opts.log || false
+		, configFile = opts.loadFile || "live_persist_config.json"
 		;
 
 	var clients = []
 		, routes = []
 		;
+
+	logger.debugLevel = opts.logLevel || "error";
 
 	var setupWSClient = function(){ 
 
@@ -48,7 +62,7 @@ exports.persistRoutes = function( opts ){
 
 		// configure the spacebrew admin client once connection stablished
 		wsc.on("open", function(conn){
-			console.log("[ws.open] connected to spacebrew \n");
+			logger.log("info", "[ws.open] connected to spacebrew \n");
 
 			// send the admin configuration message to spacebrew server
 			var adminMsg = { "admin": [ 
@@ -67,7 +81,7 @@ exports.persistRoutes = function( opts ){
 			}
 
 			// load the routes that were saved
-			if (load) loadRoutes(load_file);
+			if (load) loadRoutes();
 		});
 
 		// handle messages
@@ -75,15 +89,15 @@ exports.persistRoutes = function( opts ){
 
 		// handle websocket error events
 		wsc.on("error", function(){
-			console.log("[ws.onerror] spacebrew Connection Error"); 
-			console.log(arguments);
-			if (wsc.readyState != OPEN) reestablishConnection();
+			logger.log("error", "[ws.onerror] spacebrew Connection Error"); 
+			logger.log("error", arguments);
+			if (wsc.readyState != WS_OPEN) reestablishConnection();
 		});
 
 		// handle websocket close events
 		wsc.on("close", function(){
-			console.log("[on.close] spacebrew Connection Closed"); 
-			console.log(arguments);
+			logger.log("info", "[on.close] spacebrew Connection Closed"); 
+			logger.log("info", arguments);
 			reestablishConnection();
 		});
 	}
@@ -154,7 +168,8 @@ exports.persistRoutes = function( opts ){
 	 * @param  {websocket message} data The websocket message from the Server
 	 */
 	var receivedMessage = function(data){
-	    if (debug) console.log("[receivedMessage] received new message from spacebrew server ", data);
+	    logger.log("info", "[receivedMessage] received new message from spacebrew server: ")
+	    logger.log("info", data);
 
 	    if (data){
 	        var json = JSON.parse(data)
@@ -168,7 +183,8 @@ exports.persistRoutes = function( opts ){
 	        } 
 
 	        else if (status < 0) {
-	        	if (debug) console.log("[receivedMessage] message is not valid ", data);
+	        	logger.log("info", "[receivedMessage] message is not valid: ");
+			    logger.log("info", data);
 	        }
 	    }
 	};
@@ -184,12 +200,14 @@ exports.persistRoutes = function( opts ){
 	    } 
 
 	    else if (json.config){
-			if (debug) console.log("[handleMessage] add client request received ", json);
+			logger.log("info", "[handleMessage] add client request received: ");
+			logger.log("info", json);
 	        handleConfigMessage(json);
 	    } 
 
 	    else if (json.route){
-			if (debug) console.log("[handleMessage] route request received ", json);
+			logger.log("info", "[handleMessage] route request received: ");
+			logger.log("info", json);
 	        if (json.route.type === 'remove'){
 	            handleRouteRemoveMessage(json);
 	        }
@@ -225,7 +243,8 @@ exports.persistRoutes = function( opts ){
 		// delete from the persistent route list.
 		if ( msg.route.client_disconnect ) return;
 
-		if (debug) console.log("[handleRouteRemoveMessage] request received ", msg);
+		logger.log("info", "[handleRouteRemoveMessage] request received ");
+		logger.log("info", msg);
 
 		for (var i = routes.length - 1; i >= 0; i--) {
 			var currRoute = routes[i];
@@ -238,7 +257,7 @@ exports.persistRoutes = function( opts ){
 
 				// remove this route
 				routes.splice(i,1);
-				if (debug) console.log("[handleRouteRemoveMessage] removed route at index ", i);
+				logger.log("info", "[handleRouteRemoveMessage] removed route at index " + i);
 			}
 		};
 
@@ -251,7 +270,8 @@ exports.persistRoutes = function( opts ){
 	 */
 	var handleRouteAddMessage = function(msg){
 
-		if (debug) console.log("[handleRouteAddMessage] request received ", msg);
+		logger.log("info", "[handleRouteAddMessage] request received ");
+		logger.log("info", msg);
 
 		//go through all persistent routes and see if this one exists already
 		for (var i = routes.length - 1; i >= 0; i--) {
@@ -277,7 +297,8 @@ exports.persistRoutes = function( opts ){
 
 	    saveRoutes();
 
-		if (debug) console.log("[handleRouteAddMessage] new route ", newRoute);
+		logger.log("info", "[handleRouteAddMessage] new route: ");
+		logger.log("info", newRoute);
 	}
 
 	/**
@@ -290,7 +311,7 @@ exports.persistRoutes = function( opts ){
 	        for (var i = clients.length - 1; i >= 0; i--){
 	            if (areClientsEqual(clients[i], msg.remove[j])){
 	                clients.splice(i, 1);
-	                if (debug) console.log("[handleClientRemoveMessage] removed a client");
+	                logger.log("info", "[handleClientRemoveMessage] removed a client");
 	                break;
 	            }
 	        }
@@ -309,14 +330,14 @@ exports.persistRoutes = function( opts ){
 	    for (var i = clients.length-1; i >= 0; i--){
 	        if (areClientsEqual(clients[i], msg.config)){
 	            //we are updating an existing client
-	            if (debug) console.log("[handleConfigMessage] updating a client");
+	            logger.log("info", "[handleConfigMessage] updating a client");
 	            clients[i] = msg.config;
 	            existing = true;
 	        }
 	    }
 	    // otherwise add client to array
 	    if (!existing){
-	        if (debug) console.log("[handleConfigMessage] adding a new client");
+	        logger.log("info", "[handleConfigMessage] adding a new client");
 	        clients.push(msg.config);
 	    }
 
@@ -347,26 +368,37 @@ exports.persistRoutes = function( opts ){
 	    }));
 	};
 
+	/**
+	 * Save routes to the file
+	 * @return {[type]} [description]
+	 */
 	var saveRoutes = function() {
-		fs.writeFile('./data/routes/live/live_persist_config.json', JSON.stringify(routes), function(err){
+		fs.writeFile('./data/routes/live/' + configFile, JSON.stringify(routes), function(err){
 			if (err){
-				if (debug) console.log("[saveRoutes] error saving route model to live_persist_config.json", err);
+				logger.log("warn", "[saveRoutes] error saving route model to live_persist_config.json");
+				logger.log("warn", err);
 			} else {
-				if (debug) console.log("[saveRoutes] route model was saved to live_persist_config.json");
+				logger.log("info", "[saveRoutes] route model was saved to live_persist_config.json");
 			}
 		});
 	}
 
-	var loadRoutes = function( filename ){
-		var raw_data
-			, filename = filename || "live_persist_config.json"
-			;
+	/**
+	 * Loads routes from the specified file
+	 * 
+	 * @param  {String} filename  Name of file that should be loaded
+	 * @return {Boolean}          Returns true if data was properly loaded
+	 */
+	var loadRoutes = function(){
+		var raw_data;
 
 		// open the raw_data file
 	    try{
-	        raw_data = fs.readFileSync("./data/routes/live/" + filename);
+	        raw_data = fs.readFileSync("./data/routes/live/" + configFile);
 	    } catch(err){
-			if (debug) console.log("[loadRoutes] error while reading file " + filename, err);
+			logger.log("warn", "[loadRoutes] error while reading file" + configFile);
+			logger.log("warn", err);
+			return false;
 	    }
 
 	    // parse the file contents
@@ -374,17 +406,23 @@ exports.persistRoutes = function( opts ){
 	        routes = JSON.parse(raw_data);
 	        ensureConnected();
 	    }catch(err){
-	        if (debug) console.log("[loadRoutes] error while parsing raw_data file\n", err);
+	        logger.log("warn", "[loadRoutes] error while parsing raw_data file");
+	        logger.log("warn", err);
+			return false;
 	    }
 
 		return true;
 	};
 
+	/**
+	 * Sets a timer for attempting to reconnect to the Spacbrew server again. Method is 
+	 * 		called when connection to Spacebrew server is closed.
+	 */
 	var reestablishConnection = function() {
 		if (!reconnect) {
 			reconnect = setInterval(function() {
-				if (wsc.readyState !== OPEN) {
-					if (debug) console.log("[reestablishConnection] attempting to reconnect");
+				if (wsc.readyState !== WS_OPEN) {
+					logger.log("info", "[reestablishConnection] attempting to reconnect");
 					wsc.terminate();
 		    		setupWSClient();	
 				}
@@ -404,132 +442,3 @@ exports.persistRoutes = function( opts ){
 
 	setupWSClient();
 }
-
-
-
-var main = function() {
-
-	var port = 9000
-		, host = "localhost"
-		, persist_server = {}
-		;
-
-	var startUp = function() {
-		printStartupMsg();
-		processArguments();
-		captureInput();
-		persist_server = exports.persistRoutes({"host": host, "port": port })
-	}
-
-	var printStartupMsg = function() {
-		l("");
-		l("This is a tool for persisting all routes created in the standard spacebrew admin.");
-		l("Connecting to spacebrew server at " + host + ":" + port + ".");
-		l("");
-		l("===========================================");
-		l("");	
-	}
-
-	var processArguments = function(){
-	    var argv = process.argv;
-	    for(var i = 2; i < argv.length; i++){
-	        switch(argv[i]){
-	            case "--host":
-	                setSpacebrewHost(argv[++i]);
-	                break;
-	            case "-p":
-	            case "--port":
-	                setSpacebrewPort(argv[++i]);
-	                break;
-	            case "-h":
-	            case "--help":
-	                printCommandLineHelp();
-	                break;
-	            case "-l":
-	            case "--log":
-	                console.log('TODO: implement log flag');
-	                break;
-	            case "--loglevel":
-	                console.log("TODO: implement loglevel flag");
-	                break;
-	        }
-	    }
-	};
-
-	/**
-	 * Set the port of the spacebrew server. defaults to 9000. Can be overridden using the 
-	 * 		flag -p or --port when starting up the persistent router.
-	 * 		
-	 * @type {Number}
-	 */
-	var setSpacebrewPort = function(newPort){
-	    var tempPort = parseInt(newPort);
-	    //check that tempPort is a number and within valid port range
-	    if (!isNaN(tempPort) && tempPort >= 1 && tempPort <= 65535){
-	        port = tempPort;
-	    }
-	};
-
-	/**
-	 * Set the hostname of the device that hosts the spacebrew server. defaults to localhost. Can 
-	 * 		be overridden using the flag -h or --host when starting up the persistent router.
-	 * 		
-	 * @type {String}
-	 */
-	var setSpacebrewHost = function (newHost){
-	    host = newHost;
-	}
-
-
-	var printCommandLineHelp = function (){
-		l("command line parameters:");
-		l("\t--port (-p): set the port of the spacebrew server (default 9000)");
-		l("\t--host: the hostname of the spacebrew server (default localhost)");
-		l("\t--help (-h): print this help text");
-		l("examples:");
-		l("\tnode spacebrew_live_persist.js -p 9011");
-		l("\tnode spacebrew_live_persist.js -h my-sweet-computer");
-	};
-
-	/**
-	 * Register the function that processes each line of input from the user
-	 */
-	var captureInput = function() {
-		// the stdin.on calls a function that accepts a command object that we can .toString 
-		// to get the raw user input
-		stdin.on('data', function(command){
-		    runCommand(command.toString());
-		});	
-	}	
-
-	/**
-	 * Utility function for stripping out whitespaces
-	 * @param  {string} str The string input by stupid user
-	 * @return {string}     The string without leading or trailing whitespace
-	 */
-	var clean = function (str){
-	    return str.replace(/(^\s*|\s*$)/g,'');
-	};
-
-	/**
-	 * The function that takes a string input command, and does with it as appropriate.
-	 * 		This is used by both user input commands only.
-	 * 		
-	 * @param  {string} command the command to run
-	 */
-	var runCommand = function(command){
-	    //strip leading and trailing spaces
-	    command = clean(command.toString());
-
-		if (command == 'exit'){
-	        process.exit();
-	    } 
-	}
-
-	startUp();
-}
-
-// is this is the main module then launch app as min
-if (!module.parent) {
-	main();
-} 
