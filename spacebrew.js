@@ -1,12 +1,27 @@
-//dependencies
-var path = require('path'),
-    ws = require('ws');
- 
-//expose the path to admin so it can be served
-exports.adminPath = path.join(__dirname, 'admin');
+/**
+ * Spacebrew Server Module
+ * -----------------------
+ * 
+ * This module holds the core functionality of the Spacebrew server. To run this module as 
+ * standalone app you should use the node_server.js or node_server_forever.js script.
+ *
+ * @author: 	Quin Kennedy, Julio Terra, and other contributors
+ * @filename: 	node_server.js
+ * @date: 		May 31, 2013
+ * @updated with version: 	0.3.0 
+ *
+ */
 
+//dependencies
+var path = require('path')
+	, ws = require('ws')
+    , logger = require('./logger')
+    , spacebrew = exports
+    ;
+ 
 //create a new WebsocketServer
-exports.createServer = function( opts ){
+spacebrew.createServer = function( opts ){
+
     var expose = {};
     opts = opts || {};
     opts.port = opts.port || 9000;
@@ -15,9 +30,9 @@ exports.createServer = function( opts ){
     opts.forceClose = opts.forceClose || false;
     opts.closeTimeout = opts.pingTimeout || 10000;
     opts.pingInterval = opts.pingInterval || 1000;
-    opts.log = opts.log || false;
-    //opts.logLevel = opts.logLevel || "warn";
+    logger.debugLevel = opts.logLevel || "warn";
 
+    logger.log("info", "[createServer] log level set to " + logger.debugLevel);
 
     /**
      * startup the websocket server.
@@ -31,6 +46,7 @@ exports.createServer = function( opts ){
         });
 
     expose.wss = wss;
+
     //read-only access to properties
     expose.get = function( key ){
         return opts[key];
@@ -102,13 +118,14 @@ exports.createServer = function( opts ){
     };
 
     // WebSocket server
+
     /**
      * When a new client connects, we will add it to our list of connections
      * and setup the appropriate callbacks
      * @param  {obj} ws The ws object that contains all the connection info and provides callback hooks
      */
     wss.on('connection', function(ws) {
-        console.log("someone connected");
+        logger.log("info", "[wss.onconnection] someone connected");
 
         var connection = ws;
         allconnections.push(ws);
@@ -120,41 +137,60 @@ exports.createServer = function( opts ){
          * @param  {obj} message The incoming message from an admin or client
          */
         ws.on('message', function(message) {
-            //console.log("<"+message+">");
+            logger.log("info", "[wss.onmessage] new message received " + message);
+
             var bValidMessage = false;
             if (message) {
                 // process WebSocket message
-                try{
+                try {
                     var tMsg = JSON.parse(message);
-                }catch(err){
-                    console.log("error while parsing message as JSON");
+                } catch(err) {
+                    logger.log("debug", "[wss.onmessage] error while parsing message as JSON");
                     return;
                 }
 
                 try{
+                	// handle client app configuration messages
                     if (tMsg['config']) {
                         bValidMessage = handleConfigMessage(connection, tMsg);
-                    } else if (tMsg['message']) {
+                    } 
+
+                    // handle message messages (messages with routed data)
+                    else if (tMsg['message']) {
                         bValidMessage = handleMessageMessage(connection, tMsg);
-                    } else if (tMsg['admin']) {
+                    } 
+
+                    // handle admin client messages
+                    else if (tMsg['admin']) {
                         connection.spacebrew_is_admin = true;
+
+                        // check if admin does not want to receive 'message' messages
+                        connection.no_msgs = tMsg.no_msgs ? true : false;
+
+                        // send admin the current state of the all connections
                         connection.send(JSON.stringify(buildUpdateMessagesForAdmin()));
                         adminConnections.push(connection);
                         bValidMessage = true;
-                    } else if (tMsg['route']){
+                    } 
+
+                    // handle route add/remove messages
+                    else if (tMsg['route']){
                         bValidMessage = handleRouteMessage(connection, tMsg);
-                    } else {
-                        console.log("unrecognized message type. Use one of config, message, admin, or route");
+                    } 
+
+                    // print to console if message not recognized
+                    else {
+                        logger.log("warn",  "[wss.onmessage] unrecognized message type. ", tMsg);
                     }
+
+                    // if message was valide then send to admin
                     if (bValidMessage){
-                        //console.log("forwarding to admins");
                         sendToAdmins(tMsg);
-                    } else {
-                        console.log("message marked as invalid, ignoring");
-                    }
+                    } 
+
                 } catch (err){
-                    console.log("ERROR on line <" + err.lineNumber + "> while processing message");
-                    console.log(err.stack);
+                    logger.log("warn", "[wss.onmessage] ERROR on line <" + err.lineNumber + "> while processing message");
+                    logger.log("warn", err.stack);
                 }
             }
         });
@@ -177,13 +213,12 @@ exports.createServer = function( opts ){
         });
 
         ws.on("error", function(e) {
-            console.log("ERROR!");
-            console.log(e);
+            logger.log("error", "[wss.onerror] ERROR with websocket server " + e);
             try{
-                console.log(arguments);
-                console.log(JSON.stringify(e));
+                logger.log("error", arguments);
+                logger.log("error", JSON.stringify(e));
             } catch (ne){
-                console.log(keys(e));
+                logger.log("error", keys(e));
             }
         });
     });
@@ -195,21 +230,27 @@ exports.createServer = function( opts ){
      * @return {boolean}      True iff the message comes from a publisher that exists
      */
     var handleMessageMessage = function(connection, tMsg){
-        //find the associated client
-        //get the appropriate publisher on that client
-        //for each subscriber to that publisher,
-        //translate the message to the subscriber's name
-        //and send the type & value
+    	var pubClient = undefined
+    		, bValidMessage = false
+    		, pub = undefined
+    		, sub = undefined
+    		, toSend = {}
+    		;
+
+        // make sure that this connection is associated to at least one client
         if (!connection.spacebrew_client_list){
-            console.log("this connection has no registered clients");
+            logger.log("info", "[handleMessageMessage] this connection has no registered clients");
             return false;
         }
-        var currClient = connection.spacebrew_client_list[tMsg.message.clientName];
-        if (!currClient){
-            console.log("the client: " + tMsg.message.clientName + " does not belong to this connection");
+
+        // check whether the client that sent the message is associated to the connection where the 
+        //  	message was received
+        if (!(pubClient = connection.spacebrew_client_list[tMsg.message.clientName])){
+            logger.log("info",  "[handleMessageMessage] the client: " + tMsg.message.clientName + 
+            						" does not belong to this connection");
             return false;
         }
-        var bValidMessage = false;
+
         //high level thoughts:
         //  Change to [<type>][<pub/sub Name>] to access publishers and subscribers for a client.
         //    This should help speed up searching since the first level will usually be 3 bins max
@@ -220,36 +261,51 @@ exports.createServer = function( opts ){
         //    (sounds like we are going too deep) But maybe we could implement a priority queue, publishers
         //    that publish often are more likely to publish.
 
-        //add the remote address for the admins
+        //add the remote address to the message 
         tMsg['message'].remoteAddress = getClientAddress(connection);
 
-        var pub = currClient.publishers[tMsg.message.name];
-        if (!pub){
-            console.log("an un-registered publisher name: " + tMsg.message.name);
-            return false;
-        } else {
-            pub = pub[tMsg.message.type];
-            if (!pub){
-                console.log("an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
-                return false;
-            } else {
+        // if publishing client does have the appropriate publisher then continue processing the message
+        if (pub = pubClient.publishers[tMsg.message.name]) {
+
+            // if publisher is of the appropriate type then send message to all subscribers
+            if (pub = pub[tMsg.message.type]) {
                 bValidMessage = true;
+
                 for(var j = pub.subscribers.length - 1; j >= 0; j--){
-                    var currSub = pub.subscribers[j];
-                    //we don't want an issue with one subscriber to block messages
-                    //to other subscribers
+                    sub = pub.subscribers[j];
+
+                    // try to send the message but catch error so the server won't crash due to issues
                     try{
-                        currSub.client.connection.send(JSON.stringify({message:{
-                            name:currSub.subscriber.name,
-                            type:tMsg.message.type,
-                            value:tMsg.message.value
-                        }}));
+                    	toSend['message'] = {
+                            	'name': sub.subscriber.name,
+                            	'type': tMsg.message.type,
+                            	'value': tMsg.message.value
+                        }
+
+                        sub.client.connection.send(JSON.stringify(toSend));
+                        logger.log("info", "[handleMessageMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
+
                     } catch(err){
-                        console.log("failed sending to: " + currSub.client.name + ", " +currSub.subscriber.name + " - " + err);
+                        logger.log("debug", "[handleMessageMessage] ERROR sending message to client " + 
+                        						sub.client.name + ", on subscriber " +
+                        						sub.subscriber.name + " error message " + err );
                     }
                 }
             }
+
+        	// if publisher's type does not match then abort
+        	else {
+                logger.log("info", "[handleMessageMessage] an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
+                return false;
+            } 
         }
+
+        // if publishing client does not have the appropriate publisher then abort
+	    else {
+            logger.log("info", "[handleMessageMessage] an un-registered publisher name: " + tMsg.message.name);
+            return false;
+        } 
+
         return bValidMessage;
     };
 
@@ -339,18 +395,18 @@ exports.createServer = function( opts ){
      * logs all the currently trusted clients by name for debugging purposes
      */
     var printAllTrustedClients = function(){
-        console.log("Here are the current trustedClients "+trustedClients.length);
+        logger.log("info", "[printAllTrustedClients] total number of trustedClients: " + trustedClients.length);
 
         for (var i=0; i<trustedClients.length; i++) {
-            console.log(trustedClients[i]['name']);
+            logger.log("info", "\t client name: " + trustedClients[i]['name'] + ", ip address: " + trustedClients[i]['remoteAddress']);
         }
     };
 
     var getClientAddress = function(connection){
         try{
-            return connection._socket._handle.getpeername().address;//connection.upgradeReq.headers.host;
+            return connection._socket._handle.getpeername().address; //connection.upgradeReq.headers.host;
         } catch (e){}
-        console.log("unable to access remote address");
+        logger.log("info", "[printAllTrustedClients] unable to access remote address");
         return "unknown";
     };
 
@@ -361,35 +417,46 @@ exports.createServer = function( opts ){
      * @return {boolean}            True iff the Client you are trying to config does not already exist
      */
     var handleConfigMessage = function(connection, tMsg){
-        var bValidMessage = false;
-        var trustedClient = undefined;
-        var msgName = tMsg['config']['name'];
-        var msgAddress = getClientAddress(connection);
-        //check if this connection already has this client defined
-        if (connection.spacebrew_client_list &&
-            connection.spacebrew_client_list[msgName]){
-            //the client matches one already defined for this connection,
-            //so lets update the config
-            console.log("client is sending a config update");
+        var bValidMessage = false
+        	, trustedClient = undefined
+        	, msgName = tMsg['config']['name']
+        	, msgAddress = getClientAddress(connection)
+        	;
+
+        // check if websocket client already has registered client app with same name
+        if (connection.spacebrew_client_list && 
+        	connection.spacebrew_client_list[msgName]){
+
+            // if so, then set trustedClient to existing client
             trustedClient = connection.spacebrew_client_list[msgName];
-        } else {
-            //check that the name, remote address pair is not already taken
+            logger.log("info", "[handleConfigMessage] client already exists and will be updated ");
+        } 
+
+        // otherwise, check that the name and remote address pair is not already taken
+        else {
+
             for (var i = trustedClients.length - 1; i >= 0; i--) {
+
+            	// if client exists with name and remote address pair
                 if (trustedClients[i]['name'] === msgName &&
                     trustedClients[i]['remoteAddress'] === msgAddress){
-                    //name, remote address pair is already taken.
-                    //check to see if the existing connection has been verified
+
+                    // ignore config message if client connection has been verified
                     if (trustedClients[i].connection.spacebrew_pong_validated){
-                        //ignore this config
-                        console.log("client is already connected -- denying new connection");
+                        logger.log("info", "[handleConfigMessage] verified client exists with same name and address -- denying new connection");
+
+                        // stop processing config message
                         return false;
-                    } else {
-                        console.log("client is already registered -- replacing with new connection");
-                        //we will replace the existing client with the new one on this new connection
-                        //TODO: either remove all routes involving this client we removed, or migrate all connections to the new client
-                        //starting with removing all routes since the client might have the same name, but a different config
+                    } 
+
+                    // otherwise, remove old unverified client to make space for new client
+                    else {
+                        logger.log("info", "[handleConfigMessage] unverified client exists with same name and address -- removing unverified client");
+
+                        // remove all routes associated to old client
                         removeRoutesInvolvingClient(trustedClients[i]);
-                        //remove it from the admin, so nothing funny happens when the new one gets added
+
+                        // remove old client from all admins
                         sendToAdmins({remove:{name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress}});
 
                         //remove the old client from the list
@@ -399,11 +466,14 @@ exports.createServer = function( opts ){
             };
         }
 
+        // if client doesn't already exist then initialize it
         if (!trustedClient){
-            //the name is available, and this is a new client
+
+            // if connection does not have a client list, then create it.
             if (!connection.spacebrew_client_list){
                 connection.spacebrew_client_list = {};
             }
+
             trustedClient = {
                 "name": msgName,
                 "remoteAddress": msgAddress,
@@ -411,29 +481,36 @@ exports.createServer = function( opts ){
                 "connection": connection,
                 "publishers": {},
                 "subscribers": {},
-                "config":""
+                "options": {},
+                "config": {}
             };
-            console.log("Client is new");
 
+            // add client to trustedClients array
             trustedClients.push(trustedClient);
+
+            // add client to websocket client list
             connection.spacebrew_client_list[msgName] = trustedClient;
-            console.log("client added");
-            bValidMessage = true;
+
+            // print a list of all trusted clients (info logging level only)
             printAllTrustedClients();
         }
 
-        //now that we have the base data structure, we can update it to match the new
-        //config message, Regardless of whether or not this is a pre-existing client.
+        // Now that we have the base data structure, we can update it to match the new
+        // config message, regardless of whether or not this is a pre-existing client.
+
         bValidMessage = true;
-        //add the remote address to the message for the admins
+
+        // add remote address to the message which will be forwarded to admins
         tMsg['config'].remoteAddress = trustedClient.remoteAddress;
+
+        // configure the trustedClient object with config message and description
         trustedClient.config = tMsg['config'];
         trustedClient.description = tMsg['config']['description'];
+
+        // process subscribers
         var tSubs = [];
         if (tMsg.config.subscribe && tMsg.config.subscribe.messages){
-            //tSubs = tMsg.config.subscribe.messages;
-            //we will copy over the data from the config so that we don't 
-            //corrupt the original config message
+            // copy data from config so that we don't corrupt original config message
             for (var i = tMsg.config.subscribe.messages.length - 1; i >= 0; i--) {
                 var currSub = tMsg.config.subscribe.messages[i];
                 currSub.type = currSub.type.toLowerCase();
@@ -443,11 +520,11 @@ exports.createServer = function( opts ){
             tMsg.config['subscribe'] = {};
             tMsg.config.subscribe['messages'] = [];
         }
+
+        // process publishers
         var tPubs = [];
         if (tMsg.config.publish && tMsg.config.publish.messages){
-            //tPubs = tMsg.config.publish.messages;
-            //we will copy over the data from the config so that we don't 
-            //corrupt the original config message
+            // copy data from config so that we don't corrupt original config message
             for (var i = tMsg.config.publish.messages.length - 1; i >= 0; i--) {
                 var currPub = tMsg.config.publish.messages[i];
                 currPub.type = currPub.type.toLowerCase();
@@ -457,6 +534,18 @@ exports.createServer = function( opts ){
             tMsg.config['publish'] = {};
             tMsg.config.publish['messages'] = [];
         }
+
+        // process client options
+        if (tMsg.config.options){
+        	// update supported options only (present in trustedClient object)
+            for (var option in trustedClient.options) {
+            	if (tMsg.config.options[option]) {
+            		trustedClient.options[option] = tMsg.config.options[option];
+            	}
+            };
+        } 
+
+        /////////////////////////////////////////
         //we are storing in a structure
         // trustedClient = {subscribers:{<name>:{<type>:{name:____,type:____,publishers:[{client:<client_pointer>,publisher:<pub_pointer>}]}}}
         //                  publishers:{<name>:{<type>:{name:____,type:____,default:____,subscribers:[{client:<client_pointer>,subscriber:<sub_pointer>}]}}}}
@@ -467,6 +556,7 @@ exports.createServer = function( opts ){
         //we can check against the 'hash' variable and remove any now undefined publishers and subscribers.
         var items = [{'first':tSubs, 'second':trustedClient.subscribers, 'third':'publishers', 'fourth':'subscriber', 'fifth':'publisher'}, 
                      {'first':tPubs, 'second':trustedClient.publishers, 'third':'subscribers', 'fourth':'publisher', 'fifth':'subscriber'}];
+
         for (var j = 0; j<items.length; j++){
             var item = items[j];
             var hash = {};
@@ -484,6 +574,7 @@ exports.createServer = function( opts ){
                     item['second'][item['first'][i].name][item['first'][i].type] = item['first'][i];
                 }
             }
+
             //remove stale subscribers/publishers from our data structures
             //TODO:break any routes associated with now undefined publishers and subscribers
             for (var itemName in item['second']){
@@ -504,6 +595,7 @@ exports.createServer = function( opts ){
                 }
             }
         }
+
         return bValidMessage;
     };
 
@@ -524,7 +616,10 @@ exports.createServer = function( opts ){
         //create, process, and send a route remove connection
         for (var i = currBase[otherTypePlural].length - 1; i >= 0; i--) {
             var currLeaf = currBase[otherTypePlural][i];
-            var messageContent = {type:'remove'};
+            var messageContent = {
+					            	type:'remove'
+					            	, client_disconnect: true  // used to identify message as cleanup message
+					            };
             messageContent[otherType] = {clientName:currLeaf.client.name,
                                             name:currLeaf[otherType].name,
                                             type:currLeaf[otherType].type,
@@ -533,12 +628,12 @@ exports.createServer = function( opts ){
                                             name:currBase.name,
                                             type:currBase.type,
                                             remoteAddress:client.remoteAddress};
-            console.log("################ removing internally ################");
-            console.log(JSON.stringify(messageContent));
+            logger.log("info", "[removeRoutesInvolving] removing route internally ################");
+            logger.log("info", JSON.stringify(messageContent));
             //Here I use the standard 'route removing' function to actually 
             //clean up all the data structures related to this route.
             if (handleRouteMessage(undefined, {route:messageContent})){
-                console.log("successfully removed route, telling admins");
+                logger.log("info", "[removeRoutesInvolving] successfully removed route, telling admins");
                 toSend.push({route:messageContent});
             }
         };
@@ -632,10 +727,20 @@ exports.createServer = function( opts ){
         	// check if connection is still open before attempting to send messages
         	if (adminConnections[i].readyState == 1) {
 	        	try {
-		            adminConnections[i].send(toSend);    		
+
+                    ////////////////////////////////////////////////////////
+                    // ---- NEW FUNCTIONALITY FOR ADMINS TO NOT GET MESSAGES
+	        		// if admin does not want to receive messages and this is a message, then skip
+	        		if( adminConnections[i].no_msgs && json['message'] ) continue;
+	        		// otherwise send message to admin
+		            else adminConnections[i].send(toSend);    		
+		            ///////////////////////////////////////////////////////
+
+		            // OLD APPROACH
+		            // adminConnections[i].send(toSend);    		
 	        	} catch (e) {
-	        		console.log("ERROR: WebSocket library error sending message to admin at index " + i);
-	        		console.log("\eerror message: ", e);
+	        		logger.log("debug", "[sendToAdmins] ERROR: WebSocket library error sending message to admin at index " + i);
+	        		logger.log("debug", e);
 	        	}        		
         	}
         }
@@ -643,14 +748,11 @@ exports.createServer = function( opts ){
 
     var cleanupClosedConnections = function(){
         // close user connection
-        console.log("close");
-        //console.log(ws);
+        logger.log("info", "close");
         var removed = [];
-        //remove clients
-        //console.log("There are this many clients: "+trustedClients.length);
 
         for(var i = 0; i < trustedClients.length;){
-            //console.log(trustedClients);
+            //logger.log("info", trustedClients);
             if (!trustedClients[i].connection._socket){
                 removeRoutesInvolvingClient(trustedClients[i]);
                 removed.push({name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress});
@@ -661,7 +763,7 @@ exports.createServer = function( opts ){
         }
 
         //remove Admins
-        //console.log("There are admins: "+ adminConnections.length);
+        //logger.log("info", "There are admins: "+ adminConnections.length);
         for(var i = 0; i < adminConnections.length;){
             if (adminConnections[i]._socket == null){
                 adminConnections.splice(i, 1);
@@ -694,25 +796,26 @@ exports.createServer = function( opts ){
                     || currConn.spacebrew_pong_validated === true){
                     currConn.spacebrew_pong_validated = false;
                     currConn.spacebrew_first_pong_sent = Date.now();
-                    //console.log("setting validated = false");
+                    logger.log("info", "[pingAllClients] setting validated = false");
                 } else if (opts.forceClose
                             && currConn.spacebrew_pong_validated === false
                             && (currConn.spacebrew_first_pong_sent + opts.closeTimeout) < Date.now()){
                     //10-second timeout
                     currConn.close();
                     //cleanupClosedConnections();
-                    //console.log("closed connection");
+                    logger.log("info", "[pingAllClients] closed connection");
                     continue;
                 }
                 currConn.ping("ping");
             } catch(err){
-                console.log("CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
+                logger.log("warn", "[pingAllClients] CAN'T PING CLIENT, CONNECTION ALREADY CLOSED");
             }
         };
     }
 
     if (opts.ping){
-        setInterval(pingAllClients, opts.pingInterval);//ping everyone every second to verify connections
+        setInterval(pingAllClients, opts.pingInterval); //ping everyone every second to verify connections
     }
     return expose;
+
 };
