@@ -41,9 +41,9 @@ Here is an overview of the command line options that the spacebrew server accept
 --timeout (-t): minimum number of ms to wait for response pong before force closing (implies --close, default 10000 [10 seconds])
 --persist: saves route configurations that are set via any admin interface
 --nopersist: opposite of --persist
---pinginterval: the number of ms between pings (implies --ping, default 1000 [1 second])
 --log (-l): sets logging to info level
---loglevel: set logging to info, debug, warn, error or critical - not fully supported yet
+--loglevel: set logging to info, debug, warn, error
+--pinginterval: the number of ms between pings (implies --ping, default 1000 [1 second])
 ```
 
 Here are a few examples of how to launch the app using command line options:
