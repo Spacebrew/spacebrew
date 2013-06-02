@@ -6,11 +6,15 @@
  * run this module a standalone app you should use the node_persisten_live.js
  * script.
  *
+ * Latest Updates:
+ * - checks if data/routes/live folder already exists, and if not, it creates folder
+ * - changed error message when script attempts to load a live routes file that 
+ * 	 does not exist
  *
  * @author: 	Julio Terra
- * @filename: 	spacebrew_live_persist.js
- * @date: 		May 31, 2013
- * @updated with version: 	0.3.0 
+ * @filename: 	node_server.js
+ * @date: 		June 1st, 2013
+ * @updated with version: 	0.3.1 
  *
  */
 

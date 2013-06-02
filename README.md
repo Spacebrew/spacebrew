@@ -3,8 +3,8 @@ Spacebrew Server
 
 A dynamically re-routable software toolkit for choreographing interactive spaces. Visit http://www.spacebrew.cc to learn more about spacebrew. On our site we feature a bunch of example apps and tutorials to help you get started. You'll also find a blog where we feature spacebrew projects and events.  
   
-@version 		0.3.0  
-@date			May 30, 2013  
+@version 		0.3.1  
+@date			June 1, 2013  
 @contributors 	Quin Kennedy, Brett Renfer, Josh Walton, Julio Terra   
   
 Getting Started

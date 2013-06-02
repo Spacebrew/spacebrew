@@ -8,10 +8,13 @@
  * To find out about the comand line flags just run the script with the '-h' or 
  * '--help' flag. 
  *
+ * Latest Updates:
+ * - checks if data/log folder already exists, and if not, it creates folder
+ *
  * @author: 	Quin Kennedy, Julio Terra, and other contributors
  * @filename: 	node_server.js
- * @date: 		May 31, 2013
- * @updated with version: 	0.3.0 
+ * @date: 		June 1st, 2013
+ * @updated with version: 	0.3.1 
  *
  */
 
