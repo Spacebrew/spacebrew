@@ -29,8 +29,10 @@ var defaultPort = 9000
  * Prints startup message to console/terminal
  */
 var printStartupMsg = function() {
-	console.log("\nRunning Spacebrew, start with argument '--help' to see available configuration arguments.");
+	console.log("");
+	console.log("Running Spacebrew, start with argument '--help' to see available configuration arguments.");
 	console.log("More info at http://www.spacebrew.cc");
+	console.log("");
 }
 
 /**
@@ -187,10 +189,6 @@ var main = function() {
 		if (persist) persister.persistRoutes( persist_configs); 
 	}
 }
-
-process.on('uncaughtException', function (err) {
-	console.log('error: ', err);
-});
 
 /**
  * Run the app

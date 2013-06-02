@@ -55,6 +55,43 @@ livePersister.persistRoutes = function( opts ){
 
 	logger.debugLevel = opts.logLevel || "error";
 
+	/**
+	 * check if data/routes directory already exists, and if not, then create it.
+	 */
+	var setupLogDirectory = function () {
+		var data_dir = __dirname + "/data"
+			, routes_dir = __dirname + "/data/routes"
+			, live_dir = __dirname + "/data/routes/live"
+			;
+
+		// check if data folder exists
+		try {
+			fs.statSync(data_dir);
+		} 
+		catch (e) {
+			fs.mkdir(data_dir);	
+			logger.log("info", "creating data directory");
+		}
+
+		// check if data/routes folder exists
+		try {
+			fs.statSync(routes_dir);
+		} 
+		catch (e) {
+			fs.mkdir(routes_dir);	
+			logger.log("info", "creating data/routes directory");
+		}
+
+		// check if data/routes folder exists
+		try {
+			fs.statSync(live_dir);
+		} 
+		catch (e) {
+			fs.mkdir(live_dir);	
+			logger.log("info", "creating data/routes/live directory");
+		}
+	}	
+
 	var setupWSClient = function(){ 
 
 		// create the wsclient to connect to spacebrew
@@ -396,8 +433,7 @@ livePersister.persistRoutes = function( opts ){
 	    try{
 	        raw_data = fs.readFileSync("./data/routes/live/" + configFile);
 	    } catch(err){
-			logger.log("warn", "[loadRoutes] error while reading file" + configFile);
-			logger.log("warn", err);
+			logger.log("warn", "[loadRoutes] live routes config file does not exist " + configFile);
 			return false;
 	    }
 
@@ -406,8 +442,7 @@ livePersister.persistRoutes = function( opts ){
 	        routes = JSON.parse(raw_data);
 	        ensureConnected();
 	    }catch(err){
-	        logger.log("warn", "[loadRoutes] error while parsing raw_data file");
-	        logger.log("warn", err);
+	        logger.log("warn", "[loadRoutes] unable to parse content from file ");
 			return false;
 	    }
 
@@ -440,5 +475,6 @@ livePersister.persistRoutes = function( opts ){
 	    return A.name === B.name && A.remoteAddress === B.remoteAddress; 
 	};
 
+	setupLogDirectory();
 	setupWSClient();
 }
