@@ -5,7 +5,7 @@ A dynamically re-routable software toolkit for choreographing interactive spaces
   
 @version 		0.3.1  
 @date			June 1, 2013  
-@contributors 	Quin Kennedy, Brett Renfer, Josh Walton, Julio Terra   
+@contributors 		Quin Kennedy, Brett Renfer, Josh Walton, James Tichenor, Julio Terra   
   
 Getting Started
 ---------------  
