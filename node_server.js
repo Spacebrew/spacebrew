@@ -143,7 +143,7 @@ var printHelp = function(){
     console.log("\t--ping: enable pinging of clients to track who is potentially disconnected (default)");
     console.log("\t--noping: opposite of --ping");
     console.log("\t--persist: enables the live route persister, which saves route configurations");
-    console.log("\t--noping: opposite of --persist");
+    console.log("\t--nopersist: opposite of --persist");
     console.log("\t--pinginterval: the number of ms between pings (implies --ping, default 1000 [1 second])");
     console.log("\t--log (-l): sets logging to debug level");
     console.log("\t--loglevel: set logging to info, debug, warn, error or critical - not fully supported yet");
