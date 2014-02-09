@@ -139,7 +139,6 @@ var handleMessage = function(json) {
  * @param  {websocket message} data The websocket message from the Server
  */
 var receivedMessage = function(data, flags) {
-    // console.log(data);
     if (data){
         var json = JSON.parse(data);
         //TODO: check if json is an array, otherwise use it as solo message
@@ -159,20 +158,25 @@ var setupWSClient = function() {
     // create the wsclient
     wsClient = new WebSocketClient("ws://"+defaultHost+":"+defaultPort);
     wsClient.on("open", function(conn){
+        //TODO: re-send client configs if this is a re-connect (or generally if there are configs)
         console.log("connected");
     });
     wsClient.on("message", receivedMessage);
 
     wsClient.on("error", function(){
         console.log("ERROR");
-        console.log(arguments);
+        if (DEBUG){
+            console.log(arguments);
+        }
         //attempt re-connect after 5 seconds
         setTimeout(setupWSClient, 5000);
     });
 
     wsClient.on("close", function(){
         console.log("CLOSE");
-        console.log(arguments);
+        if (DEBUG){
+            console.log(arguments);
+        }
         //attempt re-connect after 5 seconds
         setTimeout(setupWSClient, 5000);
     });
