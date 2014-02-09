@@ -279,7 +279,8 @@ spacebrew.createServer = function( opts ){
                     	toSend['message'] = {
                             	'name': sub.subscriber.name,
                             	'type': tMsg.message.type,
-                            	'value': tMsg.message.value
+                            	'value': tMsg.message.value,
+                                'clientName': sub.client.name
                         }
 
                         sub.client.connection.send(JSON.stringify(toSend));
@@ -337,15 +338,24 @@ spacebrew.createServer = function( opts ){
                 if (trustedClients[i].name === pub.clientName 
                     && trustedClients[i].remoteAddress === pub.remoteAddress){
                     pubClient = trustedClients[i];
-                    //TODO: check that the Client has the specified publisher, in order to head off any errors at the pass.
-                    // This will allow us to send back some helpful error message to the Admin in case we implement such functionality.
-                    // (same for subscriber)
-                    pubEntry = pubClient.publishers[pub.name][pub.type];
+                    if (pubClient.publishers[pub.name] == undefined){
+                        logger.log("warn", "[handleRouteMessage] client does not have publisher "+pub.name);
+                    } else if (pubClient.publishers[pub.name][pub.type] == undefined){
+                        logger.log("warn", "[handleRouteMessage] publisher is not of type "+pub.type);
+                    } else {
+                        pubEntry = pubClient.publishers[pub.name][pub.type];
+                    }
                 }
                 if (trustedClients[i].name === sub.clientName
                     && trustedClients[i].remoteAddress === sub.remoteAddress){
                     subClient = trustedClients[i];
-                    subEntry = subClient.subscribers[sub.name][sub.type];
+                    if (subClient.subscribers[sub.name] == undefined){
+                        logger.log("warn", "[handleRouteMessage] client does not have subscriber "+sub.name);
+                    } else if (subClient.subscribers[sub.name][sub.type] == undefined){
+                        logger.log("warn", "[handleRouteMessage] subscriber is not of type "+sub.type);
+                    } else {
+                        subEntry = subClient.subscribers[sub.name][sub.type];
+                    }
                 }
             }
             //if we have found a matching publisher and subscriber, 
