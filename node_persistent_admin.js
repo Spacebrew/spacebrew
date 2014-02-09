@@ -665,20 +665,12 @@ var setupWSClient = function(){
         wsClient.send(JSON.stringify(adminMsg));
     });
     wsClient.on("message", receivedMessage);
-
-    wsClient.on("error", function(){
-        console.log("ERROR"); 
-        console.log(arguments);
-        setTimeout(setupWSClient, 5000);
-    });
-
-    wsClient.on("close", function(){
-        console.log("CLOSE"); 
-        console.log(arguments);
-        setTimeout(setupWSClient, 5000);
-    });
+    wsClient.on("error", function(){console.log("ERROR"); console.log(arguments);});
+    wsClient.on("close", function(){console.log("CLOSE"); console.log(arguments);});
 }
 
+// there is an Interval set up below 
+// which will re-try the connection if it fails
 setupWSClient();
 
 /**
