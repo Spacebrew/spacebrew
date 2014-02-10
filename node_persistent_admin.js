@@ -669,7 +669,8 @@ var setupWSClient = function(){
     wsClient.on("close", function(){console.log("CLOSE"); console.log(arguments);});
 }
 
-//set up timer to attempt connection if it doesn't happen
+// there is an Interval set up below 
+// which will re-try the connection if it fails
 setupWSClient();
 
 /**
