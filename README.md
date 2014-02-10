@@ -14,15 +14,15 @@ Getting Started
 * Download and install [Node.js](http://nodejs.org)  
 * Clone the repo from github  
 * Install the dependencies using node packaged modules   
-** websockets module: `npm install ws`  
-** forever module: `npm install forever-monitor`  
+    - websockets module: `npm install ws`  
+    - forever module: `npm install forever-monitor`  
   
 ### 2. Run the Server  
 * Open terminal and navigate to the base directory of the spacebrew server  
 * Run the server by using `node node_server_forever.js`  
   
 `node_server_forever.js` vs `node_server.js`
-The first of these two files runs node using the forever-monitor node utility. This utility relaunches the spacebrew server if it crashes and it saves logs of the standard output from the spacebrew server to log files, in the data/logs directory.
+The first of these two files runs node using the forever-monitor node utility. This utility relaunches the spacebrew server if it crashes and it saves logs of the standard output from the spacebrew server to log files in the data/logs directory.
 
 ### 3. Connect Client Apps  
 * Open the [spacebrew_button example](http://spacebrew.github.io/spacebrew.js/spacebrew_button/index.html?server=localhost&name=button2) - make sure that the `sever=` in the query string points to the appropriate host. Customize the `name=` element in the query string to change your apps name.  
@@ -56,14 +56,44 @@ Other Services
 -------------- 
 
 ### HTTP Link
-Description to come
+
+The HTTP Link (`http_link.js`) is a Node.js app which acts essentially as an HTTP <-> Websocket bridge for Spacebrew. Only `GET` requests are supported currently, so all commands are read from the query string. Responses are provided as JSON.
+
+The HTTP Link allows you to use HTTP-only devices, such as the [Electric Imp](http://electricimp.com/), within the Spacebrew environment. 
+
+1. Register a client by sending a `config` query string key which contains the same json structure as would be sent over Websockets 
+    - `http://localhost:9092/?config={"config":{"name":"test","publish":{"messages":[{"name":"output","type":"string"},{"name":"out","type":"string"}]},"subscribe":{"messages":[{"name":"input","type":"string"}]}}}`
+    - this is the human-readable version, don't forget to URL encode the data first
+* The HTTP Link will respond with a `clientID` that you will use in the future to refer your client.
+* You can send messages into the Spacebrew environment by sending a `publish` query string key which contains an array of messages you wish to publish
+    - `http://localhost:9092/?clientID=0&publish=[{"message":{"clientName":"test","name":"output","type":"string","value":"hello!"}},{"message":{"clientName":"test","name":"output","type":"string","value":"good bye."}}]`
+    - in this cane we are sending 2 messages
+* You can retrieve sent messages by including `poll=true` in the query string. This will return an array of all messages that have been received by the HTTP Link for your client since the last poll:
+    - `http://localhost:9092/?clientID=0&poll=true`
+* By default, only one message is queued per subscriber. If you wish to queue more, you can send a `bufferSize` along with your subscriber specifications
+    - `http://localhost:9092/?clientID=0&config={"config":{"name":"test","publish":{"messages":[{"name":"output","type":"string"},{"name":"out","type":"string"}]},"subscribe":{"messages":[{"name":"input","type":"string","bufferSize":3}]}}}`
+    - this example also shows how you can send a config update
+* By default the HTTP Link will remove your client after 5 minutes if there is no queries associated with it. You can change this at any time by specifying a custom `timeout` in seconds
+    - `http://localhost:9092/?clientID=0&poll=true&timeout=3600`
+    - this example polls for input and also sets a 1-hour timeout
 
 ### Command Line Persistent Admin
-Description to come
+
+The Persistent Admin (`node_persistent_admin.js`) is a command line Node.js app which makes sure certain specified publishers and subscribers always stay routed to one-another.
+
+After starting the Persistent Admin (`node node_persistent_admin.js` in the command line/terminal) you can type `help` to get an overview of the various commands available. Basically you can:
+
+* `ls` to get a list of currently-protected routes
+* `add myClient,pubOne,theirClient,subscriberUno` to connect the `pubOne` publisher associated with client `myClient` to the `subscriberUno` subscriber associated with client `theirClient`
+* `save` to save to disk
+* `load` to load from disk (it will automatically load when starting up)
+* `remove 0` to remove the zero'th route from protection (when you list the routes via `ls`, the indices listed before each route are what should be used for the remove command)
+* `exit` to quit the Persistent Admin
+* the `add` command can also be used with regular expressions such as `add myClient,.*,theirClient,.*` to connect all publishers from `myClient` with all compatible subscribers in `theirClient`
 
 
-#### LICENSE
 =============
+#### LICENSE
 The MIT License (MIT)
 Copyright © 2012 LAB at Rockwell Group, http://www.rockwellgroup.com/lab
 
