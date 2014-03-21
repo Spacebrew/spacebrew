@@ -8,7 +8,7 @@
  * @author: 	Quin Kennedy, Julio Terra, and other contributors
  * @filename: 	node_server.js
  * @date: 		May 31, 2013
- * @updated with version: 	0.3.0 
+ * @updated with version: 	0.3.2 
  *
  */
 
@@ -732,6 +732,9 @@ spacebrew.createServer = function( opts ){
      * @param  {json} json The message to forward to all Admins
      */
     var sendToAdmins = function(json){
+        //This is an enum designed to specify more generally who the message is targetted toward
+        //the absense of "targetType" implies "targetType":"client"
+        json.targetType = "admin";
         var toSend = JSON.stringify(json);
         for(var i = adminConnections.length - 1; i >= 0; i--){
         	// check if connection is still open before attempting to send messages
