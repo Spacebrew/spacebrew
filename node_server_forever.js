@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Spacebrew Server with Forever
  * ------------------------------
