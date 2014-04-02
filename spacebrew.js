@@ -135,12 +135,13 @@ spacebrew.createServer = function( opts ){
          * admin, config, message, and routing messages for setting up, managing, and communicating
          * via spacebrew. This is the backbone of spacebrew.
          * @param  {obj} message The incoming message from an admin or client
+         * @param  {obj} flags   Incoming flags re: the message (e.g. is it binary?)
          */
-        ws.on('message', function(message) {
+        ws.on('message', function(message, flags) {
             logger.log("info", "[wss.onmessage] new message received " + message);
 
             var bValidMessage = false;
-            if (message) {
+            if (message && !flags.binary) {
                 // process WebSocket message
                 try {
                     var tMsg = JSON.parse(message);
@@ -192,6 +193,94 @@ spacebrew.createServer = function( opts ){
                     logger.log("warn", "[wss.onmessage] ERROR on line <" + err.lineNumber + "> while processing message");
                     logger.log("warn", err.stack);
                 }
+            
+            // this is a binary message!
+            } else {
+                // for now:
+                // 0 = size of JSON packet
+                // 1 - data[0] = JSON packet
+                // data[0] +1 = payload
+                if (message instanceof ArrayBuffer) {
+                     console.log("binary message received (ArrayBuffer)");
+                  //} else if (message.data instanceof Blob) {
+                  //   console.log("binary message received (Blob)");
+                  } else if (message instanceof Buffer) {
+                     console.log("binary message received (NodeJS/Buffer)");
+
+                    if ( message.length > 0 ){
+                        var len = message.length;
+                        var ind = message.slice(0,100).toString().indexOf("{"); // dumb
+                        message.slice(0,len);
+                        
+                        var jsonSize = parseInt(message.slice(0,ind).toString());
+                        message.slice(0,len);
+
+                        console.log( ind +":"+ jsonSize );
+                        var json  = JSON.parse( message.slice(ind, ind + jsonSize ).toString());
+                        message.slice(0,len);
+
+                        var binarySize = parseInt(json.message.value);
+                        console.log("sending binary of size "+binarySize+" "+(message.length-ind + jsonSize));
+                        try {
+                            // var binaryData = message.slice(ind + jsonSize, binarySize);
+                            // console.log(binaryData);
+                            connection.send( message.slice(ind + jsonSize, len), {binary: true } );
+                        } catch(e){
+                            console.log(e);
+                        }
+                    }
+
+                  } else {
+                     console.log("binary message of illegal type");
+                     console.log( message );
+                  }
+                /*try {
+                    var data = message.data;
+                    var tMsg = JSON.parse(message);
+                } catch(err) {
+                    logger.log("debug", "[wss.onmessage] error while parsing message as JSON");
+                    return;
+                }
+
+                try{
+
+                    // handle message messages (messages with routed data)
+                    else if (tMsg['message']) {
+                        bValidMessage = handleMessageMessage(connection, tMsg);
+                    } 
+
+                    // handle admin client messages
+                    else if (tMsg['admin']) {
+                        connection.spacebrew_is_admin = true;
+
+                        // check if admin does not want to receive 'message' messages
+                        connection.no_msgs = tMsg.no_msgs ? true : false;
+
+                        // send admin the current state of the all connections
+                        connection.send(JSON.stringify(buildUpdateMessagesForAdmin()));
+                        adminConnections.push(connection);
+                        bValidMessage = true;
+                    } 
+
+                    // handle route add/remove messages
+                    else if (tMsg['route']){
+                        bValidMessage = handleRouteMessage(connection, tMsg);
+                    } 
+
+                    // print to console if message not recognized
+                    else {
+                        logger.log("warn",  "[wss.onmessage] unrecognized message type. ", tMsg);
+                    }
+
+                    // if message was valide then send to admin
+                    if (bValidMessage){
+                        sendToAdmins(tMsg);
+                    } 
+
+                } catch (err){
+                    logger.log("warn", "[wss.onmessage] ERROR on line <" + err.lineNumber + "> while processing message");
+                    logger.log("warn", err.stack);
+                }*/
             }
         });
 
