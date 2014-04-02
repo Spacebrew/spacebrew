@@ -210,23 +210,20 @@ spacebrew.createServer = function( opts ){
                     if ( message.length > 0 ){
                         var len = message.length;
                         var ind = message.slice(0,100).toString().indexOf("{"); // dumb
-                        message.slice(0,len);
+                        // message.slice(0,len);
                         
                         var jsonSize = parseInt(message.slice(0,ind).toString());
-                        message.slice(0,len);
+                        if (jsonSize != 0 ){
+                            console.log( ind +":"+ jsonSize );
+                            try {
+                                var json  = JSON.parse( message.slice(ind, ind + jsonSize ).toString());
+                            } catch ( err ){
+                                console.log( "Error parsing JSON from binary packet. Discarding");
+                                return;
+                            }
 
-                        console.log( ind +":"+ jsonSize );
-                        var json  = JSON.parse( message.slice(ind, ind + jsonSize ).toString());
-                        message.slice(0,len);
-
-                        var binarySize = parseInt(json.message.value);
-                        console.log("sending binary of size "+binarySize+" "+(message.length-ind + jsonSize));
-                        try {
-                            // var binaryData = message.slice(ind + jsonSize, binarySize);
-                            // console.log(binaryData);
-                            connection.send( message.slice(ind + jsonSize, len), {binary: true } );
-                        } catch(e){
-                            console.log(e);
+                            //var binarySize = parseInt(json.message.value);
+                            bValidMessage = handleBinaryMessage(connection, json, message.slice(ind + jsonSize, len) );
                         }
                     }
 
@@ -393,6 +390,94 @@ spacebrew.createServer = function( opts ){
         // if publishing client does not have the appropriate publisher then abort
 	    else {
             logger.log("info", "[handleMessageMessage] an un-registered publisher name: " + tMsg.message.name);
+            return false;
+        } 
+
+        return bValidMessage;
+    };
+
+    /**
+     * A helper function to handle routing messages from a publisher to the appropriate subscribers.
+     * @param  {ws Connection Obj} connection The connection that the message came in on
+     * @param  {json} tMsg The message from the publisher which should be forwarded to its subscribers
+     * @param  {Buffer} Binary data to be sent to subscriber
+     * @return {boolean}      True iff the message comes from a publisher that exists
+     */
+    var handleBinaryMessage = function(connection, tMsg, binaryData){
+        var pubClient = undefined
+            , bValidMessage = false
+            , pub = undefined
+            , sub = undefined
+            , toSend = {}
+            ;
+
+        // make sure that this connection is associated to at least one client
+        if (!connection.spacebrew_client_list){
+            logger.log("info", "[handleBinaryMessage] this connection has no registered clients");
+            return false;
+        }
+
+        // check whether the client that sent the message is associated to the connection where the 
+        //      message was received
+        if (!(pubClient = connection.spacebrew_client_list[tMsg.message.clientName])){
+            logger.log("info",  "[handleBinaryMessage] the client: " + tMsg.message.clientName + 
+                                    " does not belong to this connection");
+            return false;
+        }
+
+        //high level thoughts ( are below \/ )
+
+        //add the remote address to the message 
+        tMsg['message'].remoteAddress = getClientAddress(connection);
+
+        // if publishing client does have the appropriate publisher then continue processing the message
+        if (pub = pubClient.publishers[tMsg.message.name]) {
+
+            // if publisher is of the appropriate type then send message to all subscribers
+            if (pub = pub[tMsg.message.type]) {
+                bValidMessage = true;
+
+                for(var j = pub.subscribers.length - 1; j >= 0; j--){
+                    sub = pub.subscribers[j];
+
+                    // try to send the message but catch error so the server won't crash due to issues
+                    try{
+                        toSend['message'] = {
+                                'name': sub.subscriber.name,
+                                'type': tMsg.message.type,
+                                'value': tMsg.message.value,
+                                'clientName': sub.client.name
+                        }
+
+                        var jsonString = JSON.stringify(toSend);
+                        var sizeString = String(jsonString.length);
+                        var newBuffer = new Buffer( binaryData.length + sizeString.length + jsonString.length );
+                        logger.log("info", "[handleBinaryMessage] created new buffer of size "+newBuffer.length );
+                        newBuffer.write(sizeString);
+                        newBuffer.write(jsonString, sizeString.length);
+                        binaryData.copy(newBuffer, jsonString.length );
+
+                        sub.client.connection.send(newBuffer, {binary: true});
+                        logger.log("info", "[handleBinaryMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
+
+                    } catch(err){
+                        logger.log("debug", "[handleBinaryMessage] ERROR sending message to client " + 
+                                                sub.client.name + ", on subscriber " +
+                                                sub.subscriber.name + " error message " + err );
+                    }
+                }
+            }
+
+            // if publisher's type does not match then abort
+            else {
+                logger.log("info", "[handleBinaryMessage] an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
+                return false;
+            } 
+        }
+
+        // if publishing client does not have the appropriate publisher then abort
+        else {
+            logger.log("info", "[handleBinaryMessage] an un-registered publisher name: " + tMsg.message.name);
             return false;
         } 
 
