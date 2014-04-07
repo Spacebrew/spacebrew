@@ -138,10 +138,11 @@ spacebrew.createServer = function( opts ){
          * @param  {obj} flags   Incoming flags re: the message (e.g. is it binary?)
          */
         ws.on('message', function(message, flags) {
-            logger.log("info", "[wss.onmessage] new message received " + message);
+            logger.log("info", "[wss.onmessage] new message received");
 
             var bValidMessage = false;
             if (message && !flags.binary) {
+                logger.log("info", "[wss.onmessage] text message content: " + message);
                 // process WebSocket message
                 try {
                     var tMsg = JSON.parse(message);
@@ -194,90 +195,80 @@ spacebrew.createServer = function( opts ){
                     logger.log("warn", err.stack);
                 }
             
-            // this is a binary message!
+            // this is a binary message
             } else {
                 // for now:
-                // 0 = size of JSON packet
-                // 1 - data[0] = JSON packet
-                // data[0] +1 = payload
+                //  description follows format described here: https://tools.ietf.org/html/rfc5234
+                //  inspired by WS protocol
+                //  
+                //       0                   1                   2                   3
+                //       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+                //      +---------------+-------------------------------+---------------+
+                //      |  JSON len     |   Extended JSON length        |Extended JSON  |
+                //      |      (8)      |            (16/32)            | length cont.  |
+                //      |               |  (if JSON len == 254 or 255)  | (if JSON      |
+                //      |               |                               | len == 255)   |
+                //      +---------------+-----------------------------------------------+
+                //      |Extended JSON  |                  JSON Data                    |
+                //      | length cont.  |               (length variable)               |
+                //      | (if JSON      |                                               |
+                //      | len == 255)   |                                               |
+                //      +---------------+-----------------------------------------------+
+                //      |          Binary Data (remainder of packet payload)            |
+                //      +---------------------------------------------------------------+
+                //      
                 if (message instanceof ArrayBuffer) {
-                     console.log("binary message received (ArrayBuffer)");
-                  //} else if (message.data instanceof Blob) {
-                  //   console.log("binary message received (Blob)");
-                  } else if (message instanceof Buffer) {
-                     console.log("binary message received (NodeJS/Buffer)");
+                    message = new Buffer( new Uint8Array(message) );
+                }
 
+                if (message instanceof Buffer) {
+                    logger.log("info", "[wss.onmessage] Binary message received (NodeJS/Buffer)");
+
+                    //TODO: what concerns me is that the ws module does not explicitly guarantee
+                    //  in its documentation that message.length is actually the message length 
+                    //  (the Buffer documentation says .length is the size of the buffer, 
+                    //  not necessarily the size of its contents)
                     if ( message.length > 0 ){
-                        var len = message.length;
-                        var ind = message.slice(0,100).toString().indexOf("{"); // dumb
-                        // message.slice(0,len);
-                        
-                        var jsonSize = parseInt(message.slice(0,ind).toString());
-                        if (jsonSize != 0 ){
-                            console.log( ind +":"+ jsonSize );
-                            try {
-                                var json  = JSON.parse( message.slice(ind, ind + jsonSize ).toString());
-                            } catch ( err ){
-                                console.log( "Error parsing JSON from binary packet. Discarding");
+                        var jsonLength = message.readUInt8(0);
+                        var jsonStartIndex = 1;
+                        if (jsonLength == 254){
+                            if (message.length > 3){
+                                jsonLength = message.readUInt16BE(1);
+                                jsonStartIndex = 3;
+                            } else {
+                                logger.log("error", "[wss.onmessage] message of incorrect format");
                                 return;
                             }
+                        } else if (jsonLength == 255){
+                            if (message.length > 5){
+                                jsonLength = message.readUInt32BE(1);
+                                jsonStartIndex = 5;
+                            } else {
+                                logger.log("error", "[wss.onmessage] message of incorrect format");
+                                return;
+                            }
+                        }
 
-                            //var binarySize = parseInt(json.message.value);
-                            bValidMessage = handleBinaryMessage(connection, json, message.slice(ind + jsonSize, len) );
+                        if (jsonLength > 0 ){
+                            if (message.length >= jsonStartIndex + jsonLength) {
+                                try {
+                                    var json  = JSON.parse( message.slice(jsonStartIndex, jsonStartIndex + jsonLength ).toString());
+                                } catch ( err ){
+                                    logger.log("error", "[wss.onmessage] Error parsing JSON from binary packet. Discarding");
+                                    return;
+                                }
+
+                                bValidMessage = handleBinaryMessage(connection, json, message.slice(jsonStartIndex + jsonLength) );
+                            } else {
+                                logger.log("error", "[wss.onmessage] message of incorrect format");
+                                return;
+                            }
                         }
                     }
 
-                  } else {
-                     console.log("binary message of illegal type");
-                     console.log( message );
-                  }
-                /*try {
-                    var data = message.data;
-                    var tMsg = JSON.parse(message);
-                } catch(err) {
-                    logger.log("debug", "[wss.onmessage] error while parsing message as JSON");
-                    return;
+                } else {
+                    logger.log("warn", "[wss.onmessage] Binary message received in unknown format");
                 }
-
-                try{
-
-                    // handle message messages (messages with routed data)
-                    else if (tMsg['message']) {
-                        bValidMessage = handleMessageMessage(connection, tMsg);
-                    } 
-
-                    // handle admin client messages
-                    else if (tMsg['admin']) {
-                        connection.spacebrew_is_admin = true;
-
-                        // check if admin does not want to receive 'message' messages
-                        connection.no_msgs = tMsg.no_msgs ? true : false;
-
-                        // send admin the current state of the all connections
-                        connection.send(JSON.stringify(buildUpdateMessagesForAdmin()));
-                        adminConnections.push(connection);
-                        bValidMessage = true;
-                    } 
-
-                    // handle route add/remove messages
-                    else if (tMsg['route']){
-                        bValidMessage = handleRouteMessage(connection, tMsg);
-                    } 
-
-                    // print to console if message not recognized
-                    else {
-                        logger.log("warn",  "[wss.onmessage] unrecognized message type. ", tMsg);
-                    }
-
-                    // if message was valide then send to admin
-                    if (bValidMessage){
-                        sendToAdmins(tMsg);
-                    } 
-
-                } catch (err){
-                    logger.log("warn", "[wss.onmessage] ERROR on line <" + err.lineNumber + "> while processing message");
-                    logger.log("warn", err.stack);
-                }*/
             }
         });
 
@@ -450,12 +441,22 @@ spacebrew.createServer = function( opts ){
                         }
 
                         var jsonString = JSON.stringify(toSend);
-                        var sizeString = String(jsonString.length);
-                        var newBuffer = new Buffer( binaryData.length + sizeString.length + jsonString.length );
+                        var jsonByteLength = Buffer.byteLength(jsonString);
+                        var numBytesForJsonLength = (jsonByteLength > 0xFFFF ? 5 : (jsonByteLength >= 254 ? 3 : 1));
+                        var bufferSize = binaryData.length + jsonByteLength + numBytesForJsonLength;
+                        var newBuffer = new Buffer( bufferSize );
                         logger.log("info", "[handleBinaryMessage] created new buffer of size "+newBuffer.length );
-                        newBuffer.write(sizeString);
-                        newBuffer.write(jsonString, sizeString.length);
-                        binaryData.copy(newBuffer, jsonString.length );
+                        if (numBytesForJsonLength == 5){
+                            newBuffer.writeUInt8(255, 0);
+                            newBuffer.writeUInt32BE(jsonByteLength, 1);
+                        } else if (numBytesForJsonLength == 3){
+                            newBuffer.writeUInt8(254, 0);
+                            newBuffer.writeUInt16BE(jsonByteLength, 1);
+                        } else {
+                            newBuffer.writeUInt8(jsonByteLength, 0);
+                        }
+                        newBuffer.write(jsonString, numBytesForJsonLength);
+                        binaryData.copy(newBuffer, numBytesForJsonLength + jsonByteLength );
 
                         sub.client.connection.send(newBuffer, {binary: true});
                         logger.log("info", "[handleBinaryMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
