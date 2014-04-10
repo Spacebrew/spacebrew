@@ -5,10 +5,10 @@
  * This module holds the core functionality of the Spacebrew server. To run this module as 
  * standalone app you should use the node_server.js or node_server_forever.js script.
  *
- * @author: 	Quin Kennedy, Julio Terra, and other contributors
+ * @author: 	LAB at Rockwell Group, Quin Kennedy, Brett Renfer, Josh Walton, James Tichenor, Julio Terra
  * @filename: 	node_server.js
  * @date: 		May 31, 2013
- * @updated with version: 	0.3.2 
+ * @updated with version: 	0.4.0 
  *
  */
 
