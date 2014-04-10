@@ -5,10 +5,10 @@
  * This module holds the core functionality of the Spacebrew server. To run this module as 
  * standalone app you should use the node_server.js or node_server_forever.js script.
  *
- * @author: 	Quin Kennedy, Julio Terra, and other contributors
+ * @author: 	LAB at Rockwell Group, Quin Kennedy, Brett Renfer, Josh Walton, James Tichenor, Julio Terra
  * @filename: 	node_server.js
  * @date: 		May 31, 2013
- * @updated with version: 	0.3.2 
+ * @updated with version: 	0.4.0 
  *
  */
 
@@ -135,12 +135,14 @@ spacebrew.createServer = function( opts ){
          * admin, config, message, and routing messages for setting up, managing, and communicating
          * via spacebrew. This is the backbone of spacebrew.
          * @param  {obj} message The incoming message from an admin or client
+         * @param  {obj} flags   Incoming flags re: the message (e.g. is it binary?)
          */
-        ws.on('message', function(message) {
-            logger.log("info", "[wss.onmessage] new message received " + message);
+        ws.on('message', function(message, flags) {
+            logger.log("info", "[wss.onmessage] new message received");
 
             var bValidMessage = false;
-            if (message) {
+            if (message && !flags.binary) {
+                logger.log("info", "[wss.onmessage] text message content: " + message);
                 // process WebSocket message
                 try {
                     var tMsg = JSON.parse(message);
@@ -191,6 +193,81 @@ spacebrew.createServer = function( opts ){
                 } catch (err){
                     logger.log("warn", "[wss.onmessage] ERROR on line <" + err.lineNumber + "> while processing message");
                     logger.log("warn", err.stack);
+                }
+            
+            // this is a binary message
+            } else {
+                // for now:
+                //  description follows format described here: https://tools.ietf.org/html/rfc5234
+                //  inspired by WS protocol
+                //  
+                //       0                   1                   2                   3
+                //       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+                //      +---------------+-------------------------------+---------------+
+                //      |  JSON len     |   Extended JSON length        |Extended JSON  |
+                //      |      (8)      |            (16/32)            | length cont.  |
+                //      |               |  (if JSON len == 254 or 255)  | (if JSON      |
+                //      |               |                               | len == 255)   |
+                //      +---------------+-----------------------------------------------+
+                //      |Extended JSON  |                  JSON Data                    |
+                //      | length cont.  |               (length variable)               |
+                //      | (if JSON      |                                               |
+                //      | len == 255)   |                                               |
+                //      +---------------+-----------------------------------------------+
+                //      |          Binary Data (remainder of packet payload)            |
+                //      +---------------------------------------------------------------+
+                //      
+                if (message instanceof ArrayBuffer) {
+                    message = new Buffer( new Uint8Array(message) );
+                }
+
+                if (message instanceof Buffer) {
+                    logger.log("info", "[wss.onmessage] Binary message received (NodeJS/Buffer)");
+
+                    //TODO: what concerns me is that the ws module does not explicitly guarantee
+                    //  in its documentation that message.length is actually the message length 
+                    //  (the Buffer documentation says .length is the size of the buffer, 
+                    //  not necessarily the size of its contents)
+                    if ( message.length > 0 ){
+                        var jsonLength = message.readUInt8(0);
+                        var jsonStartIndex = 1;
+                        if (jsonLength == 254){
+                            if (message.length > 3){
+                                jsonLength = message.readUInt16BE(1);
+                                jsonStartIndex = 3;
+                            } else {
+                                logger.log("error", "[wss.onmessage] message of incorrect format");
+                                return;
+                            }
+                        } else if (jsonLength == 255){
+                            if (message.length > 5){
+                                jsonLength = message.readUInt32BE(1);
+                                jsonStartIndex = 5;
+                            } else {
+                                logger.log("error", "[wss.onmessage] message of incorrect format");
+                                return;
+                            }
+                        }
+
+                        if (jsonLength > 0 ){
+                            if (message.length >= jsonStartIndex + jsonLength) {
+                                try {
+                                    var json  = JSON.parse( message.slice(jsonStartIndex, jsonStartIndex + jsonLength ).toString());
+                                } catch ( err ){
+                                    logger.log("error", "[wss.onmessage] Error parsing JSON from binary packet. Discarding");
+                                    return;
+                                }
+
+                                bValidMessage = handleBinaryMessage(connection, json, message.slice(jsonStartIndex + jsonLength) );
+                            } else {
+                                logger.log("error", "[wss.onmessage] message of incorrect format");
+                                return;
+                            }
+                        }
+                    }
+
+                } else {
+                    logger.log("warn", "[wss.onmessage] Binary message received in unknown format");
                 }
             }
         });
@@ -304,6 +381,104 @@ spacebrew.createServer = function( opts ){
         // if publishing client does not have the appropriate publisher then abort
 	    else {
             logger.log("info", "[handleMessageMessage] an un-registered publisher name: " + tMsg.message.name);
+            return false;
+        } 
+
+        return bValidMessage;
+    };
+
+    /**
+     * A helper function to handle routing messages from a publisher to the appropriate subscribers.
+     * @param  {ws Connection Obj} connection The connection that the message came in on
+     * @param  {json} tMsg The message from the publisher which should be forwarded to its subscribers
+     * @param  {Buffer} Binary data to be sent to subscriber
+     * @return {boolean}      True iff the message comes from a publisher that exists
+     */
+    var handleBinaryMessage = function(connection, tMsg, binaryData){
+        var pubClient = undefined
+            , bValidMessage = false
+            , pub = undefined
+            , sub = undefined
+            , toSend = {}
+            ;
+
+        // make sure that this connection is associated to at least one client
+        if (!connection.spacebrew_client_list){
+            logger.log("info", "[handleBinaryMessage] this connection has no registered clients");
+            return false;
+        }
+
+        // check whether the client that sent the message is associated to the connection where the 
+        //      message was received
+        if (!(pubClient = connection.spacebrew_client_list[tMsg.message.clientName])){
+            logger.log("info",  "[handleBinaryMessage] the client: " + tMsg.message.clientName + 
+                                    " does not belong to this connection");
+            return false;
+        }
+
+        //high level thoughts ( are below \/ )
+
+        //add the remote address to the message 
+        tMsg['message'].remoteAddress = getClientAddress(connection);
+
+        // if publishing client does have the appropriate publisher then continue processing the message
+        if (pub = pubClient.publishers[tMsg.message.name]) {
+
+            // if publisher is of the appropriate type then send message to all subscribers
+            if (pub = pub[tMsg.message.type]) {
+                bValidMessage = true;
+
+                for(var j = pub.subscribers.length - 1; j >= 0; j--){
+                    sub = pub.subscribers[j];
+
+                    // try to send the message but catch error so the server won't crash due to issues
+                    try{
+                        toSend['message'] = {
+                                'name': sub.subscriber.name,
+                                'type': tMsg.message.type,
+                                'value': tMsg.message.value,
+                                'clientName': sub.client.name
+                        }
+
+                        var jsonString = JSON.stringify(toSend);
+                        var jsonByteLength = Buffer.byteLength(jsonString);
+                        var numBytesForJsonLength = (jsonByteLength > 0xFFFF ? 5 : (jsonByteLength >= 254 ? 3 : 1));
+                        var bufferSize = binaryData.length + jsonByteLength + numBytesForJsonLength;
+                        var newBuffer = new Buffer( bufferSize );
+                        logger.log("info", "[handleBinaryMessage] created new buffer of size "+newBuffer.length );
+                        if (numBytesForJsonLength == 5){
+                            newBuffer.writeUInt8(255, 0);
+                            newBuffer.writeUInt32BE(jsonByteLength, 1);
+                        } else if (numBytesForJsonLength == 3){
+                            newBuffer.writeUInt8(254, 0);
+                            newBuffer.writeUInt16BE(jsonByteLength, 1);
+                        } else {
+                            newBuffer.writeUInt8(jsonByteLength, 0);
+                        }
+                        newBuffer.write(jsonString, numBytesForJsonLength);
+                        binaryData.copy(newBuffer, numBytesForJsonLength + jsonByteLength );
+
+                        sub.client.connection.send(newBuffer, {binary: true});
+                        logger.log("info", "[handleBinaryMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
+
+                    } catch(err){
+                        logger.log("debug", "[handleBinaryMessage] ERROR sending message to client " + 
+                                                sub.client.name + ", on subscriber " +
+                                                sub.subscriber.name + " error message " + err );
+                    }
+                }
+            }
+
+            // if publisher's type does not match then abort
+            else {
+                logger.log("info", "[handleBinaryMessage] an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
+                return false;
+            } 
+        }
+
+        // if publishing client does not have the appropriate publisher then abort
+        else {
+            logger.log("info", "[handleBinaryMessage] an un-registered publisher name: " + tMsg.message.name);
             return false;
         } 
 
