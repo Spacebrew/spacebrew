@@ -1,1 +1,1 @@
-web: node node_server_forever.js
+web: node node_server_forever.js -p $PORT
