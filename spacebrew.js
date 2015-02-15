@@ -282,6 +282,7 @@ spacebrew.createServer = function( opts ){
          * @param  {obj} ws The object containing information about the connection that is being closed
          */
         ws.on('close', function(ws) {
+            connection.spacebrew_was_closed = true;
             cleanupClosedConnections();
         });
 
@@ -941,7 +942,7 @@ spacebrew.createServer = function( opts ){
 
         for(var i = 0; i < trustedClients.length;){
             //logger.log("info", trustedClients);
-            if (!trustedClients[i].connection._socket){
+            if (trustedClients[i].connection.spacebrew_was_closed){
                 removeRoutesInvolvingClient(trustedClients[i]);
                 removed.push({name:trustedClients[i].name, remoteAddress:trustedClients[i].remoteAddress});
                 trustedClients.splice(i, 1);
@@ -953,7 +954,7 @@ spacebrew.createServer = function( opts ){
         //remove Admins
         //logger.log("info", "There are admins: "+ adminConnections.length);
         for(var i = 0; i < adminConnections.length;){
-            if (adminConnections[i]._socket == null){
+            if (adminConnections[i].spacebrew_was_closed){
                 adminConnections.splice(i, 1);
             } else {
                 i++;
@@ -961,7 +962,7 @@ spacebrew.createServer = function( opts ){
         }
         //remove connections
         for(var i = 0; i<allconnections.length;){
-            if (allconnections[i]._socket == null){
+            if (allconnections[i].spacebrew_was_closed){
                 allconnections.splice(i, 1);
             } else {
                 i++;
