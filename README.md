@@ -25,8 +25,8 @@ Getting Started
 The first of these two files runs node using the forever-monitor node utility. This utility relaunches the spacebrew server if it crashes and it saves logs of the standard output from the spacebrew server to log files in the data/logs directory.
 
 ### 3. Connect Client Apps  
-* Open the [spacebrew_button example](http://spacebrew.github.io/spacebrew.js/spacebrew_button/index.html?server=localhost&name=button2) - make sure that the `sever=` in the query string points to the appropriate host. Customize the `name=` element in the query string to change your apps name.  
-* Open the admin [spacebrew_button example](http://spacebrew.github.io/spacebrew/admin/admin.html?server=localhost) in another browser window - again, make sure that the `sever=` in the query string points to the appropriate host.  
+* Open the [spacebrew_button example](http://spacebrew.github.io/spacebrew.js/spacebrew_button/index.html?server=localhost&name=button2) - make sure that the `server=` in the query string points to the appropriate host. Customize the `name=` element in the query string to change your apps name.  
+* Open the [spacebrew admin interface](http://spacebrew.github.io/spacebrew/admin/admin.html?server=localhost) in another browser window - again, make sure that the `server=` in the query string points to the appropriate host.  
 * Start connecting apps and routing data.   
   
 Spacebrew Server Options
@@ -67,7 +67,7 @@ The HTTP Link allows you to use HTTP-only devices, such as the [Electric Imp](ht
 * The HTTP Link will respond with a `clientID` that you will use in the future to refer your client.
 * You can send messages into the Spacebrew environment by sending a `publish` query string key which contains an array of messages you wish to publish
     - `http://localhost:9092/?clientID=0&publish=[{"message":{"clientName":"test","name":"output","type":"string","value":"hello!"}},{"message":{"clientName":"test","name":"output","type":"string","value":"good bye."}}]`
-    - in this cane we are sending 2 messages
+    - in this case we are sending 2 messages
 * You can retrieve sent messages by including `poll=true` in the query string. This will return an array of all messages that have been received by the HTTP Link for your client since the last poll:
     - `http://localhost:9092/?clientID=0&poll=true`
 * By default, only one message is queued per subscriber. If you wish to queue more, you can send a `bufferSize` along with your subscriber specifications
