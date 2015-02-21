@@ -590,7 +590,9 @@ spacebrew.createServer = function( opts ){
 
     var getClientAddress = function(connection){
         try{
-            return connection._socket._handle.getpeername().address; //connection.upgradeReq.headers.host;
+            var out = {};
+            connection._socket._handle.getpeername(out);
+            return out.address; //connection.upgradeReq.headers.host;
         } catch (e){}
         logger.log("info", "[printAllTrustedClients] unable to access remote address");
         return "unknown";
