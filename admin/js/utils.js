@@ -30,7 +30,7 @@ Unsafetify = function(s){
 //handlebar helper so we can use Safetify in our handlebar templates
 //{{Safetify some.cool.property}}
 Handlebars.registerHelper('Safetify', function(val){
-  return val.Safetify();
+  return String(val).Safetify();
 });
 
 //handlebar helper to provide an {{index}} property in our each loops
