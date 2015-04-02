@@ -588,15 +588,23 @@ spacebrew.createServer = function( opts ){
         }
     };
 
-    var getClientAddress = function(connection){
-        try{
-            var out = {};
-            connection._socket._handle.getpeername(out);
-            return out.address; //connection.upgradeReq.headers.host;
-        } catch (e){}
-        logger.log("info", "[printAllTrustedClients] unable to access remote address");
-        return "unknown";
-    };
+	var getClientAddress = function (connection) {
+		try {
+			// old node returns an object
+			var ret = connection._socket._handle.getpeername();
+			if (ret !== null) {
+				return connection._socket._handle.getpeername().address;
+			} else {
+				// new node applies to an object
+				var out = {};
+				connection._socket._handle.getpeername(out);
+				return out.address; //connection.upgradeReq.headers.host;
+			}
+		} catch (e) {
+		}
+		logger.log("info", "[printAllTrustedClients] unable to access remote address");
+		return "unknown";
+	};
 
     /**
      * A helper function used to parse config messages from Clients.
