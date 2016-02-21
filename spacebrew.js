@@ -17,6 +17,8 @@ var path = require('path')
 	, ws = require('ws')
     , logger = require('./logger')
     , spacebrew = exports
+    , express = require('express')
+    , http = require('http')
     ;
  
 //create a new WebsocketServer
@@ -34,6 +36,14 @@ spacebrew.createServer = function( opts ){
 
     logger.log("info", "[createServer] log level set to " + logger.debugLevel);
 
+
+    // create basic express HTTP that routes to admin
+    var app = express();
+    app.use(express.static('admin'));
+
+    var server = http.createServer(app);
+    server.listen(opts.port);
+
     /**
      * startup the websocket server.
      * The port specifies which port to listen on
@@ -41,8 +51,9 @@ spacebrew.createServer = function( opts ){
      * not just localhost or a specific IP
      */
     var wss = new ws.Server({
-            port: opts.port,
-            host: opts.host
+            // port: opts.port,
+            host: opts.host,
+            server: server
         });
 
     expose.wss = wss;

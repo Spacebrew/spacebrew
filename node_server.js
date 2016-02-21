@@ -187,6 +187,8 @@ var main = function() {
 			"port": defaultPort, 
 			"logLevel": logger.debugLevel 
 		}
+        
+        // create spacebrew server
 		spacebrew.createServer( server_configs );
 		if (persist) persister.persistRoutes( persist_configs); 
 	}
