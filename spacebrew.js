@@ -17,8 +17,9 @@ var path = require('path')
 	, ws = require('ws')
     , logger = require('./logger')
     , spacebrew = exports
-    , express = require('express')
+    , serveStatic = require('serve-static')
     , http = require('http')
+    , finalhandler = require('finalhandler')
     ;
  
 //create a new WebsocketServer
@@ -36,13 +37,17 @@ spacebrew.createServer = function( opts ){
 
     logger.log("info", "[createServer] log level set to " + logger.debugLevel);
 
+    // create basic static folder
+    var serve = serveStatic('admin');
 
-    // create basic express HTTP that routes to admin
-    var app = express();
-    app.use(express.static('admin'));
+    var server = http.createServer(
+        function(req, res){
+            var done = finalhandler(req, res)
+            serve(req, res, done)
+        }
+    );
 
-    var server = http.createServer(app);
-    server.listen(opts.port);
+    server.listen(opts.port, opts.host);
 
     /**
      * startup the websocket server.
