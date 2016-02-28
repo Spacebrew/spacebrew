@@ -28,6 +28,11 @@ spacebrew.createServer = function( opts ){
     var expose = {};
     opts = opts || {};
     opts.port = opts.port || 9000;
+    /** 
+     * host can be set to limit which network interfaces to listen on.
+     *   The default is 0.0.0.0 which will listen on all interfaces.
+     *   Setting 'localhost' will only listen on the loopback interface
+     */
     opts.host = opts.host || '0.0.0.0';
     opts.ping = opts.ping || true;
     opts.forceClose = opts.forceClose || false;
@@ -49,15 +54,8 @@ spacebrew.createServer = function( opts ){
 
     server.listen(opts.port, opts.host);
 
-    /**
-     * startup the websocket server.
-     * The port specifies which port to listen on
-     * The 'host = 0.0.0.0' specifies to listen to ALL incoming traffic, 
-     * not just localhost or a specific IP
-     */
+    // allow websocket connections on the existing server.
     var wss = new ws.Server({
-            // port: opts.port,
-            host: opts.host,
             server: server
         });
 
