@@ -17,6 +17,9 @@ var path = require('path')
 	, ws = require('ws')
     , logger = require('./logger')
     , spacebrew = exports
+    , serveStatic = require('serve-static')
+    , http = require('http')
+    , finalhandler = require('finalhandler')
     ;
  
 //create a new WebsocketServer
@@ -25,6 +28,11 @@ spacebrew.createServer = function( opts ){
     var expose = {};
     opts = opts || {};
     opts.port = opts.port || 9000;
+    /** 
+     * host can be set to limit which network interfaces to listen on.
+     *   The default is 0.0.0.0 which will listen on all interfaces.
+     *   Setting 'localhost' will only listen on the loopback interface
+     */
     opts.host = opts.host || '0.0.0.0';
     opts.ping = opts.ping || true;
     opts.forceClose = opts.forceClose || false;
@@ -34,15 +42,21 @@ spacebrew.createServer = function( opts ){
 
     logger.log("info", "[createServer] log level set to " + logger.debugLevel);
 
-    /**
-     * startup the websocket server.
-     * The port specifies which port to listen on
-     * The 'host = 0.0.0.0' specifies to listen to ALL incoming traffic, 
-     * not just localhost or a specific IP
-     */
+    // create basic static folder
+    var serve = serveStatic('admin');
+
+    var server = http.createServer(
+        function(req, res){
+            var done = finalhandler(req, res)
+            serve(req, res, done)
+        }
+    );
+
+    server.listen(opts.port, opts.host);
+
+    // allow websocket connections on the existing server.
     var wss = new ws.Server({
-            port: opts.port,
-            host: opts.host
+            server: server
         });
 
     expose.wss = wss;
