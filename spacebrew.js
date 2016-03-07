@@ -22,11 +22,9 @@ var path = require('path')
     , finalhandler = require('finalhandler')
     , AJV = require('ajv')
     , fs = require('fs')
+    , schema = require('./schema.json')
     ;
 
-//setup validator
-var ajv = AJV();
-var validate = ajv.compile(JSON.parse(fs.readFileSync('schema.json')));
  
 //create a new WebsocketServer
 spacebrew.createServer = function( opts ){
@@ -47,6 +45,10 @@ spacebrew.createServer = function( opts ){
     logger.debugLevel = opts.logLevel || "warn";
 
     logger.log("info", "[createServer] log level set to " + logger.debugLevel);
+
+    //setup validator
+    ajv = AJV();
+    validate = ajv.compile(schema);
 
     // create basic static folder
     var serve = serveStatic('admin');
