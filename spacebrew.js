@@ -20,7 +20,13 @@ var path = require('path')
     , serveStatic = require('serve-static')
     , http = require('http')
     , finalhandler = require('finalhandler')
+    , AJV = require('ajv')
+    , fs = require('fs')
     ;
+
+//setup validator
+var ajv = AJV();
+var validate = ajv.compile(JSON.parse(fs.readFileSync('schema.json')));
  
 //create a new WebsocketServer
 spacebrew.createServer = function( opts ){
@@ -157,11 +163,21 @@ spacebrew.createServer = function( opts ){
             var bValidMessage = false;
             if (message && !flags.binary) {
                 logger.log("info", "[wss.onmessage] text message content: " + message);
+                logger.log('info', "[wss.onmessage] source: " + getClientAddress(connection));
                 // process WebSocket message
                 try {
                     var tMsg = JSON.parse(message);
                 } catch(err) {
                     logger.log("debug", "[wss.onmessage] error while parsing message as JSON");
+                    return;
+                }
+
+                //validate message against schema
+                if (!validate(tMsg)){
+                    logger.log("warn", "[wss.onmessage] message did not pass JSON validation.");
+                    for(var i = 0; i < validate.errors.length; i++){
+                        logger.log('info', '[wss.onmessage] error ' + (i+1) + ': ' + validate.errors[i].message);
+                    }
                     return;
                 }
 
