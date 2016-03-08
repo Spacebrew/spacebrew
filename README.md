@@ -14,8 +14,7 @@ Getting Started
 * Download and install [Node.js](http://nodejs.org)  
 * Clone the repo from github  
 * Install the dependencies using node packaged modules   
-    - websockets module: `npm install ws`  
-    - forever module: `npm install forever-monitor`  
+    - `npm install`
   
 ### 2. Run the Server  
 * Open terminal and navigate to the base directory of the spacebrew server  
