@@ -1,0 +1,3 @@
+[submodule "admin"]
+	path = admin
+	url = https://github.com/Spacebrew/webAdmin.git
