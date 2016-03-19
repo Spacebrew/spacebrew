@@ -15,6 +15,8 @@ Getting Started
 * Clone the repo from github  
 * Install the dependencies using node packaged modules   
     - `npm install`
+* Initialize admin submodule
+    - ```git submodule update --init```
   
 ### 2. Run the Server  
 * Open terminal and navigate to the base directory of the spacebrew server  
