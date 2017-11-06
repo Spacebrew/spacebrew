@@ -1,3 +1,4 @@
+process.chdir(__dirname);
 var processArguments = function(){
     var argv = process.argv;
     for(var i = 2; i < argv.length; i++){
