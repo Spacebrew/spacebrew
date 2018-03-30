@@ -21,6 +21,7 @@ var spacebrew = require('./spacebrew')
 	;
 
 var defaultPort = 9000
+    , secure = false
 	, forceClose = false
 	, doPing = true
 	, persist = true
@@ -60,6 +61,9 @@ var processArguments = function(){
             case "--port":
                 setDefaultPort(argv[++i]);
                 break;
+            case "--secure":
+                secure = true;
+            break;
             case "-c":
             case "--close":
                 forceClose = true;
@@ -175,7 +179,8 @@ var main = function() {
 	// if app command did not include help flag then start-up persist server
 	else {
 		server_configs = { 
-			"port": defaultPort, 
+            "port": defaultPort,
+            "secure": secure, 
 			"forceClose": forceClose, 
 			"ping": doPing, 
 			"pingInterval": pingIntervalTime, 
@@ -183,7 +188,8 @@ var main = function() {
 			"logLevel": logger.debugLevel 
 		}
 		persist_configs = { 
-			"host": "localhost", 
+            "host": "localhost",
+            "secure": secure,
 			"port": defaultPort, 
 			"logLevel": logger.debugLevel 
 		}

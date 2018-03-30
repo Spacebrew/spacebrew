@@ -48,6 +48,7 @@ livePersister.persistRoutes = function( opts ){
 
 	var port = opts.port || 9000
 		, host = opts.host || "localhost"
+		, secure = opts.secure || false
 		, autosave = opts.autosave || true
 		, load = opts.load || true
 		, configFile = opts.loadFile || "live_persist_config.json"
@@ -99,8 +100,15 @@ livePersister.persistRoutes = function( opts ){
 	var setupWSClient = function(){ 
 
 		// create the wsclient to connect to spacebrew
-		wsc = new WebSocketClient("ws://" + host + ":" + port);
-
+		
+		//check for secure socket
+		if (secure){
+			logger.log("info", 'spacebrew_live_persist secure socket');
+			wsc = new WebSocketClient("wss://" + host + ":" + port);
+		}else{
+			wsc = new WebSocketClient("ws://" + host + ":" + port);
+		}
+		
 		// configure the spacebrew admin client once connection stablished
 		wsc.on("open", function(conn){
 			logger.log("info", "[ws.open] connected to spacebrew \n");

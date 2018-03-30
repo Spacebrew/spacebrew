@@ -8,7 +8,9 @@ var ws;
 var reconnect_timer = undefined;
 
 var setupWebsocket = function(){
-	ws = new WebSocket("ws://"+server+":" + Number(port));
+	//detect https
+	var protocol = ('https:' == document.location.protocol ? 'wss://' : 'ws://');
+	ws = new WebSocket(protocol + server + ":" + Number(port));
 
 	ws.onopen = function() {
 		console.log("WebSockets connection opened");

@@ -20,6 +20,9 @@
  *
  */
 
+ //DANGEROUS DEBUG ONLY
+ //from https://stackoverflow.com/questions/20433287/node-js-request-cert-has-expired
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 var	forever = require('forever-monitor')
 	, fs = require('fs')
@@ -66,7 +69,9 @@ var processArguments = function(){
             case "-l":
             case "--log":
             	logger.debugLevel = "info";
-            	break;
+				break;
+			case "--secure":
+				logger.log('warn', 'running secure');
             case "--loglevel":
             	logger.debugLevel = argv[(i += 1)];
             	break;            case "-x":
