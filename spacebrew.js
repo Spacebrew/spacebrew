@@ -58,10 +58,12 @@ spacebrew.createServer = function( opts ){
     var server;
     if (opts.secure==true){
         logger.log("info", 'spacebrew starting secure server');
-        //send in key and cert paths?
+        //send in key and cert paths probably
+        var key = 'key.pem';
+        var cert = 'cert.pem';
         var options = {
-            key: fs.readFileSync('key.pem'),
-            cert: fs.readFileSync('cert.pem')
+            key: fs.readFileSync(key),
+            cert: fs.readFileSync(cert)
         };
         server = https.createServer(
             options,

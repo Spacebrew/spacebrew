@@ -143,6 +143,7 @@ var printHelp = function(){
     console.log("");
     console.log("command line parameters:");
     console.log("\t--port (-p): set the port of the spacebrew server (default 9000)");
+    console.log("\t--secure: [ALPHA] run the spacebrew server on https with secure sockets (default false)");
     console.log("\t--help (-h): print this help text");
     console.log("\t--close (-c): force close clients that don't respond to pings");
     console.log("\t--timeout (-t): minimum number of ms to wait for response pong before force closing (implies --close, default 10000 [10 seconds])");
