@@ -101,10 +101,12 @@ livePersister.persistRoutes = function( opts ){
 
 		// create the wsclient to connect to spacebrew
 		
+		//{rejectUnauthorized: false}
 		//check for secure socket
 		if (secure){
 			logger.log("info", 'spacebrew_live_persist secure socket');
-			wsc = new WebSocketClient("wss://" + host + ":" + port);
+			var options = { rejectUnauthorized: false }
+			wsc = new WebSocketClient("wss://" + host + ":" + port, options);
 		}else{
 			wsc = new WebSocketClient("ws://" + host + ":" + port);
 		}

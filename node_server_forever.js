@@ -22,7 +22,7 @@
 
  //DANGEROUS DEBUG ONLY
  //from https://stackoverflow.com/questions/20433287/node-js-request-cert-has-expired
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 var	forever = require('forever-monitor')
 	, fs = require('fs')

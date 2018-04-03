@@ -26,3 +26,5 @@ data/*
 spacebrew_log*
 localhost.crt
 localhost.key
+video.expo.local.crt
+video.expo.local.key
