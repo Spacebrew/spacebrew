@@ -42,7 +42,7 @@ var setupLogDirectory = function() {
 		fs.statSync(data_dir);
 	} 
 	catch (e) {
-		fs.mkdir(data_dir);	
+		fs.mkdir(data_dir, err => { if (err) console.log(err) });	
 		logger.log("info", "creating data directory");
 	}
 
@@ -51,7 +51,7 @@ var setupLogDirectory = function() {
 		fs.statSync(log_dir);
 	} 
 	catch (e) {
-		fs.mkdir(__dirname + "/data/log");	
+		fs.mkdir(__dirname + "/data/log", err => { if (err) console.log(err) });	
 		logger.log("info", "creating data/log directory");
 	}	
 }

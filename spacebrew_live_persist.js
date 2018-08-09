@@ -73,7 +73,7 @@ livePersister.persistRoutes = function( opts ){
 			fs.statSync(data_dir);
 		} 
 		catch (e) {
-			fs.mkdir(data_dir);	
+			fs.mkdir(data_dir, err => { if (err) console.log(err) });	
 			logger.log("info", "creating data directory");
 		}
 
@@ -82,7 +82,7 @@ livePersister.persistRoutes = function( opts ){
 			fs.statSync(routes_dir);
 		} 
 		catch (e) {
-			fs.mkdir(routes_dir);	
+			fs.mkdir(routes_dir, err => { if (err) console.log(err) });	
 			logger.log("info", "creating data/routes directory");
 		}
 
@@ -91,7 +91,7 @@ livePersister.persistRoutes = function( opts ){
 			fs.statSync(live_dir);
 		} 
 		catch (e) {
-			fs.mkdir(live_dir);	
+			fs.mkdir(live_dir, err => { if (err) console.log(err) });	
 			logger.log("info", "creating data/routes/live directory");
 		}
 	}	
