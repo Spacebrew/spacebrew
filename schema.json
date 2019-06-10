@@ -1,6 +1,6 @@
 {
-  "id":"http://spacebrew.cc/messaging-schema#",
-  "$schema":"http://json-schema.org/draft-04/schema#",
+  "$id":"http://spacebrew.cc/messaging-schema#",
+  "$schema":"http://json-schema.org/draft-07/schema#",
   "description":"a schema defining the messages sent by clients and admins",
   "type":"object",
   "oneOf":[
@@ -89,4 +89,3 @@
                 "remoteAddress":{"type":"string"}}}}}}}}
   }
 }
-      

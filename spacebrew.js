@@ -1,14 +1,14 @@
 /**
  * Spacebrew Server Module
  * -----------------------
- * 
- * This module holds the core functionality of the Spacebrew server. To run this module as 
+ *
+ * This module holds the core functionality of the Spacebrew server. To run this module as
  * standalone app you should use the node_server.js or node_server_forever.js script.
  *
  * @author: 	LAB at Rockwell Group, Quin Kennedy, Brett Renfer, Josh Walton, James Tichenor, Julio Terra
  * @filename: 	node_server.js
  * @date: 		May 31, 2013
- * @updated with version: 	0.4.0 
+ * @updated with version: 	0.4.0
  *
  */
 
@@ -25,14 +25,22 @@ var path = require('path')
     , schema = require('./schema.json')
     ;
 
- 
+function toBuffer(ab) {
+    var buf = Buffer.alloc(ab.byteLength);
+    var view = new Uint8Array(ab);
+    for (var i = 0; i < buf.length; ++i) {
+        buf[i] = view[i];
+    }
+    return buf;
+}
+
 //create a new WebsocketServer
 spacebrew.createServer = function( opts ){
 
     var expose = {};
     opts = opts || {};
     opts.port = opts.port || 9000;
-    /** 
+    /**
      * host can be set to limit which network interfaces to listen on.
      *   The default is 0.0.0.0 which will listen on all interfaces.
      *   Setting 'localhost' will only listen on the loopback interface
@@ -156,19 +164,18 @@ spacebrew.createServer = function( opts ){
          * We will handle all messages from connections here. This includes
          * admin, config, message, and routing messages for setting up, managing, and communicating
          * via spacebrew. This is the backbone of spacebrew.
-         * @param  {obj} message The incoming message from an admin or client
-         * @param  {obj} flags   Incoming flags re: the message (e.g. is it binary?)
+         * @param  {obj} data The incoming data from an admin or client
          */
-        ws.on('message', function(message, flags) {
+        ws.on('message', function(data) {
             logger.log("info", "[wss.onmessage] new message received");
 
             var bValidMessage = false;
-            if (message && !flags.binary) {
-                logger.log("info", "[wss.onmessage] text message content: " + message);
+            if (data && typeof(data) == 'string') {
+                logger.log("info", "[wss.onmessage] text message content: " + data);
                 logger.log('info', "[wss.onmessage] source: " + getClientAddress(connection));
                 // process WebSocket message
                 try {
-                    var tMsg = JSON.parse(message);
+                    var tMsg = JSON.parse(data);
                 } catch(err) {
                     logger.log("debug", "[wss.onmessage] error while parsing message as JSON");
                     return;
@@ -187,12 +194,12 @@ spacebrew.createServer = function( opts ){
                 	// handle client app configuration messages
                     if (tMsg['config']) {
                         bValidMessage = handleConfigMessage(connection, tMsg);
-                    } 
+                    }
 
                     // handle message messages (messages with routed data)
                     else if (tMsg['message']) {
                         bValidMessage = handleMessageMessage(connection, tMsg);
-                    } 
+                    }
 
                     // handle admin client messages
                     else if (tMsg['admin']) {
@@ -205,12 +212,12 @@ spacebrew.createServer = function( opts ){
                         connection.send(JSON.stringify(buildUpdateMessagesForAdmin()));
                         adminConnections.push(connection);
                         bValidMessage = true;
-                    } 
+                    }
 
                     // handle route add/remove messages
                     else if (tMsg['route']){
                         bValidMessage = handleRouteMessage(connection, tMsg);
-                    } 
+                    }
 
                     // print to console if message not recognized
                     else {
@@ -220,19 +227,19 @@ spacebrew.createServer = function( opts ){
                     // if message was valide then send to admin
                     if (bValidMessage){
                         sendToAdmins(tMsg);
-                    } 
+                    }
 
                 } catch (err){
                     logger.log("warn", "[wss.onmessage] ERROR on line <" + err.lineNumber + "> while processing message");
                     logger.log("warn", err.stack);
                 }
-            
+
             // this is a binary message
             } else {
                 // for now:
                 //  description follows format described here: https://tools.ietf.org/html/rfc5234
                 //  inspired by WS protocol
-                //  
+                //
                 //       0                   1                   2                   3
                 //       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
                 //      +---------------+-------------------------------+---------------+
@@ -248,32 +255,32 @@ spacebrew.createServer = function( opts ){
                 //      +---------------+-----------------------------------------------+
                 //      |          Binary Data (remainder of packet payload)            |
                 //      +---------------------------------------------------------------+
-                //      
-                if (message instanceof ArrayBuffer) {
-                    message = new Buffer( new Uint8Array(message) );
+                //
+                if (data instanceof ArrayBuffer) {
+                    data = toBuffer(data);
                 }
 
-                if (message instanceof Buffer) {
+                if (data instanceof Buffer) {
                     logger.log("info", "[wss.onmessage] Binary message received (NodeJS/Buffer)");
 
                     //TODO: what concerns me is that the ws module does not explicitly guarantee
-                    //  in its documentation that message.length is actually the message length 
-                    //  (the Buffer documentation says .length is the size of the buffer, 
+                    //  in its documentation that message.length is actually the message length
+                    //  (the Buffer documentation says .length is the size of the buffer,
                     //  not necessarily the size of its contents)
-                    if ( message.length > 0 ){
-                        var jsonLength = message.readUInt8(0);
+                    if ( data.length > 0 ){
+                        var jsonLength = data.readUInt8(0);
                         var jsonStartIndex = 1;
                         if (jsonLength == 254){
-                            if (message.length > 3){
-                                jsonLength = message.readUInt16BE(1);
+                            if (data.length > 3){
+                                jsonLength = data.readUInt16BE(1);
                                 jsonStartIndex = 3;
                             } else {
                                 logger.log("error", "[wss.onmessage] message of incorrect format");
                                 return;
                             }
                         } else if (jsonLength == 255){
-                            if (message.length > 5){
-                                jsonLength = message.readUInt32BE(1);
+                            if (data.length > 5){
+                                jsonLength = data.readUInt32BE(1);
                                 jsonStartIndex = 5;
                             } else {
                                 logger.log("error", "[wss.onmessage] message of incorrect format");
@@ -282,15 +289,15 @@ spacebrew.createServer = function( opts ){
                         }
 
                         if (jsonLength > 0 ){
-                            if (message.length >= jsonStartIndex + jsonLength) {
+                            if (data.length >= jsonStartIndex + jsonLength) {
                                 try {
-                                    var json  = JSON.parse( message.slice(jsonStartIndex, jsonStartIndex + jsonLength ).toString());
+                                    var json  = JSON.parse( data.slice(jsonStartIndex, jsonStartIndex + jsonLength ).toString());
                                 } catch ( err ){
                                     logger.log("error", "[wss.onmessage] Error parsing JSON from binary packet. Discarding");
                                     return;
                                 }
 
-                                bValidMessage = handleBinaryMessage(connection, json, message.slice(jsonStartIndex + jsonLength) );
+                                bValidMessage = handleBinaryMessage(connection, json, data.slice(jsonStartIndex + jsonLength) );
                             } else {
                                 logger.log("error", "[wss.onmessage] message of incorrect format");
                                 return;
@@ -353,10 +360,10 @@ spacebrew.createServer = function( opts ){
             return false;
         }
 
-        // check whether the client that sent the message is associated to the connection where the 
+        // check whether the client that sent the message is associated to the connection where the
         //  	message was received
         if (!(pubClient = connection.spacebrew_client_list[tMsg.message.clientName])){
-            logger.log("info",  "[handleMessageMessage] the client: " + tMsg.message.clientName + 
+            logger.log("info",  "[handleMessageMessage] the client: " + tMsg.message.clientName +
             						" does not belong to this connection");
             return false;
         }
@@ -367,11 +374,11 @@ spacebrew.createServer = function( opts ){
         //    and then the second level has many branches instead of the first level having all
         //    the branches and the second level having one branch. Keep in mind that we should support
         //    user-defined types beyond String, Boolean, Range. Is it quicker to rely on the hash-map
-        //    to quickly find elements or should be implement our own binary search? 
+        //    to quickly find elements or should be implement our own binary search?
         //    (sounds like we are going too deep) But maybe we could implement a priority queue, publishers
         //    that publish often are more likely to publish.
 
-        //add the remote address to the message 
+        //add the remote address to the message
         tMsg['message'].remoteAddress = getClientAddress(connection);
 
         // if publishing client does have the appropriate publisher then continue processing the message
@@ -394,10 +401,10 @@ spacebrew.createServer = function( opts ){
                         }
 
                         sub.client.connection.send(JSON.stringify(toSend));
-                        logger.log("info", "[handleMessageMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
+                        logger.log("info", "[handleMessageMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend));
 
                     } catch(err){
-                        logger.log("debug", "[handleMessageMessage] ERROR sending message to client " + 
+                        logger.log("debug", "[handleMessageMessage] ERROR sending message to client " +
                         						sub.client.name + ", on subscriber " +
                         						sub.subscriber.name + " error message " + err );
                     }
@@ -408,14 +415,14 @@ spacebrew.createServer = function( opts ){
         	else {
                 logger.log("info", "[handleMessageMessage] an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
                 return false;
-            } 
+            }
         }
 
         // if publishing client does not have the appropriate publisher then abort
 	    else {
             logger.log("info", "[handleMessageMessage] an un-registered publisher name: " + tMsg.message.name);
             return false;
-        } 
+        }
 
         return bValidMessage;
     };
@@ -441,17 +448,17 @@ spacebrew.createServer = function( opts ){
             return false;
         }
 
-        // check whether the client that sent the message is associated to the connection where the 
+        // check whether the client that sent the message is associated to the connection where the
         //      message was received
         if (!(pubClient = connection.spacebrew_client_list[tMsg.message.clientName])){
-            logger.log("info",  "[handleBinaryMessage] the client: " + tMsg.message.clientName + 
+            logger.log("info",  "[handleBinaryMessage] the client: " + tMsg.message.clientName +
                                     " does not belong to this connection");
             return false;
         }
 
         //high level thoughts ( are below \/ )
 
-        //add the remote address to the message 
+        //add the remote address to the message
         tMsg['message'].remoteAddress = getClientAddress(connection);
 
         // if publishing client does have the appropriate publisher then continue processing the message
@@ -492,10 +499,10 @@ spacebrew.createServer = function( opts ){
                         binaryData.copy(newBuffer, numBytesForJsonLength + jsonByteLength );
 
                         sub.client.connection.send(newBuffer, {binary: true});
-                        logger.log("info", "[handleBinaryMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend)); 
+                        logger.log("info", "[handleBinaryMessage] message sent to: '" + sub.client.name + "' msg: " + JSON.stringify(toSend));
 
                     } catch(err){
-                        logger.log("debug", "[handleBinaryMessage] ERROR sending message to client " + 
+                        logger.log("debug", "[handleBinaryMessage] ERROR sending message to client " +
                                                 sub.client.name + ", on subscriber " +
                                                 sub.subscriber.name + " error message " + err );
                     }
@@ -506,14 +513,14 @@ spacebrew.createServer = function( opts ){
             else {
                 logger.log("info", "[handleBinaryMessage] an un-registered publisher type: " + tMsg.message.type + " with name: " + tMsg.message.name);
                 return false;
-            } 
+            }
         }
 
         // if publishing client does not have the appropriate publisher then abort
         else {
             logger.log("info", "[handleBinaryMessage] an un-registered publisher name: " + tMsg.message.name);
             return false;
-        } 
+        }
 
         return bValidMessage;
     };
@@ -543,7 +550,7 @@ spacebrew.createServer = function( opts ){
             //find the appropriate entry in trustedClients
             var tcLength = trustedClients.length;
             for(var i = 0; i < tcLength && (pubEntry === undefined || subEntry === undefined); i++){
-                if (trustedClients[i].name === pub.clientName 
+                if (trustedClients[i].name === pub.clientName
                     && trustedClients[i].remoteAddress === pub.remoteAddress){
                     pubClient = trustedClients[i];
                     if (pubClient.publishers[pub.name] == undefined){
@@ -566,7 +573,7 @@ spacebrew.createServer = function( opts ){
                     }
                 }
             }
-            //if we have found a matching publisher and subscriber, 
+            //if we have found a matching publisher and subscriber,
             //handle the adding or deleting of references
             //and notify the calling function that they can forward the message
             //to all the admins
@@ -644,13 +651,13 @@ spacebrew.createServer = function( opts ){
         	;
 
         // check if websocket client already has registered client app with same name
-        if (connection.spacebrew_client_list && 
+        if (connection.spacebrew_client_list &&
         	connection.spacebrew_client_list[msgName]){
 
             // if so, then set trustedClient to existing client
             trustedClient = connection.spacebrew_client_list[msgName];
             logger.log("info", "[handleConfigMessage] client already exists and will be updated ");
-        } 
+        }
 
         // otherwise, check that the name and remote address pair is not already taken
         else {
@@ -667,7 +674,7 @@ spacebrew.createServer = function( opts ){
 
                         // stop processing config message
                         return false;
-                    } 
+                    }
 
                     // otherwise, remove old unverified client to make space for new client
                     else {
@@ -763,7 +770,7 @@ spacebrew.createServer = function( opts ){
             		trustedClient.options[option] = tMsg.config.options[option];
             	}
             };
-        } 
+        }
 
         /////////////////////////////////////////
         //we are storing in a structure
@@ -772,9 +779,9 @@ spacebrew.createServer = function( opts ){
         //so you need to access them by trustedClients[i][<sub_or_pub>][<name>][<type>]
         //
         //The 'hash' variable is used to keep a list of publishers or subscribers defined by this config
-        //message. After we add all the new or updated publishers and subscribers to our internal data structures, 
+        //message. After we add all the new or updated publishers and subscribers to our internal data structures,
         //we can check against the 'hash' variable and remove any now undefined publishers and subscribers.
-        var items = [{'first':tSubs, 'second':trustedClient.subscribers, 'third':'publishers', 'fourth':'subscriber', 'fifth':'publisher'}, 
+        var items = [{'first':tSubs, 'second':trustedClient.subscribers, 'third':'publishers', 'fourth':'subscriber', 'fifth':'publisher'},
                      {'first':tPubs, 'second':trustedClient.publishers, 'third':'subscribers', 'fourth':'publisher', 'fifth':'subscriber'}];
 
         for (var j = 0; j<items.length; j++){
@@ -832,7 +839,7 @@ spacebrew.createServer = function( opts ){
             otherTypePlural = (isPublisher ? 'subscribers' : 'publishers');
         var toSend = [];//an array of messages to send to admins to tell them about the route updates
 
-        //for each item that the passed-in item is connected to, 
+        //for each item that the passed-in item is connected to,
         //create, process, and send a route remove connection
         for (var i = currBase[otherTypePlural].length - 1; i >= 0; i--) {
             var currLeaf = currBase[otherTypePlural][i];
@@ -850,7 +857,7 @@ spacebrew.createServer = function( opts ){
                                             remoteAddress:client.remoteAddress};
             logger.log("info", "[removeRoutesInvolving] removing route internally ################");
             logger.log("info", JSON.stringify(messageContent));
-            //Here I use the standard 'route removing' function to actually 
+            //Here I use the standard 'route removing' function to actually
             //clean up all the data structures related to this route.
             if (handleRouteMessage(undefined, {route:messageContent})){
                 logger.log("info", "[removeRoutesInvolving] successfully removed route, telling admins");
@@ -900,7 +907,7 @@ spacebrew.createServer = function( opts ){
                     //                                     name:currBase.name,
                     //                                     type:currBase.type,
                     //                                     remoteAddress:trustedClients[i].remoteAddress};
-                    //     //Here I use the standard 'route removing' function to actually 
+                    //     //Here I use the standard 'route removing' function to actually
                     //     //clean up all the data structures related to this route.
                     //     if (handleRouteMessage(undefined, {route:messageContent})){
                     //         //TODO: add the route remove message to an array,
@@ -956,15 +963,15 @@ spacebrew.createServer = function( opts ){
 	        		// if admin does not want to receive messages and this is a message, then skip
 	        		if( adminConnections[i].no_msgs && json['message'] ) continue;
 	        		// otherwise send message to admin
-		            else adminConnections[i].send(toSend);    		
+		            else adminConnections[i].send(toSend);
 		            ///////////////////////////////////////////////////////
 
 		            // OLD APPROACH
-		            // adminConnections[i].send(toSend);    		
+		            // adminConnections[i].send(toSend);
 	        	} catch (e) {
 	        		logger.log("debug", "[sendToAdmins] ERROR: WebSocket library error sending message to admin at index " + i);
 	        		logger.log("debug", e);
-	        	}        		
+	        	}
         	}
         }
     };
