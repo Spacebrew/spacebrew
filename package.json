@@ -23,6 +23,6 @@
     "finalhandler": "^0.4.1",
     "forever-monitor": "1.1.0",
     "serve-static": "^1.10.2",
-    "ws": "~0.4.25"
+    "ws": "~7.2.0"
   }
 }
