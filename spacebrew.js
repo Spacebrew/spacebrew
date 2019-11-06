@@ -23,6 +23,7 @@ var path = require('path')
     , AJV = require('ajv')
     , fs = require('fs')
     , schema = require('./schema.json')
+    , https = require('https')
     ;
 
  
@@ -38,6 +39,7 @@ spacebrew.createServer = function( opts ){
      *   Setting 'localhost' will only listen on the loopback interface
      */
     opts.host = opts.host || '0.0.0.0';
+    opts.secure = opts.secure || false;
     opts.ping = opts.ping || true;
     opts.forceClose = opts.forceClose || false;
     opts.closeTimeout = opts.pingTimeout || 10000;
@@ -53,13 +55,37 @@ spacebrew.createServer = function( opts ){
     // create basic static folder
     var serve = serveStatic('admin');
 
-    var server = http.createServer(
-        function(req, res){
-            var done = finalhandler(req, res)
-            serve(req, res, done)
-        }
-    );
-
+    var server;
+    if (opts.secure==true){
+        logger.log("info", 'spacebrew starting secure server');
+        //send in key and cert paths probably
+        var key = 'video.expo.local.key';
+        var cert = 'video.expo.local.crt';
+        // var key = 'key.pem';
+        // var cert = 'cert.pem';
+        var options = {
+            key: fs.readFileSync(key),
+            cert: fs.readFileSync(cert)
+        };
+        server = https.createServer(
+            options,
+            function (req, res) {
+                var done = finalhandler(req, res)
+                serve(req, res, done)
+            }
+        );
+    }else{
+        //otherwise it's secure
+        server = http.createServer(
+            function (req, res) {
+                var done = finalhandler(req, res)
+                serve(req, res, done)
+            }
+        );
+    }
+    
+    
+    
     server.listen(opts.port, opts.host);
 
     // allow websocket connections on the existing server.
