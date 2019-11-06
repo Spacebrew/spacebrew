@@ -59,10 +59,8 @@ spacebrew.createServer = function( opts ){
     if (opts.secure==true){
         logger.log("info", 'spacebrew starting secure server');
         //send in key and cert paths probably
-        var key = 'video.expo.local.key';
-        var cert = 'video.expo.local.crt';
-        // var key = 'key.pem';
-        // var cert = 'cert.pem';
+        var key = 'secure/server-key.pem';
+        var cert = 'secure/server-key.crt';
         var options = {
             key: fs.readFileSync(key),
             cert: fs.readFileSync(cert)

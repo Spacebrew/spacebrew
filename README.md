@@ -43,6 +43,7 @@ Here is an overview of the command line options that the spacebrew server accept
 --log (-l): sets logging to info level
 --loglevel: set logging to info, debug, warn, error
 --pinginterval: the number of ms between pings (implies --ping, default 1000 [1 second])
+--secure: launch the server with https/wss support. See certificate details in the secure/ directory.
 ```
 
 Here are a few examples of how to launch the app using command line options:
