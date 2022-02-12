@@ -19,7 +19,7 @@
   "author": "LAB at Rockwell Group",
   "license": "MIT",
   "dependencies": {
-    "ajv": "^3.8.3",
+    "ajv": "^6.12.3",
     "finalhandler": "^0.4.1",
     "forever-monitor": "1.1.0",
     "serve-static": "^1.10.2",
