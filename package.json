@@ -21,7 +21,7 @@
   "dependencies": {
     "ajv": "^3.8.3",
     "finalhandler": "^0.4.1",
-    "forever-monitor": "1.1.0",
+    "forever-monitor": "1.7.2",
     "serve-static": "^1.10.2",
     "ws": "~0.4.25"
   }
